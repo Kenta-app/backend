@@ -14,7 +14,7 @@ class Article(Base):
     author = Column(String(200))
     source = Column(String(100), nullable=False, index=True)
     published_date = Column(DateTime)
-    scraped_date = Column(DateTime, default=datetime.utcnow, index=True)
+    scraped_date = Column(DateTime, default=datetime.now(), index=True)
     category = Column(String(100))
     tags = Column(String(500))
     image_url = Column(String(1000))
