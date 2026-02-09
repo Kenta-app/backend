@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.models.article import Article
 from app.models.scrapinglog import ScrapingLog
-from scrapers import BBCNewsScraper
+from app.scrapers.scrapers import BBCNewsScraper
 from datetime import datetime
 import logging
 
