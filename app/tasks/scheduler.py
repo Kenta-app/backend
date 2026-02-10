@@ -4,13 +4,16 @@ from app.scrapers.scraper_manager  import ScraperManager
 from app.db.database import  SessionLocal
 import logging
 import os
+from apscheduler.schedulers.background import BackgroundScheduler
+from zoneinfo import ZoneInfo
+
 
 logger = logging.getLogger(__name__)
 
 
 class ScrapingScheduler:
     def __init__(self):
-        self.scheduler = BackgroundScheduler()
+        self.scheduler = BackgroundScheduler(timezone=ZoneInfo("America/Lima"))
         self.scraper_manager = ScraperManager()
 
     def scheduled_scraping_job(self):
@@ -27,8 +30,8 @@ class ScrapingScheduler:
 
     def start(self):
         """Inicia el scheduler"""
-        hour = int(os.getenv("SCRAPING_SCHEDULE_HOUR", "6"))
-        minute = int(os.getenv("SCRAPING_SCHEDULE_MINUTE", "0"))
+        hour = int(os.getenv("SCRAPING_SCHEDULE_HOUR", "18"))
+        minute = int(os.getenv("SCRAPING_SCHEDULE_MINUTE", "58"))
 
         # Ejecutar todos los días a la hora configurada
         self.scheduler.add_job(

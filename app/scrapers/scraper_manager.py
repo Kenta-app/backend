@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.models.article import Article
 from app.models.scrapinglog import ScrapingLog
-from scrapers import BBCNewsScraper
+from app.scrapers.scrapers import ElComercioScraper, RPPNoticiasScraper, LaRepublicaScraper, Peru21Scraper
 from datetime import datetime
 import logging
 
@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 class ScraperManager:
     def __init__(self):
         self.scrapers = [
-            BBCNewsScraper(),
+           ElComercioScraper(),
+              RPPNoticiasScraper(),
+              LaRepublicaScraper(),
+                Peru21Scraper(),
             # Agregar más scrapers aquí
         ]
 
