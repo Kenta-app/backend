@@ -19,6 +19,7 @@ class ScraperManager:
               RPPNoticiasScraper(),
               LaRepublicaScraper(),
                 Peru21Scraper(),
+            #ElPeruanoScraper()
             # Agregar más scrapers aquí
         ]
 

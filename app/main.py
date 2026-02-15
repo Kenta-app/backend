@@ -1,20 +1,19 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime, timedelta
+from fastapi import FastAPI
 import logging
 
 from app.db.database import engine, get_db, Base
-from app.models.article import Article
-from app.models.scrapinglog import  ScrapingLog
-from app.schemas.articlebase import ArticleResponse, ScrapingLogResponse
-from app.scrapers.scraper_manager import ScraperManager
 from app.tasks.scheduler import ScrapingScheduler
+from app.ml.roberta_loader import load_model
+from app.routers.ml_router import router as ml_router
+
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="News Scraper API", version="1.0.0")
+app = FastAPI(title="Kenta App", version="1.0.0")
+
+app.include_router(ml_router, prefix="/ml", tags=["ML"])
+
 
 # Inicializar scheduler
 scheduler = ScrapingScheduler()
@@ -23,6 +22,7 @@ scheduler = ScrapingScheduler()
 async def startup_event():
     """Inicia el scheduler al arrancar la aplicación"""
     scheduler.start()
+    load_model()
     logging.info("Application started, scheduler is running")
 
 @app.on_event("shutdown")
