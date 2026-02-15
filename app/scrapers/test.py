@@ -1,31 +1,33 @@
-from app.scrapers.scrapers import  ElComercioScraper, RPPNoticiasScraper, LaRepublicaScraper, Peru21Scraper
+from app.scrapers.scrapers import *
+'''
+scraper1=ElComercioScraper()
+scraper2=RPPNoticiasScraper()
+scraper3=LaRepublicaScraper()
+scraper4=Peru21Scraper()
 
-from app.tasks.scheduler import ScrapingScheduler
+scrape1=scraper1.scrape()
+scrape2=scraper2.scrape()
+scrape3=scraper3.scrape()
+scrape4=scraper4.scrape()
 
-import time
+print("el comercio: ",len(scrape1))
+print("RPP: ",len(scrape2))
+print("La Republica: ",len(scrape3))
+print("Peru21: ",len(scrape4))
+for i in range(len(scrape1)):
+    print(scrape1[i]['title'])
+    print(scrape1[i]['content'])
+    print(scrape2[i]['title'])
+    print(scrape3[i]['title'])
+    print(scrape4[i]['title'])
+'''
 
-#scraper=ElComercioScraper()
-#scraper2=RPPNoticiasScraper()
-#scraper3=LaRepublicaScraper()
-#scraper4=Peru21Scraper()
-#articles=scraper.scrape()
-#articles=scraper2.scrape()
-#articles=scraper3.scrape()
-#articles4=scraper4.scrape()
-
-#print("-----------------")
-#print(len(articles))
-#for article in articles:
-#    print(article['title'])
-#    print(article['summary'])
-#    print(article['content'])
-#    print(article['url'])
-#    print(article['author'])
-#    print(article['published_date'])
-#    print("-"*20)
-#print("--------------")
-
-
-#from zoneinfo import ZoneInfo
-#from datetime import datetime
-#print(datetime.now(ZoneInfo("America/Lima")).date())
+scraper5=ElPeruanoScraper()
+scrape5=scraper5.scrape()
+print("El Peruano: ",len(scrape5))
+for i in range(len(scrape5)):
+    print(scrape5[i]['title'])
+    print(scrape5[i]['summary'])
+    print(scrape5[i]['content'])
+    print(scrape5[i]['author'])
+    print("-"*20)
