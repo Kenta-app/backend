@@ -1,31 +1,36 @@
-from app.scrapers.scrapers import  ElComercioScraper, RPPNoticiasScraper, LaRepublicaScraper, Peru21Scraper
+from app.db.database import  SessionLocal
+from app.models.article import Article
+from app.models.summaries import Summary
+from app.ml.summarizer import summarize
+def main():
+    db = SessionLocal()
 
-from app.tasks.scheduler import ScrapingScheduler
-
-import time
-
-#scraper=ElComercioScraper()
-#scraper2=RPPNoticiasScraper()
-#scraper3=LaRepublicaScraper()
-#scraper4=Peru21Scraper()
-#articles=scraper.scrape()
-#articles=scraper2.scrape()
-#articles=scraper3.scrape()
-#articles4=scraper4.scrape()
-
-#print("-----------------")
-#print(len(articles))
-#for article in articles:
-#    print(article['title'])
-#    print(article['summary'])
-#    print(article['content'])
-#    print(article['url'])
-#    print(article['author'])
-#    print(article['published_date'])
-#    print("-"*20)
-#print("--------------")
+    article=db.query(Article).first()
+    if article:
+        print("Article ID:", article.id)
+        print("Title:", article.title)
+        print("URL:", article.url)
+        print("Content:", article.content)
+        print("Summary:", article.summary)
+        print("Author:", article.author)
+        print("Source:", article.source)
+        print("Published Date:", article.published_date)
+        print("Scraped Date:", article.scraped_date)
+        print("Category:", article.category)
+        print("Tags:", article.tags)
+        print("Image URL:", article.image_url)
+        print("Is Active:", article.is_active)
+    else:
+        print("No articles found.")
 
 
-#from zoneinfo import ZoneInfo
-#from datetime import datetime
-#print(datetime.now(ZoneInfo("America/Lima")).date())
+    try:
+        summarized=summarize(article.content)
+        print("Summarized:", summarized)
+
+
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    main()
