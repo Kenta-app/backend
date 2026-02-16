@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timedelta
 from app.db.database import get_db
 from app.models.article import Article
 from app.schemas.articlebase import ArticleResponse
+from app.scrapers.scrapers import AndinaScraper, ElComercioScraper, LaRepublicaScraper, Peru21Scraper, RPPNoticiasScraper
 
 router = APIRouter()
 
@@ -83,3 +84,34 @@ def get_article(article_id: int, db: Session = Depends(get_db)):
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
+
+
+@router.get("/test/scraper/{scraper_name}")
+def test_scraper(scraper_name: str):
+    """Endpoint para probar scrapers individuales"""
+    scrapers = {
+        "andina": AndinaScraper(),
+        "elcomercio": ElComercioScraper(),
+        "larepublica": LaRepublicaScraper(),
+        "peru21": Peru21Scraper(),
+        "rpp": RPPNoticiasScraper(),
+    }
+
+    scraper_name = scraper_name.lower()
+    if scraper_name not in scrapers:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scraper no encontrado. Opciones: {', '.join(scrapers.keys())}"
+        )
+
+    try:
+        scraper = scrapers[scraper_name]
+        articles = scraper.scrape()
+        return {
+            "scraper": scraper_name,
+            "articles_count": len(articles),
+            "articles": articles
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al ejecutar scraper: {str(e)}")
+

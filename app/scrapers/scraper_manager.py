@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.models.article import Article
 from app.models.scrapinglog import ScrapingLog
-from app.scrapers.scrapers import ElComercioScraper, RPPNoticiasScraper, LaRepublicaScraper, Peru21Scraper
+from app.scrapers.scrapers import ElComercioScraper, RPPNoticiasScraper, LaRepublicaScraper, Peru21Scraper, AndinaScraper
 from datetime import datetime
 import logging
 from app.models.summaries import Summary
@@ -19,6 +19,7 @@ class ScraperManager:
               RPPNoticiasScraper(),
               LaRepublicaScraper(),
                 Peru21Scraper(),
+                AndinaScraper(),
             #ElPeruanoScraper()
             # Agregar más scrapers aquí
         ]

@@ -1,11 +1,13 @@
 # python
 from sympy.parsing.sympy_parser import null
 
+from bs4 import BeautifulSoup
 from app.scrapers.base_scraper import BaseScraper
 from typing import List, Dict, Optional
 from datetime import datetime
 import logging
 from zoneinfo import ZoneInfo
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -374,3 +376,146 @@ class ElPeruanoScraper(BaseScraper):
             logger.error(f"Error scraping {self.source_name}: {str(e)}")
     
     '''
+class AndinaScraper(BaseScraper):
+    # Patrones para limpiar HTML del cuerpo (scripts, embeds, "Lea también" + enlace)
+    _CHUNK_STRIP = (
+        r'<script[^>]*>[\s\S]*?</script>',
+        r'<iframe[^>]*>[\s\S]*?</iframe>',
+        r'<div[^>]*class="[^"]*twitter[^"]*"[^>]*>[\s\S]*?</div>',
+        r'<div[^>]*>\s*\[?(?:Lea|Lee|Lease) también:?\s*&nbsp;?\s*<a\s[^>]*>[\s\S]*?</a>\s*\]?\s*</div>',
+        r'<div[^>]*>\s*<strong>(?:Lea|Lee|Lease) también:?</strong>\s*<a\s[^>]*>[\s\S]*?</a>\s*</div>',
+        r'\[?(?:Lea|Lee|Lease) también:?\s*&nbsp;?\s*<a\s[^>]*>[\s\S]*?</a>\s*\]?',
+        r'<strong>(?:Lea|Lee|Lease) también:?</strong>\s*<a\s[^>]*>[\s\S]*?</a>',
+    )
+    _CONTENT_STRIP = (
+        r'\[(?:Lea|Lee|Lease) también:[^\]]*\]',
+        r'(?:Lea|Lee|Lease) también:\s*\[[^\]]*\]',
+    )
+    _MESES_ES = {'ene': 1, 'enero': 1, 'feb': 2, 'febrero': 2, 'mar': 3, 'marzo': 3, 'abr': 4, 'abril': 4,
+                 'may': 5, 'mayo': 5, 'jun': 6, 'junio': 6, 'jul': 7, 'julio': 7, 'ago': 8, 'agosto': 8,
+                 'sep': 9, 'sept': 9, 'septiembre': 9, 'oct': 10, 'octubre': 10, 'nov': 11, 'noviembre': 11,
+                 'dic': 12, 'diciembre': 12}
+
+    def __init__(self):
+        super().__init__("Andina", "https://andina.pe")
+
+    def _parse_spanish_date(self, date_text: str, current_year: int) -> Optional[str]:
+        """Parsea fecha en español 'feb. 15.' o 'febrero 15' a formato YYYY-MM-DD"""
+        try:
+            match = re.search(r'(\w+)\.?\s+(\d{1,2})', date_text)
+            if match:
+                mes_str, dia_str = match.group(1).lower(), match.group(2)
+                if mes_str in self._MESES_ES and dia_str.isdigit():
+                    mes, dia = self._MESES_ES[mes_str], int(dia_str)
+                    return str(datetime(current_year, mes, dia).date())
+        except Exception as e:
+            logger.warning(f"Error parsing date '{date_text}': {str(e)}")
+        return None
+
+    def _scrape_article(self, article_url: str, fecha_actual_date) -> Optional[Dict]:
+        """Extrae los datos de un artículo individual"""
+        if not article_url.startswith('http'):
+            article_url = article_url.lstrip('/')
+            article_url = f"https://andina.pe/{article_url}" if article_url.startswith('agencia/') else f"https://andina.pe/agencia/{article_url}"
+
+        article_soup = self.fetch_page(article_url)
+        if not article_soup:
+            return None
+
+        # Extraer título
+        title_elem = article_soup.select_one('h1')
+        if not title_elem:
+            return None
+
+        # Resumen: puede venir de h2 o de la zona DESCRIPCION
+        summary_elem = article_soup.select_one('h2')
+
+        # Extraer fecha: "12:12 | Lima, feb. 15." -> YYYY-MM-DD
+        published_date = None
+        all_text = article_soup.get_text()
+        date_pattern = r'(\d{1,2}):(\d{2})\s*\|\s*(\w+),\s*(\w+)\.?\s*(\d{1,2})'
+        match = re.search(date_pattern, all_text)
+        if match:
+            mes_str = match.group(4).lower()
+            dia_str = match.group(5)
+            published_date = self._parse_spanish_date(f"{mes_str} {dia_str}", fecha_actual_date.year)
+        if not published_date:
+            time_elem = article_soup.select_one('time')
+            if time_elem and time_elem.get('datetime'):
+                published_date = time_elem.get('datetime', '').split('T')[0]
+
+        # Descripción y cuerpo usando comentarios HTML
+        description_text = ""
+        body_text = ""
+        html_str = str(article_soup)
+        idx_desc = html_str.find('DESCRIPCION')
+        idx_cont = html_str.find('CONTENIDO DE LA NOTICIA')
+        idx_fin = html_str.upper().find('(FIN)')
+
+        if idx_desc != -1 and idx_cont != -1 and idx_cont > idx_desc:
+            end_desc = html_str.find('-->', idx_desc) + 3
+            start_cont_comment = html_str.rfind('<!--', 0, idx_cont + 1)
+            desc_html = html_str[end_desc:start_cont_comment]
+            description_text = self.clean_text(BeautifulSoup(desc_html, 'html.parser').get_text(separator=' ', strip=True))
+
+        if idx_cont != -1 and idx_fin != -1 and idx_fin > idx_cont:
+            end_cont = html_str.find('-->', idx_cont) + 3
+            chunk = html_str[end_cont:idx_fin]
+            for pat in self._CHUNK_STRIP:
+                chunk = re.sub(pat, '', chunk, flags=re.I)
+            body_soup = BeautifulSoup(chunk, 'html.parser')
+            for tag in body_soup.find_all(['nav', 'footer', 'header', 'aside']):
+                tag.decompose()
+            body_text = self.clean_text(body_soup.get_text(separator=' ', strip=True))
+
+        content_text = f"{description_text}\n\n{body_text}".strip() if (description_text or body_text) else (self.clean_text(summary_elem.get_text()) if summary_elem else "")
+        for pat in self._CONTENT_STRIP:
+            content_text = re.sub(pat, ' ', content_text, flags=re.I)
+        content_text = re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', content_text)).strip()
+
+        author = "Andina"
+
+        return {
+            'title': self.clean_text(title_elem.get_text()),
+            'url': article_url,
+            'summary': self.clean_text(summary_elem.get_text()) if summary_elem else (description_text or None),
+            'content': content_text,
+            'source': self.source_name,
+            'published_date': published_date,
+            'scraped_date': fecha_actual_date,
+            'author': author
+        }
+
+    def scrape(self) -> List[Dict]:
+        """Scraper principal que obtiene la lista de artículos de la sección de política"""
+        articles = []
+        try:
+            soup = self.fetch_page("https://andina.pe/agencia/seccion-politica-17.aspx")
+            if not soup:
+                return articles
+            fecha_actual_date = datetime.now(ZoneInfo("America/Lima")).date()
+            base_agencia = "https://andina.pe/agencia"
+            skip = {'facebook', 'twitter', 'sharer', 'linkedin', 'whatsapp'}
+
+            def norm(href: str) -> str:
+                href = (href or "").strip()
+                if not href or "noticia-" not in href.lower() or any(x in href.lower() for x in skip):
+                    return ""
+                if href.startswith("http"):
+                    return href if "andina.pe" in href and "noticia" in href else ""
+                return f"https://andina.pe{href}" if href.startswith("/") else f"{base_agencia}/{href}"
+
+            urls = (norm(a.get('href', '')) for a in soup.select('a[href*="noticia-"]'))
+            article_urls = list(dict.fromkeys(u for u in urls if u))[:5]
+            logger.info(f"Encontradas {len(article_urls)} URLs potenciales de artículos")
+            for url in article_urls:
+                try:
+                    article = self._scrape_article(url, fecha_actual_date)
+                    if article and article.get('content') and article.get('published_date'):
+                        articles.append(article)
+                except Exception as e:
+                    logger.debug(f"Error scraping article {url}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error scraping {self.source_name}: {str(e)}")
+        return articles
+

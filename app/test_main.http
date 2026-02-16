@@ -9,3 +9,33 @@ GET http://127.0.0.1:8000/hello/User
 Accept: application/json
 
 ###
+
+# Test Scraper - Andina (MEJORADO - Excluye URLs de redes sociales)
+GET http://127.0.0.1:8000/articles/test/scraper/andina
+Accept: application/json
+
+###
+
+# Test Scraper - El Comercio
+GET http://127.0.0.1:8000/articles/test/scraper/elcomercio
+Accept: application/json
+
+###
+
+# Test Scraper - La República
+GET http://127.0.0.1:8000/articles/test/scraper/larepublica
+Accept: application/json
+
+###
+
+# Test Scraper - Peru21
+GET http://127.0.0.1:8000/articles/test/scraper/peru21
+Accept: application/json
+
+###
+
+# Test Scraper - RPP Noticias
+GET http://127.0.0.1:8000/articles/test/scraper/rpp
+Accept: application/json
+
+###
