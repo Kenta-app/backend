@@ -506,7 +506,7 @@ class AndinaScraper(BaseScraper):
                 return f"https://andina.pe{href}" if href.startswith("/") else f"{base_agencia}/{href}"
 
             urls = (norm(a.get('href', '')) for a in soup.select('a[href*="noticia-"]'))
-            article_urls = list(dict.fromkeys(u for u in urls if u))[:5]
+            article_urls = list(dict.fromkeys(u for u in urls if u))
             logger.info(f"Encontradas {len(article_urls)} URLs potenciales de artículos")
             for url in article_urls:
                 try:

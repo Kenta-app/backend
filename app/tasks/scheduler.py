@@ -22,6 +22,11 @@ class ScrapingScheduler:
         db = SessionLocal()
         try:
             logs = self.scraper_manager.run_all_scrapers(db)
+            for log in logs:
+                status = log.status or "unknown"
+                count = getattr(log, 'articles_scraped', None) or 0
+                err = getattr(log, 'error_message', None) or ""
+                logger.info(f"  {log.source}: {status}, artículos={count}" + (f" | error: {err}" if err else ""))
             logger.info(f"Scraping job completed. Processed {len(logs)} sources.")
         except Exception as e:
             logger.error(f"Error in scheduled scraping: {str(e)}")

@@ -25,13 +25,25 @@ class ScraperManager:
         ]
 
     def run_all_scrapers(self, db: Session) -> List[ScrapingLog]:
-        """Ejecuta todos los scrapers configurados"""
+        """Ejecuta todos los scrapers configurados. Si uno falla, se sigue con el siguiente."""
         logs = []
-
         for scraper in self.scrapers:
-            log = self._run_single_scraper(scraper, db)
-            logs.append(log)
-
+            logger.info(f"Ejecutando scraper: {scraper.source_name}")
+            try:
+                log = self._run_single_scraper(scraper, db)
+                logs.append(log)
+            except Exception as e:
+                logger.error(f"Scraper {scraper.source_name} falló por completo: {e}")
+                log = ScrapingLog(
+                    source=scraper.source_name,
+                    status="error",
+                    error_message=str(e),
+                    started_at=datetime.now(),
+                    finished_at=datetime.now(),
+                )
+                db.add(log)
+                db.commit()
+                logs.append(log)
         return logs
 
     def _run_single_scraper(self, scraper, db: Session) -> ScrapingLog:
@@ -48,13 +60,15 @@ class ScraperManager:
             articles_data = scraper.scrape()
             saved_count = 0
             new_articles = []
+            seen_urls = set()  # evita duplicados dentro del mismo lote (ej. La República repite URLs)
 
             # 1️⃣ Insertar solo artículos nuevos
             for article_data in articles_data:
-                existing = db.query(Article).filter(
-                    Article.url == article_data['url']
-                ).first()
-
+                url = article_data.get('url')
+                if not url or url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                existing = db.query(Article).filter(Article.url == url).first()
                 if not existing:
                     article = Article(**article_data)
                     db.add(article)
@@ -70,18 +84,22 @@ class ScraperManager:
             logger.info(f"Scraped {saved_count} new articles from {scraper.source_name}")
 
             # 2️⃣ Generar resumen SOLO de los nuevos
-            for article in new_articles:
+            num_summaries = len(new_articles)
+            if num_summaries > 0:
+                logger.info(f"Generating {num_summaries} summaries for {scraper.source_name}...")
+            for i, article in enumerate(new_articles):
                 summary_text = summarize(article.content)
-
                 summary = Summary(
                     article_id=article.id,
                     summary_text=summary_text,
                     created_at=datetime.now(),
                     updated_at=datetime.now()
                 )
-
                 db.add(summary)
-
+                if (i + 1) % 5 == 0 or (i + 1) == num_summaries:
+                    logger.info(f"  {scraper.source_name}: summary {i + 1}/{num_summaries} done")
+            if num_summaries > 0:
+                logger.info(f"Summaries done for {scraper.source_name}")
             db.commit()
 
         except Exception as e:
@@ -90,6 +108,9 @@ class ScraperManager:
             log.error_message = str(e)
             log.finished_at = datetime.now()
             logger.error(f"Error in {scraper.source_name}: {str(e)}")
+            db.add(log)  # re-asociar tras rollback para que el commit guarde el estado
+            db.commit()
+            return log
 
         db.commit()
         db.refresh(log)

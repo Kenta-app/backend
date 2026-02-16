@@ -6,6 +6,7 @@ from app.db.database import get_db
 from app.models.article import Article
 from app.schemas.articlebase import ArticleResponse
 from app.scrapers.scrapers import AndinaScraper, ElComercioScraper, LaRepublicaScraper, Peru21Scraper, RPPNoticiasScraper
+from app.scrapers.scraper_manager import ScraperManager
 
 router = APIRouter()
 
