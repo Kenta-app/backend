@@ -17,6 +17,13 @@ FNC_FILES = [
     "competition_test_stances.csv",
 ]
 
+LIAR_BASE_URL = "https://raw.githubusercontent.com/tfs4/liar_dataset/master/"
+LIAR_FILES = {
+    "train.tsv": "train.tsv",
+    "valid.tsv": "validation.tsv",
+    "test.tsv": "test.tsv",
+}
+
 
 def download_fnc(output_dir="data/fnc-1"):
     """Download FNC-1 CSV files from GitHub."""
@@ -32,31 +39,16 @@ def download_fnc(output_dir="data/fnc-1"):
 
 
 def download_liar(output_dir="data/liar"):
-    """Download LIAR dataset via HuggingFace datasets library."""
+    """Download LIAR TSV files from a public GitHub mirror."""
     os.makedirs(output_dir, exist_ok=True)
 
-    try:
-        from datasets import load_dataset
-    except ImportError:
-        print("Install the datasets library first:  pip install datasets")
-        raise
-
-    ds = load_dataset("ucsbnlp/liar", trust_remote_code=True)
-    label_names = ds["train"].features["label"].names
-
-    splits = {"train": "train", "validation": "validation", "test": "test"}
-    for split_name, split_key in splits.items():
-        dest = os.path.join(output_dir, f"{split_name}.tsv")
+    for remote_name, local_name in LIAR_FILES.items():
+        dest = os.path.join(output_dir, local_name)
         if os.path.exists(dest):
-            print(f"  [skip] {split_name}.tsv already exists")
+            print(f"  [skip] {local_name} already exists")
             continue
-        print(f"  Saving {split_name}.tsv ({len(ds[split_key]):,} rows)...")
-        with open(dest, "w", encoding="utf-8") as f:
-            for row in ds[split_key]:
-                label = label_names[row["label"]]
-                stmt = row["statement"].replace("\t", " ").replace("\n", " ")
-                row_id = row.get("id", "")
-                f.write(f"{row_id}\t{label}\t{stmt}\n")
+        print(f"  Downloading {remote_name} as {local_name}...")
+        urllib.request.urlretrieve(LIAR_BASE_URL + remote_name, dest)
 
     print("LIAR ready.\n")
 

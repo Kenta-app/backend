@@ -1,25 +1,10 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Index
-from datetime import datetime
-# app/models/article.py
-from app.db.database import Base
+"""
+Legacy compatibility wrapper.
 
-class Article(Base):
-    __tablename__ = "articles"
+The project now uses the class-diagram-aligned raw/processed/serving packages.
+`Article` is kept as an alias to `RawNews` for older imports.
+"""
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(500), nullable=False)
-    url = Column(String(1000), unique=True, nullable=False, index=True)
-    content = Column(Text)
-    summary = Column(Text)
-    author = Column(String(200))
-    source = Column(String(100), nullable=False, index=True)
-    published_date = Column(DateTime)
-    scraped_date = Column(DateTime, default=datetime.now(), index=True)
-    category = Column(String(100))
-    tags = Column(String(500))
-    image_url = Column(String(1000))
-    is_active = Column(Boolean, default=True)
+from app.raw.models import RawNews as Article
 
-    __table_args__ = (
-        Index('idx_source_date', 'source', 'scraped_date'),
-    )
+__all__ = ["Article"]

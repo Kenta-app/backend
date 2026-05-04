@@ -1,6 +1,3 @@
-# python
-from sympy.parsing.sympy_parser import null
-
 from app.scrapers.base_scraper import BaseScraper
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -16,19 +13,30 @@ class ElComercioScraper(BaseScraper):
     def _scrape_article(self, article_url: str, fecha_html_date, fecha_actual_date) -> Optional[Dict]:
         if not article_url.startswith('http'):
             article_url = f"https://elcomercio.pe{article_url}"
-        article_soup = self.fetch_page(article_url)
+        if '/ecdata/' in article_url:
+            return None
 
-        print("article_soup: ", article_url)
+        article_soup = self.fetch_page(article_url)
 
         if not article_soup:
             return None
-        if article_soup.select_one('div.story-header-headsubscription__text') == "Solo para suscriptores":
+
+        subscription_notice = article_soup.select_one('div.story-header-headsubscription__text')
+        if subscription_notice and "Solo para suscriptores" in subscription_notice.get_text(" ", strip=True):
             return None
 
         title_elem = article_soup.select_one('h1')
         summary_elem = article_soup.select_one('h2')
-        contents = article_soup.select('p.sc__font-paragraph')
-        content_text = " ".join([self.clean_text(p.get_text()) for p in contents])
+        contents = article_soup.select(
+            'p.sc__font-paragraph, '
+            'article p.sc__font-paragraph, '
+            'article div.story-content p, '
+            'article section p'
+        )
+        if not contents:
+            contents = article_soup.select('article p')
+        paragraphs = [self.clean_text(p.get_text()) for p in contents if self.clean_text(p.get_text())]
+        content_text = " ".join(paragraphs)
         author = article_soup.select_one('a.sc__author-nd-a')
 
         fecha_html=article_soup.find("time")
@@ -42,7 +50,7 @@ class ElComercioScraper(BaseScraper):
         if author:
             author = author.get_text(strip=True)
 
-        if not title_elem:
+        if not title_elem or len(content_text) < 80:
             return None
 
         return {
@@ -76,6 +84,8 @@ class ElComercioScraper(BaseScraper):
 
                 link = container.select_one('a.story-item__title')
                 if not link or not link.get('href'):
+                    continue
+                if '/ecdata/' in link.get('href'):
                     continue
 
                 article = self._scrape_article(link.get('href'), None, fecha_actual_date)
@@ -175,8 +185,11 @@ class Peru21Scraper(BaseScraper):
             for p in content_block.find_all('p'):
                 if not p.find_parent("article.embedded-entity"):
                     paragraphs.append(p)
+        if not paragraphs:
+            paragraphs = article_soup.select('article p, main p')
         content_text = [p.get_text(strip=True) for p in paragraphs]
-        author = article_soup.select_one('div.firma-s1 div.field__item').get_text(strip=True)
+        author_elem = article_soup.select_one('div.firma-s1 div.field__item')
+        author = author_elem.get_text(strip=True) if author_elem else None
 
         if not title_elem:
             return None
@@ -213,7 +226,11 @@ class Peru21Scraper(BaseScraper):
                     continue
 
 
-                article = self._scrape_article(link.get('href'), fecha_html_date, fecha_actual_date)
+                try:
+                    article = self._scrape_article(link.get('href'), fecha_html_date, fecha_actual_date)
+                except Exception as article_error:
+                    logger.warning(f"Error parsing article {link.get('href')}: {article_error}")
+                    continue
                 if article:
                     articles.append(article)
 

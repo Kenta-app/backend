@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, classification_report, f1_score
+from torch.cuda.amp import autocast, GradScaler
 from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
 
@@ -35,11 +36,20 @@ class MultiTaskTrainer:
             self.fakenews_criterion = FocalLoss(gamma=config.focal_gamma)
         else:
             self.stance_criterion = nn.CrossEntropyLoss()
-            self.fakenews_criterion = nn.CrossEntropyLoss()
+            # Class weights for binary fakenews: ~35% False, ~65% True
+            # Weight minority class (False) more to balance
+            fakenews_weights = torch.tensor([1.8, 1.0]).to(self.device)
+            self.fakenews_criterion = nn.CrossEntropyLoss(weight=fakenews_weights)
+
+        # Mixed precision (FP16) for faster training on GPU
+        self.use_amp = torch.cuda.is_available() and self.device.type == "cuda"
+        self.scaler = GradScaler() if self.use_amp else None
+        if self.use_amp:
+            logger.info("Mixed precision (FP16) enabled for faster training")
 
     def _build_optimizer_and_scheduler(self, total_steps):
         """Differential learning rates: lower for BERT, higher for task heads."""
-        bert_params = list(self.model.bert.parameters())
+        bert_params = list(self.model.encoder.parameters())
         head_params = list(self.model.stance_head.parameters()) + list(
             self.model.fakenews_head.parameters()
         )
@@ -71,16 +81,24 @@ class MultiTaskTrainer:
         )
         return optimizer, scheduler
 
-    def train(self, fnc_train_loader, fnc_val_loader, liar_train_loader, liar_val_loader):
+    def train(self, fnc_train_loader, fnc_val_loader, liar_train_loader, liar_val_loader, start_epoch=1):
         steps_per_epoch = len(fnc_train_loader) + len(liar_train_loader)
         total_steps = steps_per_epoch * self.config.num_epochs
 
-        optimizer, scheduler = self._build_optimizer_and_scheduler(total_steps)
+        # Adjust scheduler for resumed training
+        if start_epoch > 1:
+            completed_steps = steps_per_epoch * (start_epoch - 1)
+            optimizer, scheduler = self._build_optimizer_and_scheduler(total_steps)
+            for _ in range(completed_steps):
+                scheduler.step()
+            logger.info(f"Resumed scheduler at step {completed_steps}")
+        else:
+            optimizer, scheduler = self._build_optimizer_and_scheduler(total_steps)
 
         best_score = 0.0
         history = []
 
-        for epoch in range(1, self.config.num_epochs + 1):
+        for epoch in range(start_epoch, self.config.num_epochs + 1):
             logger.info(f"{'='*20} Epoch {epoch}/{self.config.num_epochs} {'='*20}")
 
             train_metrics = self._train_epoch(
@@ -171,27 +189,48 @@ class MultiTaskTrainer:
     def _train_step(self, batch, task, optimizer, scheduler):
         optimizer.zero_grad()
 
-        input_ids = batch["input_ids"].to(self.device)
-        attention_mask = batch["attention_mask"].to(self.device)
-        token_type_ids = batch["token_type_ids"].to(self.device)
+        model_inputs = {
+            "input_ids": batch["input_ids"].to(self.device),
+            "attention_mask": batch["attention_mask"].to(self.device),
+        }
+        if "token_type_ids" in batch:
+            model_inputs["token_type_ids"] = batch["token_type_ids"].to(self.device)
         labels = batch["labels"].to(self.device)
 
-        outputs = self.model(input_ids, attention_mask, token_type_ids, task=task)
-
-        if task == "stance":
-            raw_loss = self.stance_criterion(outputs["stance_logits"], labels)
+        # Forward pass with optional mixed precision
+        if self.use_amp:
+            with autocast():
+                outputs = self.model(task=task, **model_inputs)
+                if task == "stance":
+                    raw_loss = self.stance_criterion(outputs["stance_logits"], labels)
+                else:
+                    raw_loss = self.fakenews_criterion(outputs["fakenews_logits"], labels)
+                loss = self.model.compute_weighted_loss(raw_loss, task)
         else:
-            raw_loss = self.fakenews_criterion(outputs["fakenews_logits"], labels)
+            outputs = self.model(task=task, **model_inputs)
+            if task == "stance":
+                raw_loss = self.stance_criterion(outputs["stance_logits"], labels)
+            else:
+                raw_loss = self.fakenews_criterion(outputs["fakenews_logits"], labels)
+            loss = self.model.compute_weighted_loss(raw_loss, task)
 
-        loss = self.model.compute_weighted_loss(raw_loss, task)
+        # Backward pass with gradient scaling for FP16
+        if self.use_amp:
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(), self.config.max_grad_norm
+            )
+            self.scaler.step(optimizer)
+            self.scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(), self.config.max_grad_norm
+            )
+            optimizer.step()
 
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(
-            self.model.parameters(), self.config.max_grad_norm
-        )
-        optimizer.step()
         scheduler.step()
-
         return raw_loss.item()
 
     @torch.no_grad()
@@ -201,24 +240,26 @@ class MultiTaskTrainer:
         # --- Stance ---
         s_preds, s_labels = [], []
         for batch in fnc_val_loader:
-            outputs = self.model(
-                batch["input_ids"].to(self.device),
-                batch["attention_mask"].to(self.device),
-                batch["token_type_ids"].to(self.device),
-                task="stance",
-            )
+            model_inputs = {
+                "input_ids": batch["input_ids"].to(self.device),
+                "attention_mask": batch["attention_mask"].to(self.device),
+            }
+            if "token_type_ids" in batch:
+                model_inputs["token_type_ids"] = batch["token_type_ids"].to(self.device)
+            outputs = self.model(task="stance", **model_inputs)
             s_preds.extend(outputs["stance_logits"].argmax(dim=-1).cpu().numpy())
             s_labels.extend(batch["labels"].numpy())
 
         # --- FakeNews ---
         f_preds, f_labels = [], []
         for batch in liar_val_loader:
-            outputs = self.model(
-                batch["input_ids"].to(self.device),
-                batch["attention_mask"].to(self.device),
-                batch["token_type_ids"].to(self.device),
-                task="fakenews",
-            )
+            model_inputs = {
+                "input_ids": batch["input_ids"].to(self.device),
+                "attention_mask": batch["attention_mask"].to(self.device),
+            }
+            if "token_type_ids" in batch:
+                model_inputs["token_type_ids"] = batch["token_type_ids"].to(self.device)
+            outputs = self.model(task="fakenews", **model_inputs)
             f_preds.extend(outputs["fakenews_logits"].argmax(dim=-1).cpu().numpy())
             f_labels.extend(batch["labels"].numpy())
 
@@ -255,5 +296,5 @@ class MultiTaskTrainer:
         path = os.path.join(self.config.output_dir, name)
         os.makedirs(path, exist_ok=True)
         torch.save(self.model.state_dict(), os.path.join(path, "model.pt"))
-        self.model.bert.config.save_pretrained(path)
+        self.model.encoder.config.save_pretrained(path)
         logger.info(f"Checkpoint saved to {path}")

@@ -13,7 +13,7 @@ import random
 
 import numpy as np
 import torch
-from transformers import BertTokenizer
+from transformers import AutoTokenizer
 
 from app.ml.multitask_model import MultiTaskBert
 from app.ml.training.config import TrainingConfig
@@ -36,14 +36,16 @@ def set_seed(seed):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Multi-task BERT Training")
-    parser.add_argument("--model_name", default="bert-base-uncased")
+    parser = argparse.ArgumentParser(description="Multi-task transformer training")
+    parser.add_argument("--model_name", default="xlm-roberta-base")
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--max_seq_length", type=int, default=512)
     parser.add_argument("--no_uncertainty", action="store_true")
     parser.add_argument("--no_focal_loss", action="store_true")
+    parser.add_argument("--resume", action="store_true", help="Resume from best_model checkpoint")
+    parser.add_argument("--start_epoch", type=int, default=1, help="Starting epoch (use with --resume)")
     parser.add_argument("--fnc_dir", default="data/fnc-1")
     parser.add_argument("--liar_dir", default="data/liar")
     parser.add_argument("--output_dir", default="output/multitask_bert")
@@ -67,7 +69,7 @@ def main():
     set_seed(config.seed)
     logger.info(f"Config: {config}")
 
-    tokenizer = BertTokenizer.from_pretrained(config.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(config.model_name)
 
     logger.info("Loading datasets...")
     fnc_train, fnc_val, liar_train, liar_val = create_dataloaders(config, tokenizer)
@@ -86,12 +88,23 @@ def main():
         use_uncertainty_weighting=config.use_uncertainty_weighting,
     )
 
+    # Resume from checkpoint if requested
+    if args.resume:
+        checkpoint_path = f"{config.output_dir}/best_model/model.pt"
+        if torch.cuda.is_available():
+            state_dict = torch.load(checkpoint_path)
+        else:
+            state_dict = torch.load(checkpoint_path, map_location="cpu")
+        model.load_state_dict(state_dict)
+        logger.info(f"Resumed from checkpoint: {checkpoint_path}")
+
     total_params = sum(p.numel() for p in model.parameters())
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"Parameters: {total_params:,} total, {trainable:,} trainable")
 
     trainer = MultiTaskTrainer(model, config)
-    history = trainer.train(fnc_train, fnc_val, liar_train, liar_val)
+    start_epoch = args.start_epoch if args.resume else 1
+    history = trainer.train(fnc_train, fnc_val, liar_train, liar_val, start_epoch=start_epoch)
 
     # Save tokenizer alongside model for inference
     tokenizer.save_pretrained(f"{config.output_dir}/best_model")

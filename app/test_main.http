@@ -1,11 +1,65 @@
-# Test your FastAPI endpoints
-
-GET http://127.0.0.1:8000/
+### Health general
+GET http://127.0.0.1:8000/health
 Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/hello/User
+### Estado del modelo multitarea
+GET http://127.0.0.1:8000/ml/health
 Accept: application/json
 
 ###
+
+### Registrar usuario
+POST http://127.0.0.1:8000/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin_demo",
+  "email": "admin_demo@example.com",
+  "password": "123456"
+}
+
+###
+
+### Crear fuente como administrador
+POST http://127.0.0.1:8000/admin/sources
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "name": "Fuente Demo",
+  "baseUrl": "https://example.com/politica",
+  "type": "web",
+  "parserKey": "generic"
+}
+
+###
+
+### Ingerir noticias de una fuente
+POST http://127.0.0.1:8000/admin/ingestion/1
+X-User-Id: 1
+
+###
+
+### Ejecutar pipeline sobre raw news pendientes
+POST http://127.0.0.1:8000/pipeline/run/1
+X-User-Id: 1
+
+###
+
+### Feed publicado
+GET http://127.0.0.1:8000/news?page=1&pageSize=10
+Accept: application/json
+
+###
+
+### Analisis manual de noticia
+POST http://127.0.0.1:8000/ml/analyze
+Content-Type: application/json
+
+{
+  "title": "Congreso debate nueva reforma politica",
+  "content": "El pleno del Congreso debatio durante varias horas la nueva reforma politica presentada por el Ejecutivo. La propuesta incluye cambios en financiamiento de partidos, elecciones primarias y mecanismos de fiscalizacion. Distintos voceros parlamentarios expresaron apoyo parcial mientras otros cuestionaron la viabilidad del proyecto.",
+  "include_summary": true
+}

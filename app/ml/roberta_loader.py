@@ -1,37 +1,19 @@
-import torch
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
+"""
+Backward-compatible wrapper around the multitask analysis pipeline.
 
-MODEL_NAME = "roberta-base"
+The module name is kept to avoid breaking older imports while the project
+transitions from a demo RoBERTa classifier to the real multitask backend.
+"""
 
-tokenizer = None
-model = None
+from app.ml.pipeline import news_analysis_pipeline
+
 
 def load_model():
-    global tokenizer, model
+    return news_analysis_pipeline.load()
 
-    tokenizer = RobertaTokenizer.from_pretrained(MODEL_NAME)
-    model = RobertaForSequenceClassification.from_pretrained(
-        MODEL_NAME,
-        num_labels=3
-    )
-
-    model.eval()
 
 def predict(text: str):
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        padding=True
+    return news_analysis_pipeline.analyze_news(
+        text=text,
+        include_summary=False,
     )
-
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    probs = torch.softmax(outputs.logits, dim=1)
-    prediction = torch.argmax(probs, dim=1).item()
-
-    return {
-        "label": prediction,
-        "probabilities": probs.tolist()[0]
-    }

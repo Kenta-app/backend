@@ -4,13 +4,13 @@ from dataclasses import dataclass
 @dataclass
 class TrainingConfig:
     # Model
-    model_name: str = "bert-base-uncased"
+    model_name: str = "xlm-roberta-base"
     max_seq_length: int = 512
     max_seq_length_liar: int = 128
 
     # Task labels
     num_stance_labels: int = 4   # unrelated, discuss, agree, disagree
-    num_fakenews_labels: int = 6 # pants-fire, false, barely-true, half-true, mostly-true, true
+    num_fakenews_labels: int = 2 # binary: 0=False (fake), 1=True (real)
 
     # Training
     batch_size: int = 16

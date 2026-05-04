@@ -13,14 +13,25 @@ from torch.utils.data import DataLoader, Dataset
 
 FNC_LABEL_MAP = {"unrelated": 0, "discuss": 1, "agree": 2, "disagree": 3}
 
+# Binary classification: 0=False (fake), 1=True (real)
 LIAR_LABEL_MAP = {
-    "pants-fire": 0,
-    "false": 1,
-    "barely-true": 2,
-    "half-true": 3,
-    "mostly-true": 4,
-    "true": 5,
+    "pants-fire": 0,  # False
+    "false": 0,       # False
+    "barely-true": 0, # False
+    "half-true": 1,   # True
+    "mostly-true": 1, # True
+    "true": 1,        # True
 }
+
+
+def _build_model_inputs(encoded_batch):
+    batch = {
+        "input_ids": encoded_batch["input_ids"].squeeze(0),
+        "attention_mask": encoded_batch["attention_mask"].squeeze(0),
+    }
+    if "token_type_ids" in encoded_batch:
+        batch["token_type_ids"] = encoded_batch["token_type_ids"].squeeze(0)
+    return batch
 
 
 class FNCDataset(Dataset):
@@ -64,12 +75,9 @@ class FNCDataset(Dataset):
             padding="max_length",
             return_tensors="pt",
         )
-        return {
-            "input_ids": enc["input_ids"].squeeze(0),
-            "attention_mask": enc["attention_mask"].squeeze(0),
-            "token_type_ids": enc["token_type_ids"].squeeze(0),
-            "labels": torch.tensor(s["label"], dtype=torch.long),
-        }
+        batch = _build_model_inputs(enc)
+        batch["labels"] = torch.tensor(s["label"], dtype=torch.long)
+        return batch
 
 
 class LIARDataset(Dataset):
@@ -109,12 +117,9 @@ class LIARDataset(Dataset):
             padding="max_length",
             return_tensors="pt",
         )
-        return {
-            "input_ids": enc["input_ids"].squeeze(0),
-            "attention_mask": enc["attention_mask"].squeeze(0),
-            "token_type_ids": enc["token_type_ids"].squeeze(0),
-            "labels": torch.tensor(s["label"], dtype=torch.long),
-        }
+        batch = _build_model_inputs(enc)
+        batch["labels"] = torch.tensor(s["label"], dtype=torch.long)
+        return batch
 
 
 def create_dataloaders(config, tokenizer):

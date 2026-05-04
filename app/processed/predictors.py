@@ -1,0 +1,135 @@
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy.orm import Session
+
+from app.interfaces.prediction_service import IPredictionService
+from app.ml.pipeline import news_analysis_pipeline
+from app.processed.models import MlPrediction, ProcessedNews
+from app.raw.models import RawNews
+
+
+class SentimentPrediction(IPredictionService):
+    """
+    UML alignment note:
+    `sentiment_*` stores the political stance label/score used by the project.
+    """
+
+    # Binary classification weights: "False"=fake, "True"=real
+    # fake_score = probabilidad de ser fake (inverso de predicción)
+    FAKE_RISK_WEIGHTS = {
+        "False": 0.9,  # Fake → high risk
+        "True": 0.1,   # Real → low risk
+    }
+
+    def __init__(self, db: Session, modelPath: str | None = None, threshold: float = 0.6):
+        self.db = db
+        self.modelPath = modelPath or news_analysis_pipeline.checkpoint_path
+        self.threshold = float(threshold)
+
+    def predictSentiment(self, representativeNewsProcessedId: int) -> MlPrediction:
+        return self.predictAll(representativeNewsProcessedId)
+
+    def predictFakeScore(self, representativeNewsProcessedId: int) -> MlPrediction:
+        return self.predictAll(representativeNewsProcessedId)
+
+    def predictAll(self, representativeNewsProcessedId: int) -> MlPrediction:
+        processed, raw_news = self._load_processed_raw_pair(representativeNewsProcessedId)
+        raw_result = self.runModel(
+            {
+                "title": raw_news.title_raw,
+                "content": processed.clean_text,
+            }
+        )
+
+        stance = raw_result["stance"]
+        fake_news = raw_result["fake_news"]
+        fake_score = self._calculate_fake_score(fake_news["probabilities"])
+
+        prediction = (
+            self.db.query(MlPrediction)
+            .filter(MlPrediction.representative_news_processed_id == representativeNewsProcessedId)
+            .first()
+        )
+        if not prediction:
+            prediction = MlPrediction(
+                representative_news_processed_id=representativeNewsProcessedId,
+                model_version=self.getModelVersion(),
+            )
+
+        prediction.updateSentiment(stance["label"], stance["confidence"])
+        prediction.updateFakeScore(fake_score)
+        prediction.model_version = self.getModelVersion()
+        prediction.fake_label = fake_news["label"]
+        prediction.fake_bucket = fake_news.get("bucket")
+        prediction.raw_probabilities = {
+            "stance": stance["probabilities"],
+            "fake_news": fake_news["probabilities"],
+        }
+
+        self.db.add(prediction)
+        self.db.commit()
+        self.db.refresh(prediction)
+        return prediction
+
+    def getModelVersion(self) -> str:
+        fake_classifier_name = (
+            news_analysis_pipeline.fake_news_classifier.model_name
+            if news_analysis_pipeline.fake_news_classifier.loaded
+            else news_analysis_pipeline.base_model_name
+        )
+        fake_classifier_path = (
+            news_analysis_pipeline.fake_news_model_dir
+            if news_analysis_pipeline.fake_news_classifier.loaded
+            else news_analysis_pipeline.checkpoint_path
+        )
+        return (
+            f"stance={news_analysis_pipeline.base_model_name}:{news_analysis_pipeline.checkpoint_path}"
+            f"|fake={fake_classifier_name}:{fake_classifier_path}"
+        )
+
+    def tokenize(self, text: str) -> list[int]:
+        if not news_analysis_pipeline.load():
+            raise RuntimeError(news_analysis_pipeline.load_error or "Modelo no disponible.")
+        encoded = news_analysis_pipeline.tokenizer(
+            text,
+            truncation=True,
+            max_length=news_analysis_pipeline.max_seq_length_liar,
+        )
+        return encoded["input_ids"]
+
+    def runModel(self, tokens: dict[str, Any]) -> dict[str, Any]:
+        return news_analysis_pipeline.analyze_news(
+            title=tokens.get("title"),
+            content=tokens.get("content"),
+            include_summary=False,
+        )
+
+    def _load_processed_raw_pair(self, representativeNewsProcessedId: int) -> tuple[ProcessedNews, RawNews]:
+        processed = (
+            self.db.query(ProcessedNews)
+            .filter(ProcessedNews.news_processed_id == representativeNewsProcessedId)
+            .first()
+        )
+        if not processed or not processed.clean_text:
+            raise ValueError("No existe texto procesado para predecir.")
+
+        raw_news = (
+            self.db.query(RawNews)
+            .filter(RawNews.news_raw_id == processed.news_raw_id)
+            .first()
+        )
+        if not raw_news:
+            raise ValueError("No existe la noticia raw asociada a la noticia procesada.")
+
+        return processed, raw_news
+
+    def _calculate_fake_score(self, probabilities: dict[str, float]) -> float:
+        # Binary: fake_score = P(False) * 0.9 + P(True) * 0.1
+        # Higher score = more likely to be fake
+        fake_prob = probabilities.get("False", 0.0)
+        true_prob = probabilities.get("True", 0.0)
+        # Use the actual probabilities from model output
+        score = fake_prob * 0.9 + true_prob * 0.1
+        return round(float(score), 4)

@@ -16,7 +16,7 @@ Supports uncertainty-weighted multi-task loss (Kendall et al., 2018):
 
 import torch
 import torch.nn as nn
-from transformers import BertModel
+from transformers import AutoConfig, AutoModel
 
 
 class FocalLoss(nn.Module):
@@ -46,25 +46,30 @@ class FocalLoss(nn.Module):
 
 
 class MultiTaskBert(nn.Module):
-    """BERT multi-task model with two classification heads."""
+    """Transformer encoder with two classification heads."""
 
     STANCE_LABELS = ["unrelated", "discuss", "agree", "disagree"]
-    FAKENEWS_LABELS = [
-        "pants-fire", "false", "barely-true",
-        "half-true", "mostly-true", "true",
-    ]
+    # Binary classification: 0=False (fake), 1=True (real)
+    FAKENEWS_LABELS = ["False", "True"]
 
     def __init__(
         self,
         model_name="bert-base-uncased",
         num_stance_labels=4,
-        num_fakenews_labels=6,
+        num_fakenews_labels=2,
         dropout=0.1,
         use_uncertainty_weighting=True,
+        encoder_config_path=None,
+        load_pretrained_encoder=True,
     ):
         super().__init__()
-        self.bert = BertModel.from_pretrained(model_name)
-        hidden_size = self.bert.config.hidden_size
+        if encoder_config_path and not load_pretrained_encoder:
+            encoder_config = AutoConfig.from_pretrained(encoder_config_path)
+            self.encoder = AutoModel.from_config(encoder_config)
+        else:
+            self.encoder = AutoModel.from_pretrained(model_name)
+        self.bert = self.encoder
+        hidden_size = self.encoder.config.hidden_size
         self.dropout = nn.Dropout(dropout)
 
         self.stance_head = nn.Sequential(
@@ -88,12 +93,18 @@ class MultiTaskBert(nn.Module):
             self.log_var_fakenews = nn.Parameter(torch.zeros(1))
 
     def forward(self, input_ids, attention_mask, token_type_ids=None, task=None):
-        outputs = self.bert(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-        )
-        pooled = self.dropout(outputs.pooler_output)
+        encoder_kwargs = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+        }
+        if token_type_ids is not None:
+            encoder_kwargs["token_type_ids"] = token_type_ids
+
+        outputs = self.encoder(**encoder_kwargs)
+        pooled_output = getattr(outputs, "pooler_output", None)
+        if pooled_output is None:
+            pooled_output = outputs.last_hidden_state[:, 0]
+        pooled = self.dropout(pooled_output)
 
         result = {}
         if task in ("stance", None):

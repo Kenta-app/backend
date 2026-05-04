@@ -1,0 +1,477 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide circle
+
+' ==================== INTERFACES ====================
+package "interfaces" {
+  interface IIngestionStrategy {
+    +ingest(sourceId: int): List<RawNews>
+    +supports(sourceType: string): bool
+  }
+  interface ISummarizerService {
+    +generateSummary(representativeNewsProcessedId: int): Summary
+    +getModelVersion(): string
+  }
+  interface IPredictionService {
+    +predictAll(representativeNewsProcessedId: int): MlPrediction
+    +getModelVersion(): string
+  }
+  interface INewsRepository {
+    +findById(newsId: int): PublishedNews
+    +findAll(page: int, pageSize: int): List<PublishedNews>
+    +save(news: PublishedNews): PublishedNews
+  }
+}
+
+' ==================== RAW ====================
+package "raw" {
+
+  class Source {
+    +sourceId: int
+    +name: string
+    +baseUrl: string
+    +createdAt: datetime
+    +type: string
+    --
+    +register(): void
+    +updateMetadata(name: string, baseUrl: string, type: string): void
+    +isWebSource(): bool
+    +isSocialSource(): bool
+  }
+
+  class IngestionLog {
+    +logId: int
+    +ingestionType: string
+    +status: string
+    +message: text
+    +createdAt: datetime
+    +sourceId: int
+    --
+    +start(): void
+    +markSuccess(message: string): void
+    +markFailed(message: string): void
+    +close(status: string, message: string): void
+  }
+
+  class RawNews {
+    +newsRawId: int
+    +sourceId: int
+    +logId: int
+    +platform: string
+    +sourceAccount: string
+    +originalUrl: string
+    +titleRaw: text
+    +contentRaw: text
+    +authorRaw: string
+    +publishedAt: datetime
+    +scrapedAt: datetime
+    +status: string
+    --
+    +validateContent(): bool
+    +hasContent(): bool
+    +markPending(): void
+    +markProcessed(): void
+    +markRejected(reason: string): void
+    +markFailed(reason: string): void
+  }
+
+  class WebScraperIngestion implements IIngestionStrategy {
+    +httpClient: HttpClient
+    +parserConfig: dict
+    --
+    +ingest(sourceId: int): List<RawNews>
+    +supports(sourceType: string): bool
+    -fetchPage(url: string): string
+    -parseArticles(html: string): List<dict>
+  }
+
+  class TwitterApiIngestion implements IIngestionStrategy {
+    +apiKey: string
+    +account: string
+    --
+    +ingest(sourceId: int): List<RawNews>
+    +supports(sourceType: string): bool
+    -fetchTweets(account: string): List<dict>
+  }
+
+  Source "1" -- "0..*" RawNews
+  Source "1" -- "0..*" IngestionLog
+  IngestionLog "1" -- "0..*" RawNews
+}
+
+' ==================== PROCESSED ====================
+package "processed" {
+
+  class ProcessedNews {
+    +newsProcessedId: int
+    +newsRawId: int
+    +sourceId: int
+    +cleanText: text
+    +language: string
+    +tokenCount: int
+    +processedAt: datetime
+    --
+    +isProcessable(): bool
+    +updateCleanText(cleanText: text): void
+    +updateLanguage(language: string): void
+    +updateTokenCount(tokenCount: int): void
+    +markProcessed(): void
+  }
+
+  class ProcessingLog {
+    +logId: int
+    +newsProcessedId: int
+    +stage: string
+    +status: string
+    +message: string
+    +createdAt: datetime
+    +modelVersion: string
+    +executionTimeMs: int
+    --
+    +startStage(stage: string, modelVersion: string): void
+    +markSuccess(message: string, executionTimeMs: int): void
+    +markFailed(message: string, executionTimeMs: int): void
+  }
+
+  class NewsCluster {
+    +clusterId: int
+    +representativeNewsProcessedId: int
+    +sourceId: int
+    +createdAt: datetime
+    +clusterScore: decimal
+    +clusterMethod: string
+    --
+    +assignRepresentative(newsProcessedId: int): void
+    +updateClusterScore(score: decimal): void
+    +updateClusterMethod(method: string): void
+    +isValidCluster(): bool
+  }
+
+  class ClusterMember {
+    +clusterMembersId: int
+    +clusterId: int
+    +newsProcessedId: int
+    +sourceId: int
+    --
+    +attachToCluster(clusterId: int): void
+    +detachFromCluster(): void
+    +belongsToCluster(clusterId: int): bool
+  }
+
+  class Summary {
+    +summaryId: int
+    +representativeNewsProcessedId: int
+    +summaryText: text
+    +modelVersion: string
+    +createdAt: datetime
+    --
+    +updateText(summaryText: text): void
+    +isEmpty(): bool
+  }
+
+  class OpenAISummarizer implements ISummarizerService {
+    +apiKey: string
+    +modelName: string
+    --
+    +generateSummary(representativeNewsProcessedId: int): Summary
+    +getModelVersion(): string
+    -buildPrompt(cleanText: text): string
+    -callApi(prompt: string): string
+  }
+
+  class LocalModelSummarizer implements ISummarizerService {
+    +modelPath: string
+    +maxTokens: int
+    --
+    +generateSummary(representativeNewsProcessedId: int): Summary
+    +getModelVersion(): string
+    -loadModel(): void
+    -runInference(text: text): string
+  }
+
+  class MlPrediction {
+    +predictionId: int
+    +representativeNewsProcessedId: int
+    +sentimentLabel: string
+    +sentimentScore: decimal
+    +modelVersion: string
+    +createdAt: datetime
+    +fakeScore: decimal
+    --
+    +updateSentiment(label: string, score: decimal): void
+    +updateFakeScore(fakeScore: decimal): void
+    +isHighRisk(threshold: decimal): bool
+  }
+
+  class SentimentPrediction implements IPredictionService {
+    +modelPath: string
+    +threshold: decimal
+    --
+    +predictSentiment(representativeNewsProcessedId: int): MlPrediction
+    +predictFakeScore(representativeNewsProcessedId: int): MlPrediction
+    +predictAll(representativeNewsProcessedId: int): MlPrediction
+    +getModelVersion(): string
+    -tokenize(text: string): List<int>
+    -runModel(tokens: List<int>): dict
+  }
+
+  ' --- Relaciones internas de processed ---
+  RawNews "1" --> "0..1" ProcessedNews
+  ProcessedNews "1" --> "0..*" ProcessingLog
+  NewsCluster "1" *-- "1..*" ClusterMember
+  ClusterMember "0..*" o-- "1" ProcessedNews
+  NewsCluster "1" --> "1" ProcessedNews : representative
+  NewsCluster "1" --> "0..1" Summary
+  NewsCluster "1" --> "0..1" MlPrediction
+  ProcessedNews "1" --> "0..1" Summary
+  ProcessedNews "1" --> "0..1" MlPrediction
+
+  ISummarizerService <|.. OpenAISummarizer
+  ISummarizerService <|.. LocalModelSummarizer
+  IPredictionService <|.. SentimentPrediction
+}
+
+' ==================== SERVING ====================
+package "serving" {
+
+  class NewsRepository implements INewsRepository {
+    --
+    +findById(newsId: int): PublishedNews
+    +findAll(page: int, pageSize: int): List<PublishedNews>
+    +save(news: PublishedNews): PublishedNews
+    +findBySourceId(sourceId: int): List<PublishedNews>
+  }
+
+  class User {
+    +userId: int
+    +username: string
+    +email: string
+    +passwordHash: string
+    +role: string
+    +createdAt: datetime
+    --
+    +register(): void
+    +authenticate(password: string): bool
+    +changeRole(role: string): void
+    +canModerate(): bool
+  }
+
+  class PublishedNews {
+    +newsId: int
+    +representativeNewsProcessedId: int
+    +sourceId: int
+    +title: text
+    +summary: text
+    +originalUrl: text
+    +sentimentLabel: string
+    +sentimentScore: decimal
+    +fakeScore: decimal
+    +publishedAt: datetime
+    +createdAt: datetime
+    --
+    +publish(): void
+    +updateSummary(summary: text): void
+    +updatePrediction(sentimentLabel: string, sentimentScore: decimal, fakeScore: decimal): void
+    +refreshSnapshot(): void
+    +isPublished(): bool
+  }
+
+  class NewsReaction {
+    +reactionId: int
+    +userId: int
+    +newsId: int
+    +reaction: int
+    +createdAt: datetime
+    --
+    +setReaction(value: int): void
+    +changeReaction(value: int): void
+    +removeReaction(): void
+    +isPositive(): bool
+  }
+
+  class NewsView {
+    +viewId: int
+    +userId: int
+    +newsId: int
+    +viewedAt: datetime
+    +timeSpentSec: int
+    --
+    +registerView(): void
+    +updateTimeSpent(seconds: int): void
+    +isEngagedView(minSeconds: int): bool
+  }
+
+  class NewsClick {
+    +clickId: int
+    +userId: int
+    +newsId: int
+    +clickedAt: datetime
+    --
+    +registerClick(): void
+  }
+
+  INewsRepository <|.. NewsRepository
+
+  ProcessedNews "1" --> "0..1" PublishedNews
+  User "1" --> "0..*" NewsReaction
+  User "1" --> "0..*" NewsView
+  User "1" --> "0..*" NewsClick
+  PublishedNews "1" --> "0..*" NewsReaction
+  PublishedNews "1" --> "0..*" NewsView
+  PublishedNews "1" --> "0..*" NewsClick
+}
+
+' ==================== RELACIONES CROSS-PACKAGE ====================
+Source "1" --> "0..*" ProcessedNews
+Source "1" --> "0..*" NewsCluster
+Source "1" --> "0..*" ClusterMember
+Source "1" --> "0..*" PublishedNews
+
+' ==================== APPLICATION SERVICES ====================
+package "application services" {
+
+  class IngestionService {
+    +strategy: IIngestionStrategy
+    --
+    +ingestFromSource(sourceId: int): List<RawNews>
+    +createIngestionLog(sourceId: int, ingestionType: string): IngestionLog
+    +saveRawNews(rawNews: RawNews): RawNews
+    +deduplicateBySourceAndUrl(sourceId: int, originalUrl: string): bool
+  }
+
+  class PreprocessingService {
+    --
+    +preprocess(rawNewsId: int): ProcessedNews
+    +cleanText(rawText: text): text
+    +detectLanguage(text: text): string
+    +countTokens(text: text): int
+    +logProcessing(processedId: int, stage: string, status: string): void
+  }
+
+  class ClusteringService {
+    --
+    +clusterProcessedNews(sourceId: int): List<NewsCluster>
+    +calculateSimilarity(newsAId: int, newsBId: int): decimal
+    +assignRepresentative(clusterId: int): ProcessedNews
+    +addClusterMember(clusterId: int, newsProcessedId: int): ClusterMember
+  }
+
+  class SummarizationService {
+    +summarizer: ISummarizerService
+    --
+    +generateSummary(representativeNewsProcessedId: int): Summary
+    +regenerateSummary(representativeNewsProcessedId: int, modelVersion: string): Summary
+  }
+
+  class PredictionService {
+    +predictor: IPredictionService
+    --
+    +predictSentiment(representativeNewsProcessedId: int): MlPrediction
+    +predictFakeScore(representativeNewsProcessedId: int): MlPrediction
+    +predictAll(representativeNewsProcessedId: int): MlPrediction
+  }
+
+  class PublishingService {
+    +newsRepository: INewsRepository
+    --
+    +publishRepresentative(representativeNewsProcessedId: int): PublishedNews
+    +buildServingNews(representativeNewsProcessedId: int): PublishedNews
+    +refreshPublishedNews(newsId: int): PublishedNews
+    +unpublish(newsId: int): void
+  }
+
+  class InteractionService {
+    --
+    +recordReaction(userId: int, newsId: int, reaction: int): NewsReaction
+    +removeReaction(userId: int, newsId: int): void
+    +recordView(userId: int, newsId: int, timeSpentSec: int): NewsView
+    +recordClick(userId: int, newsId: int): NewsClick
+  }
+
+  class AuthService {
+    --
+    +register(username: string, email: string, password: string): User
+    +login(email: string, password: string): User
+    +hashPassword(password: string): string
+    +verifyPassword(password: string, passwordHash: string): bool
+  }
+
+  IngestionService ..> IIngestionStrategy
+  SummarizationService ..> ISummarizerService
+  PredictionService ..> IPredictionService
+  PublishingService ..> INewsRepository
+}
+
+' ==================== API CONTROLLERS ====================
+package "api controllers" {
+
+  abstract class BaseController {
+    #getCurrentUser(): User
+    #requireAuth(): void
+    #successResponse(data: object): dict
+    #errorResponse(message: string, code: int): dict
+    #paginate(items: List, page: int, pageSize: int): dict
+  }
+
+  class AuthController extends BaseController {
+    -authService: AuthService
+    --
+    +postRegister(username: string, email: string, password: string): dict
+    +postLogin(email: string, password: string): dict
+  }
+
+  class NewsController extends BaseController {
+    -publishingService: PublishingService
+    --
+    +getNewsFeed(page: int, pageSize: int, filters: dict): dict
+    +getNewsDetail(newsId: int): dict
+  }
+
+  class InteractionController extends BaseController {
+    -interactionService: InteractionService
+    --
+    +postReaction(newsId: int, reaction: int): dict
+    +deleteReaction(newsId: int): dict
+    +postView(newsId: int, timeSpentSec: int): dict
+    +postClick(newsId: int): dict
+  }
+
+  class AdminController extends BaseController {
+    -ingestionService: IngestionService
+    -publishingService: PublishingService
+    --
+    +postSource(name: string, baseUrl: string, type: string): dict
+    +postTriggerIngestion(sourceId: int): dict
+    +postRefreshNews(newsId: int): dict
+  }
+
+  class PipelineController extends BaseController {
+    -preprocessingService: PreprocessingService
+    -clusteringService: ClusteringService
+    -summarizationService: SummarizationService
+    -predictionService: PredictionService
+    -publishingService: PublishingService
+    --
+    +postRunPipeline(sourceId: int): dict
+    +postReprocessNews(rawNewsId: int): dict
+  }
+
+  BaseController <|-- AuthController
+  BaseController <|-- NewsController
+  BaseController <|-- InteractionController
+  BaseController <|-- AdminController
+  BaseController <|-- PipelineController
+
+  AuthController ..> AuthService
+  NewsController ..> PublishingService
+  InteractionController ..> InteractionService
+  AdminController ..> IngestionService
+  AdminController ..> PublishingService
+  PipelineController ..> PreprocessingService
+  PipelineController ..> ClusteringService
+  PipelineController ..> SummarizationService
+  PipelineController ..> PredictionService
+  PipelineController ..> PublishingService
+}
+
+@enduml
