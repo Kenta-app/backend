@@ -9,5 +9,6 @@ pydantic==2.7.0
 transformers
 torch
 scikit-learn
-
+datasets
+playwright
 fastapi

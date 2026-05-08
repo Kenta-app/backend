@@ -66,6 +66,7 @@ class SentimentPrediction(IPredictionService):
         prediction.raw_probabilities = {
             "stance": stance["probabilities"],
             "fake_news": fake_news["probabilities"],
+            "fake_news_risk": fake_news.get("risk_score"),
         }
 
         self.db.add(prediction)
@@ -126,10 +127,7 @@ class SentimentPrediction(IPredictionService):
         return processed, raw_news
 
     def _calculate_fake_score(self, probabilities: dict[str, float]) -> float:
-        # Binary: fake_score = P(False) * 0.9 + P(True) * 0.1
-        # Higher score = more likely to be fake
+        # fake_score should be directly interpretable as the model probability
+        # of the "False" label, which maps to fake/high-risk content.
         fake_prob = probabilities.get("False", 0.0)
-        true_prob = probabilities.get("True", 0.0)
-        # Use the actual probabilities from model output
-        score = fake_prob * 0.9 + true_prob * 0.1
-        return round(float(score), 4)
+        return round(float(fake_prob), 4)

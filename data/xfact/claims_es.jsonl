@@ -1,0 +1,782 @@
+{"id": "1", "claim_text": "“La velocidad promedio de Internet en 2015 era apenas de 4,5 megabits por segundo, hoy la triplicamos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "2", "claim_text": "“Claramente hubo en las PASO un fraude muy, muy grande”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "3", "claim_text": "“En un país normal los trabajadores no pagan impuesto a las ganancias”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "4", "claim_text": "“En San Luis, hemos logrado el pleno empleo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "5", "claim_text": "\"De cada $100 que los misioneros pagan de impuestos, $76 se los lleva Cristina\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "6", "claim_text": "“La Argentina está a punto de emitir la mayor deuda [en moneda extranjera] de un país en desarrollo desde 1996”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "7", "claim_text": "“La reducción de las salideras bancarias está en el orden del 80%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "8", "claim_text": "“Desde 2007 no se crea empleo privado en la Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "9", "claim_text": "“Hoy se consume la misma energía para producción industrial que se consumía el 19 de marzo. Y el consumo es más alto”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "10", "claim_text": "\"Somos uno de los cuatro países que más azúcares consume en el mundo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "11", "claim_text": "“Después de 10 años de paritarias estábamos en un salario [mínimo docente] que estaba por debajo del mínimo, vital y móvil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "12", "claim_text": "“La deuda pública a fin de año representará el 87% del PBI”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "13", "claim_text": "\"[En las causas de corrupción] el tiempo promedio de la instrucción es de siete años\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "14", "claim_text": "\"En este gobierno se duplicó la pobreza y la falta de trabajo\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "15", "claim_text": "“Sólo el 50% de los argentinos tiene acceso a una cuenta bancaria”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "16", "claim_text": "“Logramos en seis años que el 3% de inversión en Infraestructura pasara a ser el 23%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "17", "claim_text": "“Si uno mira el presupuesto de este año, ha sido solamente ejecutado en un 12%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "18", "claim_text": "“La inversión en Educación ha tenido un correlato en la baja de deserción en el secundario”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "19", "claim_text": "“[Entre 2003 y 2011] creamos 300 mil empleos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "20", "claim_text": "“En este momento [hay] cuarentena estricta en Barcelona”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "21", "claim_text": "“El PRO en varias elecciones ha superado el cupo femenino”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "22", "claim_text": "“Dicen que van a gravar la renta pero en realidad van a gravar la rentita”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "23", "claim_text": "“El año pasado la inversión creció 11%, fue el mayor de los aumentos en seis años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "24", "claim_text": "“El gasto social creció un 43,5%, eso significa que la inversión hacia los que menos tienen es lo que más creció en el presupuesto”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "25", "claim_text": "“Argentina tuvo [en 2012] la Inversión Extranjera Directa más importante de toda la década”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "26", "claim_text": "“Desde agosto para acá hemos creado 82 mil nuevos puestos de trabajo formales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "27", "claim_text": "“El Estado gastó $7 mil millones en Fútbol Para Todos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "28", "claim_text": "“Sepan que cuando llegamos al Gobierno, las tarifas [de luz], una parte de la boleta se pagaba en dólares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "29", "claim_text": "“Los resultados de estos 4 años no fueron buenos", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "30", "claim_text": "“Los sectores más desprotegidos son los que más sufren los efectos del cambio climático”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "31", "claim_text": "“El salario mínimo va a estar en $ 2800 y se cuenta como ocupados a trabajadores que están cobrando $ 1700”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "32", "claim_text": "“La mayor parte del trabajo doméstico recae sobre las mujeres en Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "33", "claim_text": "“En la Ciudad de Buenos Aires hay más de 500 mil personas en emergencia habitacional\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "34", "claim_text": "“La inflación de 2017 fue menor a la de 2016″", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "35", "claim_text": "“Hay 800 mil pensiones por invalidez de más. Son más que los muertos de Estados Unidos, Reino Unido, Francia, Polonia, Grecia y los Países Bajos juntos en la Segunda Guerra Mundial”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "36", "claim_text": "“Scioli pagó por publicidad oficial $1.500 millones [en 2015]”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "37", "claim_text": "\"Mientras pagábamos esas tarifas, la producción de gas declinaba\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "38", "claim_text": "“La Argentina tiene recursos de gas no convencional que la ubica segunda en el ranking mundial después de China”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "39", "claim_text": "“El nivel de locales vacíos está en un punto muy bajo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "40", "claim_text": "“Después de China, [la Argentina] es el país que más ha hecho crecer su economía”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "41", "claim_text": "“Hay tantas miles de personas que quieren adoptar y miles de niños que quieren un hogar”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "42", "claim_text": "“Las mujeres jóvenes, hoy en día, duplican en términos de desempleo al desempleo general del país”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "43", "claim_text": "durante el paro del campo “hubo varias víctimas fatales”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "44", "claim_text": "\"El aumento de Ciencia y Tecnología [será] de 28%\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "45", "claim_text": "“Sembramos el mismo trigo que hace 100 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "46", "claim_text": "\"Estamos en uno de los países más cerrados del planeta\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "47", "claim_text": "“Este año logramos bajar los cortes [de luz] 45%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "48", "claim_text": "“Hoy paga lo mismo [de impuesto a las Ganancias] quien gana $5 millones por año que el que gana 250 mil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "49", "claim_text": "“Nunca antes se gastó menos plata en pauta publicitaria que en este gobierno”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "50", "claim_text": "“El gasto social en la Nación es más del 75% del presupuesto”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "51", "claim_text": "“Se fugaron casi un PBI”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "52", "claim_text": "“El rol de las PyMEs en nuestro país es clave", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "53", "claim_text": "“[Tuvo] la inflación más alta de los últimos 25 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "54", "claim_text": "“Somos el país con menos muertes del mundo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "55", "claim_text": "“Hoy con la comida estamos igual que Venezuela\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "56", "claim_text": "“La Argentina ya es uno de los países con mayor índice de pobreza de América Latina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "57", "claim_text": "“Argentina era el tercer exportador mundial de carne, hoy somos el 14°”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "58", "claim_text": "“En la Ciudad la mitad de los trabajadores son de la Provincia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "59", "claim_text": "“En 2016 la venta de tractores aumentó 25%, la de cosechadoras 54% y la de sembradoras un 80%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "60", "claim_text": "“[El turismo interno] del 2013 al 2015 cayó en tres millones de pasajeros”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "61", "claim_text": "“La relación entre los delitos cometidos y las personas condenadas es menor al 1%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "62", "claim_text": "“La Argentina tiene una carga tributaria récord en Latinoamérica”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "63", "claim_text": "“La demanda [eléctrica] se expandió un 41% entre el 2003 y el 2011, casi un 50% más que en la fase neoliberal”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "64", "claim_text": "“El año pasado hubo 3.262 personas asesinadas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "65", "claim_text": "“Somos una provincia récord en materia de reducción de mortalidad infantil”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "66", "claim_text": "\"400 mil [venezolanos] ingresaron en el último año (...) y están todos trabajando”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "67", "claim_text": "“No está perdiendo contra la inflación”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "68", "claim_text": "“Argentina es el tercer país proveedor mundial de cocaína”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "69", "claim_text": "“No teníamos más cortes de luz”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "70", "claim_text": "“Junín tiene índices de criminalidad comparables a los de Rosario”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "71", "claim_text": "“El proyecto de la oposición genera un costo fiscal superior a los $100 mil millones por año”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "72", "claim_text": "“Aquí 500 mil chicos al año dejan de estudiar”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "73", "claim_text": "“Somos la única provincia que pierde año a año participación en la renta federal”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "74", "claim_text": "“En [los] Estados Unidos para medir la inflación no los toman [a los alimentos y a la energía]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "75", "claim_text": "“Buenos Aires es la ciudad más desigual del país”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "76", "claim_text": "“[La economía] lleva 8 años estancada”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "77", "claim_text": "“Desde la crisis hasta hoy el salario básico del sector industrial subió 10 veces, [mientras que] la inflación (…) subió seis veces”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "78", "claim_text": "“El 98% de la población de La Matanza está conectada a la red de agua potable”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "79", "claim_text": "“Bajamos un 20% los homicidios en dos años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "80", "claim_text": "“De 79 mil empleos (mineros) en 2003, pasamos a casi medio millón en la actualidad”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "81", "claim_text": "“Todavía en la Argentina el 55% de los que trabajan se llevan al bolsillo $3200”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "82", "claim_text": "“En 2002 hubo leyes que prohibían despidos y eso no trajo más trabajo, destruyó trabajo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "83", "claim_text": "“Somos el único país que en diez años no mejoró en una sola materia [en las pruebas PISA]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "84", "claim_text": "“Quisieron montar (...) que había una suerte de espionaje de la Gendarmería, Proyecto X, inexistente”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "85", "claim_text": "“Las convenciones colectivas de trabajo eran 200 en el año 2002 y ahora son aproximadamente 1500”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "86", "claim_text": "“Macri nos deja más de 2 millones de desocupados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "87", "claim_text": "“Las incautaciones de drogas son récord”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "88", "claim_text": "“[Naciones Unidas] ha recomendado a los Estados miembros que consideren abandonar el uso de armas eléctricas Taser”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "89", "claim_text": "“Realizamos la mayor campaña de reclutamiento y renovación policial de todos los tiempos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "90", "claim_text": "“¡Récord histórico! El mes pasado viajaron en avión por el país más de 1,5 millones de pasajeros”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "91", "claim_text": "“La Provincia recibe del Gobierno nacional $5.000 por cada vecino. El promedio del resto de las provincias es $20.000”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "92", "claim_text": "“La mayoría de los países de Europa son más desiguales que la Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "93", "claim_text": "“En cuatro años bajamos un 20% el número de víctimas fatales [en siniestros viales]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "94", "claim_text": "“Mejoramos la situación fiscal”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "95", "claim_text": "“De los 210 mil empleados que tiene el Estado, hay 140 mil que son de planta y 70 mil que son contratados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "96", "claim_text": "“Entre 2006 y 2015, los argentinos pagamos al Estado nacional casi US$ 694 mil millones más en impuestos que en la década del 90”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "97", "claim_text": "“Estamos duplicando los fondos del último año del gobierno anterior para motorizar la obra pública”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "98", "claim_text": "“No han llegado ni al 40% de lo que habían prometido”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "99", "claim_text": "“En los últimos 4 años habían perdido el 29% del salario en términos reales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "100", "claim_text": "“La Ciudad genera casi el 25% de los recursos coparticipables y se lleva poco más del 1% de coparticipación”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "101", "claim_text": "“La deuda pública, en relación al PBI, está en su peor momento desde el año 2004”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "102", "claim_text": "“Hay más de 1,2 millones de jóvenes que no estudian ni trabajan”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "103", "claim_text": "“El propio Fondo Monetario Internacional ha señalado que la deuda argentina no es sostenible”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "104", "claim_text": "“La Argentina y Uruguay somos los únicos países que tenemos tan poquitos jueces en la Corte”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "105", "claim_text": "“Junto con la Capital Federal recibe más de $80 mil millones en subsidios anuales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "106", "claim_text": "“En los 70, ¿cuántos trabajadores registrados del sector privado había en la Argentina? 6 millones. Hoy (...) hay 6 millones”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "107", "claim_text": "“[Afecta] a uno de cada dos chicos menores de 14 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "108", "claim_text": "“El parque automotor, en los últimos diez años, (...) prácticamente se duplicó”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "109", "claim_text": "“Los filtros de un avión generan un aire puro permanente, un ambiente absolutamente aséptico que simula la situación de un quirófano”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "110", "claim_text": "“De cada 10 embarazos adolescentes, siete no son deseados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "111", "claim_text": "“Hay una penetración de Internet de banda ancha del 2%, cuando el promedio de la región es el 20%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "112", "claim_text": "La Argentina tiene el “mejor poder adquisitivo de América Latina para nuestros asalariados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "113", "claim_text": "“El Consejo [de la Magistratura] no funciona, está frenado”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "114", "claim_text": "“Hace 2 años que estamos en recesión profunda”&nbsp;", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "115", "claim_text": "“Neuquén tenía el índice de mortalidad infantil más alto de la República, hoy es el más bajo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "116", "claim_text": "“El total de la disminución [de secuestros] en CABA y la Provincia es del 19,1%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "117", "claim_text": "“[En Aerolíneas viaja] el 3% de la población”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "118", "claim_text": "“La compañía que últimamente ha aumentado más los precios es YPF”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "119", "claim_text": "“El valor agregado de la distribución en el AMBA es siete veces más bajo que en Río Negro, La Pampa o Córdoba”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "120", "claim_text": "“Por primera vez en la historia, en 2017 el porcentaje de condenados superó al de procesados”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "121", "claim_text": "“Entre los años 2003 y 2017 se perdieron 270 mil chicos de matrícula\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "122", "claim_text": "“Tigre tenía 0% de presupuesto en seguridad municipal y pasó a tener 14,5% del presupuesto”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "123", "claim_text": "“La participación del sector Salud en el presupuesto público bajó 45% en los últimos 4 años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "124", "claim_text": "“[La AUH, Aerolíneas e YPF], cada vez que votamos una de estas leyes en el Congreso lo hicimos en absoluta soledad”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "125", "claim_text": "\"Los salarios le ganaron a la inflación [en relación a 2015]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "126", "claim_text": "\"En el Presupuesto 2021 para la lucha contra el fuego todos los gastos se reducen a la mitad\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "127", "claim_text": "“Las exportaciones aumentaron casi 2% en dólares y casi 7% en cantidades respecto de 2015”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "128", "claim_text": "“Macri ponía el 70% del presupuesto en Seguridad Social”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "129", "claim_text": "“Hoy tenemos la misma cantidad de obreros industriales que en los ‘90”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "130", "claim_text": "“Necesitamos 400 mil votos para que tus reclamos no se queden afuera”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "131", "claim_text": "“Perdimos ocho meses y no se crearon puestos de trabajo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "132", "claim_text": "“Aumenta sistemáticamente la matrícula de la escuela pública de la Ciudad”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "133", "claim_text": "“Nunca tuvimos una economía con el grado de participación a nivel internacional, como el que hoy tiene Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "134", "claim_text": "“La Ciudad tiene el presupuesto más alto de su historia”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "135", "claim_text": "“Conectamos 1400 escuelas rurales a través de ARSAT”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "136", "claim_text": "\"La pobreza promedio de los últimos 30 años ha sido el 36%\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "137", "claim_text": "hubo “un incremento en la matrícula secundaria del 20%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "138", "claim_text": "“En agosto rompimos el récord histórico de consumo de asfalto vial”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "139", "claim_text": "“Cuando vemos los muertos en su gran mayoría son de trabajadores populares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "140", "claim_text": "“Cerró el super mayorista Makro. Más de 1000 empleados en la calle”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "141", "claim_text": "“Hay más muertes por accidentes de tránsito que por otro tipo de inseguridad delictiva”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "142", "claim_text": "“El producto cayó en 3 de los últimos 4 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "143", "claim_text": "“En la Justicia Federal las vacantes oscilan en el 30%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "144", "claim_text": "“[Hay] una candidata a vicepresidente con 8 procesamientos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "145", "claim_text": "“La Argentina registra, desde junio de 2013, 485.000 empleos menos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "146", "claim_text": "“La Argentina ya ha recibido 130 mil venezolanos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "147", "claim_text": "“Argentina no decrece en el monto de inversiones que recibe de EE.UU. sino que la tendencia es en alza”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "148", "claim_text": "“La Ley de Bosques no se está cumpliendo, sobre todo en Salta”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "149", "claim_text": "“Estamos entre los cinco países con más riqueza en el exterior”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "150", "claim_text": "“Desde que empezamos a medir la pobreza casi 2 millones de argentinos pudieron superarla. Pero, lamentablemente, la pobreza ha vuelto a los niveles de antes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "151", "claim_text": "\"El Plan RenovAr ya adjudicó 59 proyectos en los que captaremos la energía en 17 provincias por una inversión privada aproximada de 4.000 millones de dólares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "152", "claim_text": "“Durante 2 años y medio (...) creamos 700 mil puestos de trabajo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "153", "claim_text": "“El Estado gasta en Fútbol Para Todos la mitad de lo que gasta en la Asignación Universal por Hijo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "154", "claim_text": "“La Ciudad tiene la misma dotación de empleados [que cuando Macri asumió en 2007]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "155", "claim_text": "“La Argentina es un país que consume el 70% de lo que produce”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "156", "claim_text": "“El 40% de los gastos de una familia va a las tarifas y si tiene alquiler es el 80”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "157", "claim_text": "“Aumentamos 100% los montos que enviamos a los comedores escolares”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "158", "claim_text": "“Del crédito hipotecario hoy el 90% lo explica el Pro.Cre.Ar”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "159", "claim_text": "“[En 2011] la Argentina tuvo el récord histórico de inversión de toda la serie”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "160", "claim_text": "“Hay un millón y medio de pobres más”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "161", "claim_text": "“Creamos el mejor nivel de empleo de los últimos 25 años”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "162", "claim_text": "“Argentina es el país que menos aumentó sus exportaciones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "163", "claim_text": "“En los últimos tres años hubo 15 muertes sociales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "164", "claim_text": "“Hace ocho o nueve meses que crece el empleo en la Argentina”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "165", "claim_text": "“Me tocó estar en el Central la última vez que bajó fuertemente la inflación”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "166", "claim_text": "\"Mejoramos la infraestructura de 19 aeropuertos\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "167", "claim_text": "“El tipo de cambio no está retrasado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "168", "claim_text": "“Más de 5 millones de argentinos y argentinas se endeudaron con el ANSES a altas tasas de interés, sólo para cubrir otras deudas que los apremiaban”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "169", "claim_text": "“En nueve años de gobierno creamos 380 mil empleos en la Provincia”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "170", "claim_text": "\"Argentina es el quinto país en formación de activos externos\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "171", "claim_text": "“Del 2003 al 2012, 665% aumentó el salario docente, [mientras que] la inflación aumentó 365 por ciento”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "172", "claim_text": "“Hemos aumentado la productividad un 5% anual”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "173", "claim_text": "“El 50% de los trabajadores de la Ciudad de Buenos Aires, privados o públicos, ganan menos de $25 mil”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "174", "claim_text": "“Estamos 107 en el ránking de transparencia internacional muy por debajo de Chile y Uruguay, y por debajo de Cuba, México, Brasil, Colombia y Bolivia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "175", "claim_text": "“Más que duplicamos la cantidad de camas de terapia intensiva en los hospitales provinciales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "176", "claim_text": "“Bajo impacto de la AUH en la escuela”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "177", "claim_text": "“La Argentina tiene uno de los menores porcentajes de reservas respecto del PBI de América Latina, 6%, que compara con el 17% de Chile y México y 25% de Brasil”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "178", "claim_text": "“El gasto público se redujo 5,4 puntos del producto en los últimos 4 años”&nbsp;", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "179", "claim_text": "“Es el presupuesto de mayor inversión social de los últimos 50 años de la República Argentina”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "180", "claim_text": "“Hoy casi cuatro millones de usuarios reciben tarifa social, eso es casi uno de cada tres hogares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "181", "claim_text": "“El SAME llega a siete millones de bonaerenses”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "182", "claim_text": "“No hay ningún alumno ni docente que no cuente con una computadora de ‘Conectar Igualdad’”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "183", "claim_text": "“Hemos aumentado la cantidad de programas sociales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "184", "claim_text": "‌ ‌“Cuando nosotros llegamos en diciembre nos encontramos un Banco Central lánguido, sin reservas, vacío”‌ ‌", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "185", "claim_text": "“No es verdad que es un problema solo de barrios populares, ni que los contagios sean un problema solamente de la gente de edad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "186", "claim_text": "“En el AMBA el 20% de los contagiados es personal de salud”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "187", "claim_text": "“Por cada 100 delitos que se cometen, menos de una persona está cumpliendo prisión efectiva”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "188", "claim_text": "“La inflación acumulada enero-octubre estaba en el orden del 10%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "189", "claim_text": "“[En Moreno] un solo hospital atiende a 500 mil habitantes, mientras que un centro de salud está abandonado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "190", "claim_text": "“Terminamos nuestro gobierno con casi el 97% de la población en condiciones de acceder a una jubilación o a una pensión con cobertura”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "191", "claim_text": "“Hemos cambiado empleo formal por inscripción en el monotributo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "192", "claim_text": "“Entre el 2010 y el 2014 se produjeron en todo el mundo alrededor de 25 millones de abortos peligrosos, casi la mitad de los abortos totales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "193", "claim_text": "“En la Argentina hoy hay 638 mil niños de 3 a 5 años que no van a la escuela”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "194", "claim_text": "“Es la primera vez desde el año 75 que cae el producto bruto interno, o sea cae la actividad, y suben las importaciones”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "195", "claim_text": "“Cuando yo iba a la escuela secundaria asistía menos del 40% de los jóvenes de mi edad, hoy asisten el 82%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "196", "claim_text": "“Estamos ante el déficit comercial más grande desde 1910”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "197", "claim_text": "“Aumentamos 120% el gasto en medicamentos e insumos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "198", "claim_text": "“En el gobierno anterior se vetó la ley de glaciares (...) Este gobierno, apenas asumió, le quitó las retenciones a las mineras”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "199", "claim_text": "“Soy la única persona que estuvo presa por el delito de evasión fiscal”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "200", "claim_text": "“Son 12.200 [empleados en Aerolíneas Argentinas] (...) Hay un exceso”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "201", "claim_text": "“Todos los años viene aumentando en términos reales”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "202", "claim_text": "“[Según datos del FMI] la Argentina, después de China y la India, es el país que más va a crecer [en 2013]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "203", "claim_text": "“Este presupuesto tiene más del 60% en cuestiones sociales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "204", "claim_text": "“El uso de facturas apócrifas o facturas falsas nace del sector privado y termina en el sector privado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "205", "claim_text": "“Tres de cada mil [personas] que hoy están cometiendo un delito van a ir a la cárcel”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "206", "claim_text": "“La provincia del Chaco tiene diez puntos más de tasa de embarazo adolescente que el promedio del país”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "207", "claim_text": "“Hemos triplicado la energía eólica en los Estados Unidos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "208", "claim_text": "“La Argentina tiene la cobertura previsional más alta de la región”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "209", "claim_text": "“La Argentina no tiene medios concentrados”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "210", "claim_text": "“La Argentina tiene hoy la mayor presión tributaria de su historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "211", "claim_text": "“Del total de jóvenes que no estudian ni trabajan en la Provincia de Buenos Aires, el 75% son mujeres”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "212", "claim_text": "“La tasa de desempleo de los jóvenes se ha mantenido estable durante los últimos años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "213", "claim_text": "“El 80% de los crímenes en la ciudad de Rosario no tiene que ver con el narcotráfico”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "214", "claim_text": "“El año pasado se registró en la Ciudad el índice de mortalidad infantil más bajo de la historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "215", "claim_text": "“Son muchos menos ahora de los que había en 2003”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "216", "claim_text": "“Hay más de 5 millones de trabajadores que no están registrados”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "217", "claim_text": "“El 80% de los trabajadores [rurales] no está registrado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "218", "claim_text": "“Se perdieron 152 mil empleos registrados del sector privado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "219", "claim_text": "“La Ley de Financiamiento Educativo en términos de inversión no se está cumpliendo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "220", "claim_text": "“Grecia no es Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "221", "claim_text": "“Estamos [10]6, entre 142 países, en el Índice de Competitividad Global del Foro Económico Mundial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "222", "claim_text": "“[Cuando asumí] ni siquiera se sabía cuántas escuelas ni alumnos había en la Provincia”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "223", "claim_text": "“Sacaron a Seychelles de la lista de paraísos fiscales. (…) Era un paraíso fiscal, después dejó de serlo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "224", "claim_text": "“Sólo el 60% de los hogares argentinos tienen acceso a la red de gas natural. El resto consume combustibles más caros”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "225", "claim_text": "“El trabajo no registrado estaba arriba del 50%, bajó cerca del 30%. Con todos los gobiernos había subido”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "226", "claim_text": "“Se producen alimentos para 12 mil millones de personas y somos 7 mil”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "227", "claim_text": "“La deuda pública en moneda extranjera se redujo al 27,5% del PBI”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "228", "claim_text": "“Pasaron siete semestres, Presidente. No entró un centavo a la Argentina de inversiones de esas potencias”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "229", "claim_text": "“El Instituto de Vivienda porteño sólo ejecutó el 18,6% de su presupuesto anual”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "230", "claim_text": "“Creció el consumo de marihuana al doble, el de cocaína [y] el de drogas sintéticas el 350%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "231", "claim_text": "“Casación estableció que cualquier delito ligado a la investigación del atentado contra la AMIA es crimen de lesa humanidad”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "232", "claim_text": "en la Argentina se pagan más impuestos que en Suiza", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "233", "claim_text": "“[Invertimos] más de US$1.200 millones en trenes para pasajeros en todo el AMBA”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "234", "claim_text": "“El gasto de la basura en el total del presupuesto alcanzó el piso histórico”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "235", "claim_text": "“Washington D.C. tiene más tasa de mortalidad infantil que la Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "236", "claim_text": "“En la Provincia, las muertes por robo aumentaron un 90% y, en la Ciudad, un 70%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "237", "claim_text": "“Las exportaciones aumentaron casi 2% en dólares y casi 7% en cantidades respecto de 2015”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "238", "claim_text": "“Tenemos más de mil prófugos en la Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "239", "claim_text": "“¿Sabés cuántas villas hay en el cordón de la Provincia de Buenos Aires? Cerca de cuatro mil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "240", "claim_text": "“El 65% del total del presupuesto está comprendido ahí", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "241", "claim_text": "“Cambió la composición de la deuda. Antes era 57% en dólares, ahora es 83% en dólares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "242", "claim_text": "“Hemos reducido casi el 20% de la planta, esos son alrededor de 45 mil cargos. El kirchnerismo (...) la había hecho crecer 91%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "243", "claim_text": "“Hoy hay una gran superpoblación en los penales bonaerenses”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "244", "claim_text": "“Los delitos vinculados a drogas subieron un 33,1% [en la Provincia]”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "245", "claim_text": "“[No hay] un gobierno que haya avanzado como nosotros en el cumplimiento de la ley de Basura Cero”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "246", "claim_text": "“Hace 40 años que no se invertía en seguridad en los trenes de pasajeros metropolitanos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "247", "claim_text": "“En Rosario redujimos un 20% la tasa de homicidios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "248", "claim_text": "“El 80% de las personas matan por ira intrafamiliar”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "249", "claim_text": "“Argentina tiene el sistema de seguridad [social], la cobertura de salud, de educación y alimentaria más amplia de América Latina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "250", "claim_text": "“En 1999, la deuda que recibí equivalía a tres presupuestos. Cuando me fui, equivalía a 11 meses”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "251", "claim_text": "\"Tampoco podemos permitir que una mujer gane menos que un hombre. Según el INDEC, estas diferencias llegan hasta el 30 por ciento”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "252", "claim_text": "“[Fui] el primer secretario de Seguridad de la historia que no tuvo un sólo caso de gatillo fácil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "253", "claim_text": "“Los aumentos de los trabajadores no se produjeron en la misma proporción [que el aumento promedio de 203%]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "254", "claim_text": "“La Ciudad genera casi el 25% de los recursos coparticipables y se lleva poco más del 1% de la coparticipación”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "255", "claim_text": "\"Los cortes de luz pasaron, de 2003 a 2014, a casi cuadruplicarse”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "256", "claim_text": "“Para los invisibles y los pobres no hay ni cautelares, ni inconstitucionalidades, ni nada”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "257", "claim_text": "“Las obras quedaron paralizadas hace 4 años”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "258", "claim_text": "“El 70% de las noticias sobre jóvenes se publican en la sección policial”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "259", "claim_text": "“La Argentina tiene hoy el Estado más grande de toda su historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "260", "claim_text": "“Un alimento tiene 40% de impuestos entre Nación, provincia y municipios\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "261", "claim_text": "“Se bajaron las retenciones y sin embargo cayó 8% el empleo del sector minero”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "262", "claim_text": "“Hasta 2015 era una empresa que ganaba plata”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "263", "claim_text": "“La CABA tendrá $9.727 millones de libre disponibilidad”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "264", "claim_text": "“Estamos batiendo récords de incautación de droga”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "265", "claim_text": "“La peor sequía en 50 años nos tocó ahora”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "266", "claim_text": "“Entre 2015 y 2016 redujimos el déficit fiscal de 5,2% a 4,6% del PBI”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "267", "claim_text": "“La liquidación del campo fue 90% más alta en el primer trimestre que el año anterior”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "268", "claim_text": "“Tres de cada diez productos se venden en los supermercados”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "269", "claim_text": "“Cada vez [hay] más déficit y cada vez [estamos] más endeudados”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "270", "claim_text": "“En 2015 contábamos con 65 localidades conectadas [por el Plan Federal de Internet]. Ya triplicamos ese número”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "271", "claim_text": "“El pago de intereses [de la deuda] ya supera el de la inversión en educación y salud sumadas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "272", "claim_text": "“Los docentes de Santa Cruz perciben el salario más alto del sector en la Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "273", "claim_text": "“En términos interanuales el empleo industrial registrado lleva 44 meses consecutivos de destrucción”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "274", "claim_text": "“La Justicia debería también obligar a los medios a divulgar los actos de gobierno, como cuando se inaugura una vivienda”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "275", "claim_text": "“El PBI per cápita es el más bajo desde el año 2009”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "276", "claim_text": "\"En la Argentina muere más gente producto de un accidente de tránsito que a raíz de un hecho delictivo\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "277", "claim_text": "“Se ha hecho una gran cantidad de obras en La Plata”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "278", "claim_text": "“No hay ningún tipo de discrecionalidad en la asignación de fondos para la obra pública”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "279", "claim_text": "“En cloacas estamos cerca del 70% y en agua potable cerca del 100%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "280", "claim_text": "“El rubro importaciones creció un 61% comparativamente con el año anterior”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "281", "claim_text": "“Lo que más ha crecido en volumen físico han sido las exportaciones industriales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "282", "claim_text": "“El promedio de salario de los trabajadores es de $6.000, $6.500”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "283", "claim_text": "“Los cortes de luz pasaron, de 2003 a 2014, a casi cuadruplicarse”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "284", "claim_text": "“[En la industria] generamos más de un millón de puestos de trabajo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "285", "claim_text": "“El préstamo mayor de plata que tuvo Vicentin fue en la época del kirchnerismo, con más de US$ 200 millones”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "286", "claim_text": "“La mínima [de un jubilado] son $9 mil y pico”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "287", "claim_text": "“El 83% de los argentinos ve el fútbol por cable”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "288", "claim_text": "“Empezamos un servicio de emergencia para los bonaerenses”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "289", "claim_text": "“La Argentina es el único país de América Latina que aumentó el 39% la planta de investigadores”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "290", "claim_text": "“La cobertura previsional había superado con creces el 90% de la población”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "291", "claim_text": "“Hoy otras provincias paradójicamente reciben más que nosotros [por el fondo del conurbano]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "292", "claim_text": "“[Desde el aumento del subte bajaron] 300 mil pasajeros diarios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "293", "claim_text": "“La pérdida del poder [adquisitivo] del salario este año ha sido muy alta”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "294", "claim_text": "“El último Censo Nacional muestra una clara reversión en la población sin agua potable y sin cloacas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "295", "claim_text": "“Es uno de los cinco presupuestos que más creció en nuestro gobierno, Ciencia y Tecnología”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "296", "claim_text": "“Redujimos un 81,8% los secuestros extorsivos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "297", "claim_text": "“En los últimos dos años hemos bajado el 23% [los homicidios]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "298", "claim_text": "“Por cada boleto de $18, el Estado pone el doble o el triple de esto, según la zona, en subsidios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "299", "claim_text": "“El impuesto abarca a un millón de trabajadores en relación de dependencia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "300", "claim_text": "“La relación con China implica 90% de exportación en commodities contra 90% de importación en manufacturas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "301", "claim_text": "“El sector privado está perdiendo empleos hace más de un año”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "302", "claim_text": "\"En un año el delito con armas creció el 22% en la Provincia de Buenos Aires\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "303", "claim_text": "“Enero de 2019 fue el mes con mayor cantidad de pasajeros desde que se tiene registro”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "304", "claim_text": "“La Argentina, lo tenemos que reconocer, es de los países más vulnerables del mundo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "305", "claim_text": "“Hay que trabajar medio año para el Estado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "306", "claim_text": "“Las sociedades más igualitarias son las sociedades que menos crimen tienen”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "307", "claim_text": "“La inversión cayó al mismo ritmo que [en] el 2001”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "308", "claim_text": "“Los chicos de 14 años, 1 de cada 2 fue atrapado por la pobreza”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "309", "claim_text": "“La decisión está en el marco de la que hemos tomado cada vez que hemos impulsado un ascenso”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "310", "claim_text": "“Argentina tiene el nivel de trabajo registrado más alto de la historia”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "311", "claim_text": "“Terminaremos la gestión con más de 80 hospitales”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "312", "claim_text": "“Teníamos dos mil empleados [en el Senado] y en un año, en 2015, se le sumaron dos mil más”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "313", "claim_text": "“15 millones de argentinos hoy no tienen obra social ni prepaga”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "314", "claim_text": "“Hace varios meses crece el empleo en la Argentina”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "315", "claim_text": "“Sólo el 20% de los que fueron detenidos tenían trabajo fijo cuando cometieron ese delito”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "316", "claim_text": "“[Ha habido] más de siete mil cortes en los últimos 12 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "317", "claim_text": "\"Hay más de 290 mil puestos de trabajo perdidos en la gestión de Macri\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "318", "claim_text": "“La desnutrición infantil a nivel mundial causa la mitad de las muertes en niños menores de cinco años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "319", "claim_text": "“En dos años hemos fabricado el yacimiento que produce más petróleo no convencional en el mundo fuera de EEUU”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "320", "claim_text": "“Por primera vez en 15 años las obras [del subte] están paradas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "321", "claim_text": "“Solo llega a condena el 10% de los delitos económicos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "322", "claim_text": "“Todas las ciudades grandes del mundo tienen una sola policía”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "323", "claim_text": "“Se crearon 11 mil sociedades anónimas simplificadas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "324", "claim_text": "“Los subsidios son mucho más que todas las retenciones a las exportaciones agropecuarias”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "325", "claim_text": "“En el siglo XXI seguimos votando con un sistema viejo y abierto al fraude”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "326", "claim_text": "“1 de cada 2 niñas y niños es pobre en nuestro país”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "327", "claim_text": "“Bajamos impuestos por 1,6 puntos del PBI, una de las bajas más importantes que se haya hecho”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "328", "claim_text": "“Hay más muertes por accidentes de tránsito que por otro tipo de inseguridad delictiva”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "329", "claim_text": "la prórroga del mandato, “es un trámite administrativo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "330", "claim_text": "“Venimos sosteniendo una producción importantísima, alrededor de los 12 mil millones de litros de leche”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "331", "claim_text": "“Salta está entre las provincias que más presupuesto destina a Educación, pero de las que menos invierte por alumno”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "332", "claim_text": "“En la década (...) se cerraron 125 frigoríficos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "333", "claim_text": "“Bajó la mortalidad infantil en la Provincia y es la menor de toda la historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "334", "claim_text": "“Llevamos más de 85 mil detenidos por narcotráfico, 67 delincuentes detenidos por día desde que somos gobierno”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "335", "claim_text": "“Seguimos manteniendo el mismo stock ganadero”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "336", "claim_text": "“Formosa es la provincia que más invierte por alumno en el país”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "337", "claim_text": "“Nada de eso [la asignación discrecional de la pauta oficial] sucede en la Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "338", "claim_text": "“El acuerdo con los empresarios no funcionó. Tenemos cerca de 130 mil despidos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "339", "claim_text": "“La desocupación está bajando”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "340", "claim_text": "“La mortalidad en mayores de 65 años es del 80%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "341", "claim_text": "“Ni siquiera está imputado, lo pidió el fiscal, no está confirmado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "342", "claim_text": "“San Luis no tiene ninguna villa”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "343", "claim_text": "“El delito, de 2007 para acá, aumentó un 30% en la Provincia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "344", "claim_text": "“Por todas las medidas que nosotros tomamos fuimos elegidos por la OMS para llevar adelante experimentos medicinales sobre el coronavirus”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "345", "claim_text": "“En estos años logramos triplicar la exportación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "346", "claim_text": "“[Hubo] un aumento muy fuerte en la inversión social que creció casi el 44% en los primeros cinco meses del año”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "347", "claim_text": "“Los bancos centrales se crearon para financiar al Estado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "348", "claim_text": "“Aproximadamente, el 60% de la Argentina tiene gas de red y un 40% tiene garrafa”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "349", "claim_text": "“Los medicamentos más consumidos por los jubilados en los últimos dos años tuvieron un aumento promedio de 99%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "350", "claim_text": "“No es cierto que el 70% [de la población chaqueña] no tenga agua potable. Es falso”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "351", "claim_text": "“Nueve mil argentinos pierden la vida por año en las rutas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "352", "claim_text": "“Argentina mejoró las posiciones y calificaciones del Índice de Transparencia Internacional. Pasamos del puesto 106 al 85 en dos años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "353", "claim_text": "“Al 31 de enero logramos una recaudación de casi $115 mil millones [dentro del blanqueo]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "354", "claim_text": "“Sólo la dictadura usó el canal del Estado para hacer publicidad oficial”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "355", "claim_text": "“13 o 14 veces analizaron las declaraciones juradas de la familia Kirchner y siempre fue sobreseída”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "356", "claim_text": "“La pobreza actual está en los valores más altos desde 2008”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "357", "claim_text": "“En 15 meses, el salario mínimo docente aumentó un 73%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "358", "claim_text": "“No hubo ninguna sesión ordinaria, y tuvimos tres sesiones especiales para tratar lo que querían los kirchneristas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "359", "claim_text": "“Dos de cada tres pesos de nuestro presupuesto se destinan a la inversión social”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "360", "claim_text": "“Desde 2003 hasta acá, las tasas municipales son las que menos han acompañado la inflación”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "361", "claim_text": "“Manzur es el ministro más rico de la década kirchnerista”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "362", "claim_text": "“Recibimos un país donde sólo el 41% de los argentinos tienen cloacas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "363", "claim_text": "“Los agentes representan [sólo] el 10% de los empleados provinciales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "364", "claim_text": "“Yo reduje un 50% los homicidios dolosos y un 30%, el robo automotor”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "365", "claim_text": "“Estamos en un año récord en todo lo que es incautación de cocaína, éxtasis y metanfetaminas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "366", "claim_text": "“Todavía la economía no se ha reactivado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "367", "claim_text": "“Hoy alrededor de uno de cada 12 o 13 vive en una villa”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "368", "claim_text": "“Si uno mira todos los años previos [el presupuesto] se ha venido cumpliendo, punto más, punto menos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "369", "claim_text": "“La empresa tiene todos sus balances presentados, auditados y aprobados por la AGN”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "370", "claim_text": "“Somos el único país de Latinoamérica que no maneja sus recursos naturales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "371", "claim_text": "“Casi cuatro de cada diez chicos están malnutridos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "372", "claim_text": "“Hoy tenemos la nafta más barata de la región”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "373", "claim_text": "“Hace por lo menos 4 años donde los jubilados no le ganaban a la inflación”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "374", "claim_text": "“Desde 2008 no se publican los datos del delito”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "375", "claim_text": "“Todas las líneas aéreas del mundo, absolutamente todas, son deficitarias”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "376", "claim_text": "“En el 2016 equiparamos el sueldo con la inflación; en el 2017, también”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "377", "claim_text": "“Los más pobres son los que más carga [impositiva] tienen en la canasta de alimentos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "378", "claim_text": "“En nuestro país muere una mujer cada 30 horas por femicidios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "379", "claim_text": "“Desde que Macri asumió la industria acumula [la caída] más extensa desde 2001”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "380", "claim_text": "“La Asignación Universal por Hijo hoy tiene 4 millones de beneficiarios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "381", "claim_text": "“Con lo que este Gobierno gasta cada mes en propaganda, se podría pagar el sueldo de 50 mil trabajadores”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "382", "claim_text": "“Desde el 2016 hay 27 proyectos nuevos de energía renovables en marcha”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "383", "claim_text": "“Desendeudé a la mitad a la Provincia de Buenos Aires”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "384", "claim_text": "“Hoy el Estado tiene la responsabilidad de pagarle a diez millones de personas más que en el 2002”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "385", "claim_text": "“El nivel de producción industrial hoy es equivalente al de 2006", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "386", "claim_text": "“Cuando yo asumí, teníamos el 20% de cobertura de agua potable y ahora tenemos el 95%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "387", "claim_text": "\"Santa Fe tiene el doble de tasa de homicidios que otras provincias\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "388", "claim_text": "“Un país que es uno de los mayores productores de alimentos del mundo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "389", "claim_text": "“Aumentó la desigualdad en la Ciudad. En el sur hay el doble de homicidios por habitante”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "390", "claim_text": "“Lo que nos debe [la ANSES] son 1.307 millones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "391", "claim_text": "“El año pasado murieron 5.000 argentinos que no tenían que morir”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "392", "claim_text": "“Ha aumentado en los últimos años la cantidad de jóvenes que ni estudian ni trabajan”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "393", "claim_text": "“Tenemos más detenidos por narcotráfico en los últimos dos años que en toda la gestión del gobierno de Scioli”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "394", "claim_text": "“Los fondos para vivienda de 2013 alcanzaron sólo el 3,07% del total del presupuesto general”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "395", "claim_text": "“El Jefe de Gabinete respondió preguntas como nunca antes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "396", "claim_text": "“Salta viene creciendo fácil un punto y medio por arriba de la media nacional en los últimos diez años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "397", "claim_text": "“La inversión aumenta. El año pasado creció un 11%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "398", "claim_text": "“En 2003 la Argentina destinaba el 5% de su PBI a la deuda y sólo el 2% a la educación. Hoy destina el 2% del PBI a la deuda y 6,47% a la educación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "399", "claim_text": "“Hoy el 75% de la población está en condiciones de recibir la televisión digital”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "400", "claim_text": "“[Entre 2010 y 2013] la cantidad invertida en Educación y Salud en Brasil fue de 212 veces más que la cantidad invertida en los estadios”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "401", "claim_text": "“[El proyecto de ampliación de la Corte provincial] lo votó todo el bloque del Frente para la Victoria”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "402", "claim_text": "“La industria instalada registra un nivel de capacidad ociosa que roza el 40%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "403", "claim_text": "“El año pasado el comercio bilateral se incrementó un 20% respecto del año anterior”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "404", "claim_text": "“Hace cinco años que el país no crece”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "405", "claim_text": "“Hay más de cien mil puestos de trabajo, directos e indirectos, frutos de la aplicación de ley”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "406", "claim_text": "“Es el blanqueo más importante de la historia argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "407", "claim_text": "“Tenemos un nivel de deuda bajísimo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "408", "claim_text": "“Entre el 2003 al 2015 aumentó el empleo público en 64%, pasó de 2.200.000 a 3.600.000”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "409", "claim_text": "“Nosotros tenemos superávit hace muchos años, por eso invertimos lo que invertimos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "410", "claim_text": "“Los mayores exportadores de granos de los últimos tiempos fueron AFA y ACA”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "411", "claim_text": "“El esquema tributario provincial es altamente regresivo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "412", "claim_text": "“Nunca antes había viajado tanta gente en vuelos de cabotaje”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "413", "claim_text": "“El nivel de inversión es el más alto de las últimas décadas y supera al de los años ‘90”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "414", "claim_text": "“Vemos un incremento de la pobreza, que ya llega al 38%. Más de 1.500.000 personas entraron en situación de pobreza”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "415", "claim_text": "“Hemos pasado de un 3,64% del PBI en educación a un 6,5% en 2012”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "416", "claim_text": "“Alrededor del 42% de la población carece de cloacas, el 13% no tiene agua corriente y el 42% no tiene gas de red”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "417", "claim_text": "“En los lugares donde hay pocos casos de coronavirus, hay clases”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "418", "claim_text": "“El empleo público tiene más personas que todo el empleo de la industria”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "419", "claim_text": "“Durante décadas la Argentina fue uno de los países de América Latina que menos invirtió en su sistema de defensa”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "420", "claim_text": "“Aprenden menos los alumnos del Norte del país”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "421", "claim_text": "las medidas anunciadas “representan una mejora en el poder adquisitivo de los más vulnerables, que supera cualquier aumento de precios”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "422", "claim_text": "“En la Secretaría de Inteligencia no todos los fondos son reservados”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "423", "claim_text": "“Se han perdido 140 mil puestos de trabajo industriales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "424", "claim_text": "“En las primarias de la Provincia no habrá más aplazos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "425", "claim_text": "“Hoy producimos la misma, más o menos, cantidad de dólares que necesitamos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "426", "claim_text": "“Nosotros tenemos la legislación ambiental [petrolera] más exigente de la República”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "427", "claim_text": "“[No fuimos anti-estadounidenses] Durante los ‘90 la balanza comercial era deficitaria para los EE.UU. Durante nuestro gobierno fue superavitaria”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "428", "claim_text": "“Es la performance [de desempleo] más baja que hemos tenido en estos 8 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "429", "claim_text": "“Cuando terminé mi gestión el 10 de diciembre de 2015 (…) la inflación, medida por el Gobierno de la Ciudad de Buenos Aires, no superaba el 25% anual”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "430", "claim_text": "“En Uruguay las muertes maternas por aborto prácticamente cayeron a cero”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "431", "claim_text": "“Cristina Kirchner anunció en 2012 la compra de 26 aviones para incendios, pero no llegó ninguno”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "432", "claim_text": "“Cuando uno ve sector por sector, en ningún caso la importación es más del 2 o 3% del total del mercado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "433", "claim_text": "“Hoy estamos cubriendo al 65% de la población argentina con la TV digital abierta”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "434", "claim_text": "“Estamos cursando el brote de sarampión más importante desde el año 2000”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "435", "claim_text": "“Este es el Gobierno que más impuestos cobró en la historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "436", "claim_text": "\"Casi un millón de familias son titulares de la tarjeta Alimentar\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "437", "claim_text": "“La Argentina tiene el mejor salario mínimo vital y móvil de toda la región”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "438", "claim_text": "“Macri triplicó la deuda externa de la Ciudad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "439", "claim_text": "“Un millón de jóvenes no estudia ni trabaja”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "440", "claim_text": "“Formosa tiene la mejor distribución de la riqueza”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "441", "claim_text": "“La incidencia de la tasa de delito es 5 veces mayor en el Sur que en el Norte”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "442", "claim_text": "“[El gobierno de Macri] es el que más ministerios ha creado”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "443", "claim_text": "“Después de muchos años de producción decreciente de gas en el país logramos revertir la tendencia y la producción de gas volvió a crecer”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "444", "claim_text": "\"[En Educación] hoy se gasta en términos reales un 18% más de lo que se gastaba al principio\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "445", "claim_text": "“Tres o cuatro pibes de cada 10 dejan la escuela. Y los que abandonan quedan fuera”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "446", "claim_text": "“Los siniestros viales son la primera causa de muerte en jóvenes entre 15 y 34 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "447", "claim_text": "“[El presupuesto para inversión social] es de los más altos de la democracia argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "448", "claim_text": "“Desde que se fue el Servicio Militar, la [inseguridad] empeoró”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "449", "claim_text": "“En los últimos seis meses se destruyeron 328 mil puestos de trabajo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "450", "claim_text": "“A las jurisdicciones sólo llega [por coparticipación] entre el 25 y el 28 por ciento”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "451", "claim_text": "“Por primera vez en la historia del G-20 la cuestión de la reestructuración de deudas soberanas fue planteada en el comunicado final”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "452", "claim_text": "“Desastres ambientales le cuestan a la Argentina un 8% de su PBI”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "453", "claim_text": "“La ley de movilidad [jubilatoria] por primera vez en siete u ocho años ha quedado por debajo de la inflación”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "454", "claim_text": "“Estamos cubriendo el 100% de las vacantes para los chicos que tienen 4 años o más, por encima del promedio de la OCDE”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "455", "claim_text": "“Más de 1 millón y medio de chicos comenzaron a recibir asignaciones familiares o por hijo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "456", "claim_text": "“La Argentina salió de la recesión”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "457", "claim_text": "aún existen dictadores como Correa, Morales, Ortega y Chávez", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "458", "claim_text": "“La cifra de 15 mil millones [de deuda con los holdouts] no tiene sustento”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "459", "claim_text": "“Votaron una ley para permitir (...) que las empresas puedan poner dinero en las campañas electorales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "460", "claim_text": "la violencia que sufrió la prensa en Villa Soldati es “inédita”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "461", "claim_text": "“[Hay una] subrepresentación del Gran Buenos Aires en la Cámara de Diputados de la Nación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "462", "claim_text": "“Cuando Scioli asumió, de cada $ 100 que ingresaban al Tesoro, $ 51 eran de origen provincial. Hoy por hoy (…) estamos en 63 por ciento”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "463", "claim_text": "“Un 16% es por disputas de narcotráfico”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "464", "claim_text": "“Un hito son los 521 acusados de crímenes de lesa humanidad ya condenados o los 1200 en proceso”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "465", "claim_text": "“En la Ciudad la ley plantea invertir el 1% en Ciencia y Tecnología, y la inversión real en 2014 fue del 0,001%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "466", "claim_text": "“No debe haber ciudad en el mundo que no subsidie su transporte público”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "467", "claim_text": "“Hoy hay 49.567 internos privados de su libertad para 24.000 plazas. Ha habido un fuerte crecimiento”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "468", "claim_text": "“Cuando Néstor [Kirchner] llegó al Gobierno (…) los jubilados representaban el 66%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "469", "claim_text": "“Aún tenemos una ley [de responsabilidad penal juvenil] que emanó de la dictadura y que ha sido cuestionada por la Corte Suprema”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "470", "claim_text": "\"Tanto en la Ciudad como en la Provincia llegamos a la tasa de mortalidad infantil más baja de la historia\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "471", "claim_text": "“El hambre abarca a más del 50% de los chicos y jóvenes menores de 17 años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "472", "claim_text": "“Las funciones de la Comisión están claras y su trabajo también”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "473", "claim_text": "“Encontramos una provincia que sólo tenía un 3% del presupuesto en (...) inversión, la más baja entre todas las provincias”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "474", "claim_text": "“En la Argentina hay una diferencia abismal entre la inversión estatal en investigación y desarrollo, y la que hacen los privados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "475", "claim_text": "“Llegamos a gastar [en energía] un monto equivalente a la totalidad del déficit y a siete veces la AUH”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "476", "claim_text": "“[La Argentina] hace 30 años era un país de tránsito [de drogas]; después, de consumo, y hasta algo de producción”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "477", "claim_text": "“La herencia que hemos recibido es crítica. El 57% de las vías está en estado malo o muy malo”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "478", "claim_text": "“[En la Ciudad] aumentó la mortalidad infantil”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "479", "claim_text": "“La Ciudad cumplió con el fallo de la Corte Suprema y reglamentó el aborto no punible mediante un protocolo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "480", "claim_text": "“[En 2012] se usaron más de $100 mil millones en subsidios y la AUH fue 9 veces menos que esa suma”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "481", "claim_text": "“[La Argentina] lleva 8 años de estancamiento absoluto”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "482", "claim_text": "“El Estado ha asistido a 21 millones de argentinos de los 45 millones que somos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "483", "claim_text": "“Si a usted le preocupa la igualdad de género ocúpese de que el presupuesto se ejecute adecuadamente porque hasta acá solo ejecutaron el 10% de ese presupuesto”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "484", "claim_text": "“El 75% de los jubilados cobra 2150 pesos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "485", "claim_text": "“La mitad, prácticamente, de los que hoy cobran una pensión o una jubilación es por las moratorias previsionales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "486", "claim_text": "“Durante los últimos cuatro años no creció el empleo [privado] en la Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "487", "claim_text": "“Hemos reducido el gasto en términos reales un 20% en estos cuatro años”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "488", "claim_text": "“Argentina, entre los países con más deserción en la secundaria”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "489", "claim_text": "“Los jubilados del común que aportaron toda su vida cobran $7 mil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "490", "claim_text": "“La única vez que la Argentina pudo sostener un crecimiento económico sostenido fue desde el año 1860 a 1930”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "491", "claim_text": "“Todos los meses sistemáticamente viene aumentando la venta de autos a nivel local”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "492", "claim_text": "“No hubo una sola contratación directa”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "493", "claim_text": "“Jamás se designó un juez de la Corte en comisión desde la recuperación democrática”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "494", "claim_text": "“Formosa está primera en todos [los indicadores sociales negativos]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "495", "claim_text": "“La publicidad en la Ciudad aumenta siempre por encima del incremento general de los gastos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "496", "claim_text": "“[Macri] vetó las leyes (...) que prohibían los despidos y limitaban las tarifas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "497", "claim_text": "“Este año quedaron dos millones de hectáreas sin sembrar. Uruguay siembra en total 1,7 millones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "498", "claim_text": "“Un millón de turistas viajó por el país este fin de semana largo. Si se compara con el año pasado, la cantidad creció un 7,4%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "499", "claim_text": "“La inseguridad alimentaria tuvo un incremento del 71% entre el 2015 y el 2018 en nuestro país”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "500", "claim_text": "“Macri ha dispuesto que todo el presupuesto de la AFI sea secreto”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "501", "claim_text": "“Estos son los años en que menos se ha distribuido la riqueza”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "502", "claim_text": "“El mérito es de Cristina que la terminó en 2015”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "503", "claim_text": "“Nadie paga el impuesto a las ganancias en el Poder Judicial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "504", "claim_text": "\"Según la UCA, el 29% de los argentinos están en situación de pobreza y el 6% en situación de indigencia”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "505", "claim_text": "“Los supuestos opositores gobernaron con un 40% de precarización”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "506", "claim_text": "“El preservativo no las protege de nada [a las personas] porque el virus del SIDA atraviesa la porcelana”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "507", "claim_text": "“La Argentina tiene un nivel de endeudamiento muy bajo con el sector privado, de apenas 26% del PBI”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "508", "claim_text": "“Esta es la realidad que tenemos en Corrientes", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "509", "claim_text": "“El presupuesto [de salud] en su gestión [de Macri] cayó un 23%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "510", "claim_text": "“Cuando Cristina creó la AFI declaró que los fondos debían ser públicos. Macri, al llegar, los declaró secretos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "511", "claim_text": "“La Argentina se convirtió en un país triguero sobre la base del cierre a la importación de trigo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "512", "claim_text": "“Más del 70% de la deuda que hoy tiene la Argentina fue tomada durante la gestión de Macri”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "513", "claim_text": "“El año pasado alcanzamos un récord histórico con la creación de seis áreas naturales protegidas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "514", "claim_text": "“Hoy la cantidad de asesinatos cada 100 mil personas es mayor en Santa Fe que en Rosario”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "515", "claim_text": "“El Gobierno tardó todo este tiempo en volver al mismo Producto Bruto Interno de 2015”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "516", "claim_text": "\"El 4,5% de la población argentina está en las universidades y 3,5% está en las universidades públicas y gratuitas\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "517", "claim_text": "“[El Poder Judicial] nunca va a ser popular, porque sería un error que los jueces busquen la popularidad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "518", "claim_text": "“Uno de cada tres trabajadores de Argentina está en negro”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "519", "claim_text": "“En el período 2020-2030 el alivio será de US$ 37.700 millones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "520", "claim_text": "“El año pasado contrajimos más deuda que China”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "521", "claim_text": "“No debe haber nadie, ni el Gobierno nacional ni Macri, que haya invertido en publicidad lo que ha invertido Scioli”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "522", "claim_text": "“La Ciudad tiene la misma cantidad de empleados públicos que cuando llegamos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "523", "claim_text": "“La edad promedio de los fallecidos en la Ciudad es de 76,3 años y de los mayores de 80 que se contagian, casi 1 de cada 4 fallece”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "524", "claim_text": "“El consumo de droga y marihuana ha aumentado en estos años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "525", "claim_text": "“Hoy la mitad de los chicos no termina el secundario”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "526", "claim_text": "“En la Argentina, la edad promedio de los fallecidos es de 71 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "527", "claim_text": "“En la Ciudad de Buenos Aires la litigiosidad cayó el 85% [después del cambio en la ley de ARTs]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "528", "claim_text": "“Hemos logrado (...) que nos estemos pudiendo endeudar [en pesos] a la tasa más baja de la historia argentina”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "529", "claim_text": "“Santa Fe ha crecido por debajo de la media nacional”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "530", "claim_text": "“En el Ministerio de Trabajo el 75% de los empleados están precarizados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "531", "claim_text": "“[Hoy un chico en la Ciudad] tiene su vacante asegurada desde los cuatro años\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "532", "claim_text": "“El mecanismo tendrá un sesgo hacia los que menos tienen”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "533", "claim_text": "“Desde hace 50 o 60 años que no había nuevas formaciones en la República Argentina”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "534", "claim_text": "“La Argentina [posee] una rotación claramente deficiente”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "535", "claim_text": "“Siete de cada diez familias no tenían cloacas [en la Provincia de Buenos Aires]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "536", "claim_text": "“Esta deuda con el sector privado en dólares está alrededor del 8%, es de las más bajas de la serie histórica”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "537", "claim_text": "“[Bonadio es] el juez que sobrevivió a 50 denuncias en el Consejo de la Magistratura”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "538", "claim_text": "“100.000 nuevos puestos de trabajo en la industria audiovisual”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "539", "claim_text": "“La infraestructura de control [en los puertos de Rosario] es absolutamente deficiente”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "540", "claim_text": "“La pobreza retrocedió a los niveles de 1980\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "541", "claim_text": "“Hoy tenemos siete millones de adultos sin secundario completo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "542", "claim_text": "“Los legisladores porteños son los que menos cobran en todo el país”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "543", "claim_text": "“En materia de empleo industrial retrocedimos siete años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "544", "claim_text": "\"[No hay] una relación lógica entre empleados y cantidad de vuelos\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "545", "claim_text": "“[Las campañas fueron] iniciadas fuera del tiempo legal”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "546", "claim_text": "“Llevamos cinco años sin crecimiento”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "547", "claim_text": "“No construyeron un hospital en 12 años y ahora hay 500 camas menos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "548", "claim_text": "“Nuestro presupuesto educativo registra el mayor crecimiento en el contexto nacional”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "549", "claim_text": "“Los datos personales se pueden hacer conocer (...) cuando medien razones fundadas de preocupación pública”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "550", "claim_text": "“Buenos Aires recauda $ 62 mil millones de recursos genuinos; de los cuales, 5.300 corresponden a inmobiliario y 4 mil a automotor”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "551", "claim_text": "“Las principales importaciones fueron de combustibles”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "552", "claim_text": "“[El aborto] es una causa de muerte materna”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "553", "claim_text": "\"Se prevé un recorte de 70% en infraestructura escolar y un 70% para jardines de infantes\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "554", "claim_text": "“Tenemos la mortalidad infantil más baja de la historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "555", "claim_text": "“Gils Carbó le encontró la razón a los aumentos que había dado Cristina Kirchner”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "556", "claim_text": "“Hoy la Argentina tiene en el mundo el mejor grado de productividad por hectárea sembrada”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "557", "claim_text": "“Somos el país que mayor cobertura tiene en materia previsional”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "558", "claim_text": "“Tenemos una tasa de inflación parecida a la que tenía el kirchnerismo, pero habiendo resuelto todos los problemas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "559", "claim_text": "“El 50% de los chicos no termina la escuela”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "560", "claim_text": "“La Argentina se ha transformado en el tercer país exportador de coca”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "561", "claim_text": "“No se ha creado empleo en los últimos 3 años, excepto en el sector público”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "562", "claim_text": "“Ya reparamos cinco mil kilómetros de rutas que estaban en pésimo estado y estamos recuperando 12 mil más”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "563", "claim_text": "“La eliminación de las retenciones a la minería se suma a la innumerable lista de ventajas impositivas del sector”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "564", "claim_text": "\"Bajamos de más de 6 mil toneladas a 3.800 toneladas que tenemos que disponer\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "565", "claim_text": "“[En el Fuero Penal] entran 15 mil causas. Ahí arranca un sistema perverso, porque usted no puede cumplir plazos y tiene que demorar causas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "566", "claim_text": "\"Fue la actual Presidenta la que promovió la derogación del delito de calumnias e injurias\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "567", "claim_text": "“El Gobierno empezó a dar de baja pensiones por discapacidad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "568", "claim_text": "“[Con el lanzamiento de ArSat 1] la Argentina va a formar parte de un grupo muy selecto”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "569", "claim_text": "“US$ 60 mil millones se fueron de la Argentina desde que Macri es Presidente”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "570", "claim_text": "“Cinco trans por día tramitan un documento acorde con su aspecto físico”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "571", "claim_text": "“Desde que lanzamos el Plan Integral de Seguridad Pública, todos los delitos bajaron”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "572", "claim_text": "“Los programas [de vivienda] han representado desde 2003 un total de más de 900 mil soluciones habitacionales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "573", "claim_text": "“[Hoy hay] pleno empleo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "574", "claim_text": "“Hace 40 años solamente teníamos 8% de pobreza y el 3% de desocupación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "575", "claim_text": "“Prácticamente duplicamos el presupuesto del Ministerio de Ciencia y Tecnología”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "576", "claim_text": "“El kirchnerismo no fue capaz de derogar ninguna ley del menemismo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "577", "claim_text": "“La principal causa de muerte entre jóvenes de 15 y 34 años son los accidentes viales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "578", "claim_text": "“[Cambiemos contrajo] una deuda superior, en dos años y medio, a la de la dictadura militar durante todo su gobierno”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "579", "claim_text": "“Pasó en 2016 que el consumo cayó un 10%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "580", "claim_text": "“No es cierto que las exportaciones estén subiendo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "581", "claim_text": "“Desde el regreso de la democracia 3.030 mujeres fallecieron por abortos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "582", "claim_text": "“Cada año más de 100 mil chicas menores de 19 años quedan embarazadas y siete de cada diez embarazos [adolescentes] no son intencionales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "583", "claim_text": "“Cuando estaba Cristina no había este riesgo país”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "584", "claim_text": "“Dicen que yo dije que no íbamos a pagar, nunca dije eso”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "585", "claim_text": "“Todos los días llegan entre 100 y 200 inmigrantes a la ciudad, que no sabemos quiénes son”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "586", "claim_text": "“Sabemos que hoy las mujeres están sometidas (...) a cargar con el trabajo doméstico no remunerado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "587", "claim_text": "“No es posible que haya el 40% de trabajo precario”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "588", "claim_text": "“El sistema de señalización es del año 1921, y los trenes son del año 1960”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "589", "claim_text": "“La actividad automotriz está prácticamente igual que el año pasado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "590", "claim_text": "“Fuerte deterioro del campo en 10 años", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "591", "claim_text": "“En la década del ’80 circulaban doce trenes por día entre Buenos Aires y Mar del Plata, hoy sólo dos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "592", "claim_text": "“Ha habido un incremento casi exponencial de la cantidad de litigios pero no ha aumentado la cantidad de accidentes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "593", "claim_text": "“En la Argentina, cinco de cada diez chicos terminan la secundaria”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "594", "claim_text": "“Hoy hay 1,5 millones de hogares que tienen acceso a la tarifa social del gas. Antes eran solo 275 mil”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "595", "claim_text": "“Somos el sexto país de América latina en inversión cuando antes disputábamos el primer lugar”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "596", "claim_text": "“Hoy con la presencia de la gendarmería en la Villa 1-11-14 en 3 años se redujeron los homicidios de 28 a 2”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "597", "claim_text": "“El Impuesto a las Ganancias afecta a 1.300.000 trabajadores”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "598", "claim_text": "“El salario promedio argentino es $11.000. La mitad de los trabajadores gana menos de $9.000”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "599", "claim_text": "“En los últimos 10 años la Argentina no creció”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "600", "claim_text": "“Con Cristina, se tocó el piso de leyes votadas por año desde 1983”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "601", "claim_text": "“Mantiene el poder adquisitivo por el primer semestre de 2018, como la mantuvimos en 2017 y 2016”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "602", "claim_text": "“Hace una década había un millón de familias en la Argentina con déficit habitacional. Ese número hoy es dos millones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "603", "claim_text": "“La actividad industrial hoy en día está funcionando por encima del 90%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "604", "claim_text": "“Los salarios de la administración pública cayeron durante el gobierno de Macri un 40%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "605", "claim_text": "“La Ciudad es la que tiene más incidencia de casos y mortalidad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "606", "claim_text": "“En Argentina uno de cada tres trabajadores está en la informalidad”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "607", "claim_text": "“Hace 5 años empezaron los paros en los subtes”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "608", "claim_text": "“[Hay] empresas públicas que incrementaron sus déficits operativos de modo sostenido”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "609", "claim_text": "“Desde que asumió el Gobierno hay, según datos oficiales, 25 mil argentinos más que ya tienen residencia fiscal en Uruguay”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "610", "claim_text": "“La mitad de los trabajadores ganamos menos de $ 6.000 y un tercio estamos precarizados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "611", "claim_text": "\"Hemos importado más que nunca\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "612", "claim_text": "“Después de 6 meses de fuego en el Delta del Paraná no tenemos un detenido”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "613", "claim_text": "“El 75% de los jubilados cobra la mínima de 2.477 pesos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "614", "claim_text": "“Crecimos a tasas elevadísimas pero los niveles de pobreza son los mismos que teníamos hace diez años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "615", "claim_text": "“Hay casi 4 millones de jóvenes entre 19 y 25 años que cobran plan por no trabajar”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "616", "claim_text": "“[Se estiman] entre 44 mil y 53 mil egresos hospitalarios anuales por abortos con complicaciones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "617", "claim_text": "La inversión pública “significó en los últimos 9 años aproximadamente 4 o 5 puntos del PBI por año”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "618", "claim_text": "“Llevamos 19 meses consecutivos de caída de la actividad industrial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "619", "claim_text": "“[Es] algo que la Argentina no logra [equilibrar] hace más de 70 años”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "620", "claim_text": "“En 2016, incautamos 30% más de cocaína y 600% más de éxtasis que en 2015″", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "621", "claim_text": "“En el país el 10% más rico tiene ganancias equivalentes a las del 60% más pobre”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "622", "claim_text": "“Tenemos la peor caída de la industria desde el 2002, previo al kirchnerismo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "623", "claim_text": "“Disminuimos las tasas de interés”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "624", "claim_text": "“[El presupuesto 2017 prevé un] aumento para la AFI superior al promedio de gastos e inflación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "625", "claim_text": "“Vaca Muerta representa la 2º reserva mundial de gas y la 4º de petróleo no convencional”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "626", "claim_text": "“En el presupuesto se prevé un recorte de 20% para el Incucai, siempre en términos reales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "627", "claim_text": "“El año que viene terminaría con seis puntos menos de PBI per cápita que en 2015”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "628", "claim_text": "“En los últimos dos años no se han generado puestos de trabajo casi en el sector privado”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "629", "claim_text": "“La Argentina es el país que más se ha desendeudado del mundo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "630", "claim_text": "“Se han rescatado casi 4000 chicas víctimas de la trata desde el 2008”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "631", "claim_text": "“Hace 8 años que no crecemos de manera sostenida”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "632", "claim_text": "“Desde 2008 el Estado nacional rescató 6.604 víctimas de trata”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "633", "claim_text": "“No puede ser que los hogares más pudientes gasten 20 veces más gas que los humildes”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "634", "claim_text": "“Hace una década la Argentina es uno de los países con mayor inflación del mundo, con un promedio anual arriba del 20% y una inflación acumulada aproximadamente del 700%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "635", "claim_text": "“En un ránking de las 50 ciudades más violentas, Brasil fue incluida en 17 ciudades. Nosotros no tenemos ni una sola ciudad incluida”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "636", "claim_text": "“En la Ciudad de Buenos Aires el 100% del comercio ya puede abrir, el 100% de la industria y el 100% de las actividades profesionales”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "637", "claim_text": "“Hemos construido viviendas por 90 pesos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "638", "claim_text": "“El 40% de la población argentina no tiene agua, y el 60% no tiene cloacas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "639", "claim_text": "“Argentina hoy es el tercer exportador mundial de cocaína”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "640", "claim_text": "“Los jueces nunca se condenan a sí mismos”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "641", "claim_text": "“Milani en el Ejército tenía más recursos para Inteligencia que los que tenía el área de Inteligencia del Estado”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "642", "claim_text": "“47,7 es el crecimiento de la economía [de Chaco] en 4 años, versus 50,8 en 57 años anteriores”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "643", "claim_text": "“Cristina en su primer gobierno no tuvo ningún paro; en el segundo van a ser cinco”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "644", "claim_text": "“Recibimos un país donde uno de cada tres argentinos está en la pobreza o la exclusión total”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "645", "claim_text": "“Desde que se instauró el cepo en la Argentina hubo una devaluación del 230%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "646", "claim_text": "“Esta es la primera cárcel que se construye en 20 años en la provincia\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "647", "claim_text": "“[La industria] es sólo del 17% del PBI, igual que en la década del 90\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "648", "claim_text": "“[Entre 2008 y 2011] Buenos Aires mermó [su recaudación] en 13.500 millones”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "649", "claim_text": "“Lo que más viene creciendo en términos de exportación son las manufacturas de origen industrial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "650", "claim_text": "“Hoy Córdoba es el polo de software más importante del interior del país, con 500 empresas y 13 mil puestos de trabajo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "651", "claim_text": "“Por las medidas ya tomadas por el Gobierno el gasto de Promoción y Asistencia Social crecerá un 37% en 2017”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "652", "claim_text": "“La educación pública perdió chicos en las escuelas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "653", "claim_text": "“No había desaparecidos en Santa Cruz”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "654", "claim_text": "“Macri triplicó la deuda pública de la Ciudad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "655", "claim_text": "“En los últimos tres años YPF duplicó la inversión y la actividad”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "656", "claim_text": "“Durante mi gobierno no hubo ni siquiera un herido por fuerzas nacionales”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "657", "claim_text": "“Nadie habla del voto de los extranjeros (...) que son millones”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "658", "claim_text": "“Esta medida afecta solamente al 2% de las personas que compran dólares”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "659", "claim_text": "“[El DNU de $ 160 mil millones] equivale a un tercio de todo el dinero que circula en nuestra economía”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "660", "claim_text": "“La inversión en la Argentina estuvo estancada”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "661", "claim_text": "“La OMS recomienda que uno tome muchas bebidas calientes porque el calor mata al virus”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "662", "claim_text": "“Está aumentando el nivel del poder adquisitivo mes a mes”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "663", "claim_text": "“Pasamos de una provincia que invertía muy poco en infraestructura a una que invierte más del doble”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "664", "claim_text": "“Este año vamos a tener una cosecha récord”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "665", "claim_text": "“Empezamos por reconstruir la estadística criminal", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "666", "claim_text": "“Hoy el presupuesto tiene más facultades extraordinarias que el anterior”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "667", "claim_text": "“A fines de 2017, el 8% de la matriz eléctrica deberá usar fuentes renovables. Hoy apenas supera el 1%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "668", "claim_text": "“Este enero tuvimos récord de venta de (…) autos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "669", "claim_text": "“Somos la provincia del país que más invierte en términos relativos en educación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "670", "claim_text": "“Los trabajadores han perdido poder adquisitivo del salario”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "671", "claim_text": "“Todo el mundo habla del juicio del siglo, pero el reclamo de los holdouts es menos de 2% del PBI”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "672", "claim_text": "“La Argentina hoy tiene un bajísimo intercambio con los Estados Unidos”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "673", "claim_text": "“La Ciudad, cuando gobernó Macri, fue el único lugar de la Argentina donde la matrícula pública empezó a crecer”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "674", "claim_text": "“En estos diez años, el egreso de las universidades creció un 68% en la Argentina”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "675", "claim_text": "“Vetamos muchas menos leyes que el Gobierno nacional”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "676", "claim_text": "Argentina de “prestador de servicios, pasó a ser productor de bienes”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "677", "claim_text": "“[Contrajo deuda por] más de US$100 mil millones”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "678", "claim_text": "“Cada 37 horas una mujer muere por violencia de género”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "679", "claim_text": "“Ha habido un brutal crecimiento de la deuda pública", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "680", "claim_text": "“Tenemos la mortalidad infantil y materna más baja del país”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "681", "claim_text": "“Hoy pagan [Ganancias] más trabajadores de los que pagaban con el gobierno anterior”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "682", "claim_text": "“Hoy el desempleo afecta a casi un 30% de los jóvenes y aún más en las mujeres jóvenes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "683", "claim_text": "“La sentencia por la causa del atentado a la Embajada de Israel es cosa juzgada”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "684", "claim_text": "“Aumentó 100% la planta de empleados públicos [en Córdoba]”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "685", "claim_text": "“Se multiplicó 11 veces, desde el 2006, la presión tributaria sobre los trabajadores y solo 6 veces sobre las empresas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "686", "claim_text": "“Casi un tercio de la población argentina en los últimos 30 años ha estado bajo la línea de pobreza”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "687", "claim_text": "\"[Hubo una] caída de 10% del haber mínimo en el promedio anual\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "688", "claim_text": "\"La revolución de los aviones ha generado que más de medio millón de personas viajaran por primera vez\"&nbsp;", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "689", "claim_text": "“La Argentina es el país más cerrado del planeta”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "690", "claim_text": "“El Código se aplica a partir de su sanción y de su implementación para los casos futuros”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "691", "claim_text": "“Nuestro país es el mejor de Latinoamérica para ser madre”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "692", "claim_text": "“Es mentira que [el aumento del salario] es el 31%, es mentira que es para los que menos ganan”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "693", "claim_text": "“En los últimos tres años, el delito por excelencia más grave, que es el homicidio, bajó 20%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "694", "claim_text": "“La inflación actual es la más alta de los últimos 28 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "695", "claim_text": "“Tres millones de familias viven de forma precaria”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "696", "claim_text": "“Nuevo récord de despacho de asfalto en marzo", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "697", "claim_text": "“Los siniestros viales son la principal causa de muerte no natural de los menores de 25 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "698", "claim_text": "un chequeo a sus anuncios y logros en su discurso", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "699", "claim_text": "\"Este enero tuvimos récord de venta en cemento”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "700", "claim_text": "“Detrás mío y de los 11 mil presos que tiene la Justicia Federal, el 60% está sin condena”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "701", "claim_text": "“La Argentina necesitaba que a nadie le falte su jubilación”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "702", "claim_text": "“La cantidad de robos se redujo en un 11% y los homicidios en un 20% en estos dos años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "703", "claim_text": "“Sólo a Argentina se están marchando cada mes 1200 jóvenes a trabajar”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "704", "claim_text": "“Hay más accidentes de autos causados por gente que está usando el celular, mandando mensajitos de texto o hablando, que por gente alcoholizada”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "705", "claim_text": "“El 50% de la población en la provincia de Santa Cruz no tiene agua corriente”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "706", "claim_text": "“Gracias al Metrobus, bajaron la cantidad de accidentes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "707", "claim_text": "“Fuimos nosotros también los que llevamos de 6 vacunas que había a 16 vacunas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "708", "claim_text": "\"Las autoridades que tienen que velar por las garantías constitucionales de los argentinos, mandan a Brasil listados de gente (...) te están prejuzgando”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "709", "claim_text": "“Montevideo tiene más asesinatos que en la Argentina”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "710", "claim_text": "“En Argentina 1 de cada 3 hogares no tiene acceso a internet”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "711", "claim_text": "“El número de casos de mortalidad infantil en la Ciudad aumentó”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "712", "claim_text": "“Un millón y medio de personas consiguieron acceso a cloacas y 817.000 personas pueden ahora abrir una canilla y ver salir agua limpia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "713", "claim_text": "“Estamos [10]6, entre 142 países, en el Índice de Competitividad Global del Foro Económico Mundial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "714", "claim_text": "“Pusimos robótica y programación desde jardín de infantes”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "715", "claim_text": "“Las exportaciones crecieron 15% el último año sin contar los productos afectados por la sequía\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "716", "claim_text": "“En ocho años se fueron 20 mil personas y se incorporaron otras 20 mil”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "717", "claim_text": "“Hoy un trabajador tiene en promedio horario en la Argentina 11 horas de trabajo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "718", "claim_text": "“Hemos duplicado la cantidad de parques industriales”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "719", "claim_text": "“Este es un Estado que tiene el déficit más alto de los últimos 10 años”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "720", "claim_text": "“En la ciudad de Buenos Aires y en toda la campaña, según el censo de 1778, la mitad de la población eran negros”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "721", "claim_text": "“Si vamos al (…) homicidio, la Argentina, según datos de Naciones Unidas, está muy por debajo de otros países latinoamericanos\"", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "722", "claim_text": "“El total de trabajadores registrados aumentó en casi 270 mil”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "723", "claim_text": "“La cantidad de empleados públicos en el Gobierno nacional cayó fuertemente, en más de 10 mil personas”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "724", "claim_text": "“Hoy hay más de 370 policías detenidos por causas que nosotros iniciamos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "725", "claim_text": "“Los giros del Gobierno provincial a los municipios aumentaron un 50% en un año”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "726", "claim_text": "“El presupuesto educativo desde el 2015 a hoy cayó un 40%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "727", "claim_text": "“El que vivía en la villa sigue en la villa y el que alquilaba sigue alquilando”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "728", "claim_text": "“[Si hubiera problema con las divisas], la industria de la Provincia estaría parada”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "729", "claim_text": "“[Hay] 5 millones de trabajadores trabajando en negro”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "730", "claim_text": "\"Nos llevó un año conseguir todas las aprobaciones para llevar a cabo este edificio\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "731", "claim_text": "“El desempleo en la Argentina está entre los más altos de la región”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "732", "claim_text": "“Perdimos casi 12 millones de cabezas, que es el stock completo del Uruguay”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "733", "claim_text": "“Entre 2001 y 2012, la Argentina fue el tercer proveedor mundial de cocaína”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "734", "claim_text": "“El 2014 fue el año récord de muertes por la policía”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "735", "claim_text": "“En Argentina la corrupción no está tipificada en el Código Penal\"", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "736", "claim_text": "“No hay registro de condena por abortos, hay muy poquitos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "737", "claim_text": "“Los intereses de la deuda, los servicios de la deuda, aumentaron en su tiempo [de Macri] un 70%”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "738", "claim_text": "“Entre 2002 y 2012, entre homicidios, tránsito y suicidios, Brasil perdió más de dos millones de habitantes”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "739", "claim_text": "“Tenemos las tarifas más caras del mundo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "740", "claim_text": "“Cuando [Macri] llegó al gobierno la deuda externa era el 38% del producto, hoy es el 100%”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "741", "claim_text": "“El mínimo de los jubilados no se incrementa como el salario mínimo”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "742", "claim_text": "“La desocupación se había agravado y había llegado al 9,8%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "743", "claim_text": "“$11 millones por día se van en publicidad oficial”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "744", "claim_text": "\"La destrucción de empleo en la obra pública no pasa sólo en Santa Cruz sino en todo el país\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "745", "claim_text": "“Desde el 2003, hemos creado 9 universidades”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "746", "claim_text": "“En la última elección los resultados los tuvimos al mediodía del día siguiente”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "747", "claim_text": "\"En 2017 fuimos el primer destino de Sudamérica. En 2018 llegaron 7 millones de turistas extranjeros, un 3,4% más que en 2017.\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "748", "claim_text": "“La Argentina es el segundo país en inflación mundial”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "749", "claim_text": "“El país construyó en los últimos ocho años 1150 escuelas”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "750", "claim_text": "“Alcanzamos la tasa de mortalidad infantil más baja de la historia”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "751", "claim_text": "“En Provincia, se perdieron 271.000 empleos en un año”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "752", "claim_text": "“Somos la provincia que menos recibe de coparticipación federal”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "753", "claim_text": "“Sólo en la Provincia hay 500 mil jóvenes que no estudian ni trabajan”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "754", "claim_text": "“Scioli destinaba el 2,24% del presupuesto provincial a Vialidad, hoy descendió al 1,10%”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "755", "claim_text": "“Hace 3 años seguidos que cae la venta de medicamentos de recetas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "756", "claim_text": "“El 90% de los siniestros se producen por error humano”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "757", "claim_text": "\"[El fracking] está prohibido en varios estados de los Estados Unidos, en Francia, en varios países de Europa\"", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "758", "claim_text": "“Anunciaron que iban a hacer 4 mil kilómetros del programa Rutas Seguras e hicieron 0”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "759", "claim_text": "según Scioli ya se alcanzó", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "760", "claim_text": "\"Desde 2010 la Argentina tiene su mismo Producto Bruto Interno”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "761", "claim_text": "“Un chico de 13 años (...) en la Argentina no tiene ley de víctimas, no puede ser parte del proceso”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "762", "claim_text": "“Ya sobrepasamos la cantidad de personas empleadas en 2015”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "763", "claim_text": "“Tigre es un municipio que tiene un 40% de superficie de barrios cerrados”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "764", "claim_text": "“El decreto para importar basura de Macri [...] elimina el requisito de inocuidad y peligrosidad de origen”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "765", "claim_text": "“La AUH está en el nivel más alto en términos de poder adquisitivo”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "766", "claim_text": "“La nueva ley de diabetes le mejora la vida a más de tres millones de argentinos”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "767", "claim_text": "“No nos hemos desendeudado, estamos más endeudados que antes”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "768", "claim_text": "“No podemos decir que cayó el salario real”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "769", "claim_text": "“El fiscal Delgado informó que el 65% de las causas que están a su cargo son para perseguir a pibes o pibas por consumo de drogas”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "770", "claim_text": "en el mundo globalizado no se grava la renta financiera", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "771", "claim_text": "“Del total de muertos, el 85% son personas de más de 65 años”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "772", "claim_text": "“La utilidad clínica [de los medicamentos que ya no recibirán una cobertura del 100%] es muy baja”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "773", "claim_text": "“El 6,6% es la tasa de desempleo más baja registrada desde 1991”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "774", "claim_text": "“De las 22 provincias que suscribieron el Consenso Fiscal, hoy 20 tienen superávit. La relación cambió”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "775", "claim_text": "“El Gobierno nacional no hace públicas las estadísticas [sobre el delito] desde 2009. El gobierno de la Ciudad tampoco”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "776", "claim_text": "“Hoy hay cinco millones de personas con planes”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "777", "claim_text": "“La Argentina tiene la cobertura más alta [en jubilaciones de la región]”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "778", "claim_text": "“En el presupuesto sancionado de cada diez pesos seis están destinados a inversión social”", "label": "true", "verdict_raw": "mostly true", "url": "", "source": "xfact", "date": ""}
+{"id": "779", "claim_text": "“[El programa 'Terminá la Secundaria'] es para todo el país (...) es totalmente válido. (...) Está todo perfectamente establecido”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "780", "claim_text": "“No hay desequilibrio fiscal”", "label": "false", "verdict_raw": "false", "url": "", "source": "xfact", "date": ""}
+{"id": "781", "claim_text": "“Durante el último mandato de CFK se otorgaron 110 mil créditos hipotecarios [para construir]. Entre 2016 y 2019, solamente 11 mil”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
+{"id": "782", "claim_text": "“En todo el mundo están abandonando el voto electrónico”", "label": "true", "verdict_raw": "true", "url": "", "source": "xfact", "date": ""}
