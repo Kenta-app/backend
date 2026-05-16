@@ -12,3 +12,5 @@ scikit-learn
 datasets
 playwright
 fastapi
+click
+uvicorn[standard]
