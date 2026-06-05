@@ -1,1 +1,37 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python/runtime artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE/editor files
+.idea/
+.vscode/
+
+# Training and evaluation artifacts
 output/
+*.log
+
+# Temporary notes and diagrams
+_tmp_*
+*.wsd
+
+# Data policy for the public release:
+# keep only the curated public dataset and metadata-only summary references.
+data/*
+!data/claims_es_pe_full/
+data/claims_es_pe_full/*
+!data/claims_es_pe_full/*.tsv
+!data/claims_es_pe_full/README.md
+!data/summary_references/
+data/summary_references/*
+!data/summary_references/synthetic_refs_30_fixed_metadata.csv
+!data/summary_references/README.md
