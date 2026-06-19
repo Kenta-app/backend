@@ -31,6 +31,7 @@ def serialize_published_news(news: PublishedNews) -> dict:
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
         "sourceId": news.source_id,
+        "sourceName": news.source.name if news.source else None,
         "title": news.title,
         "summary": news.summary,
         "originalUrl": news.original_url,

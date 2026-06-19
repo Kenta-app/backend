@@ -41,9 +41,13 @@ class MLRouterTests(unittest.TestCase):
             },
             "summary": "Resumen generado",
             "models": {
-                "classifier": "MultiTaskBert",
-                "classifier_checkpoint": "output/multitask_bert/best_model/model.pt",
-                "classifier_base_model": "bert-base-uncased",
+                "pipeline": "dedicated_components",
+                "fake_news_classifier": "xlm-roberta-base",
+                "fake_news_classifier_checkpoint": "output/fakenews_es_pe_full_v1/best_model",
+                "stance_classifier": "xlm-roberta-base",
+                "stance_classifier_checkpoint": "output/stance_bert/best_model",
+                "claim_extractor": "heuristic_v9",
+                "claims_enabled": True,
                 "summarizer": "facebook/bart-large-cnn",
             },
             "warnings": [],
@@ -70,6 +74,7 @@ class MLRouterTests(unittest.TestCase):
             text=None,
             include_summary=True,
             force_summary=False,
+            allow_partial=True,
         )
 
     def test_predict_returns_503_when_model_is_missing(self):

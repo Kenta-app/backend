@@ -18,13 +18,16 @@ class NewsController(BaseController):
 
     def getNewsFeed(self, page: int, pageSize: int, filters: dict) -> dict:
         source_id = filters.get("sourceId")
+        source_name = filters.get("sourceName")
         if source_id:
             items = self.publishingService.newsRepository.findBySourceId(int(source_id))
+        elif source_name:
+            items = self.publishingService.newsRepository.findBySourceName(source_name)
         else:
             items = self.publishingService.newsRepository.findAll(page, pageSize)
 
         published_items = [item for item in items if item.isPublished()]
-        if source_id:
+        if source_id or source_name:
             offset = max(page - 1, 0) * pageSize
             published_items = published_items[offset : offset + pageSize]
 
@@ -50,9 +53,14 @@ def get_news_feed(
     page: int = Query(default=1, ge=1),
     pageSize: int = Query(default=10, ge=1, le=100),
     sourceId: int | None = Query(default=None),
+    sourceName: str | None = Query(default=None),
     controller: NewsController = Depends(get_news_controller),
 ):
-    return controller.getNewsFeed(page, pageSize, {"sourceId": sourceId})
+    return controller.getNewsFeed(
+        page,
+        pageSize,
+        {"sourceId": sourceId, "sourceName": sourceName},
+    )
 
 
 @router.get("/{news_id}")

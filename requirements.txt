@@ -9,6 +9,7 @@ datasets
 fastapi==0.104.1
 lxml==4.9.3
 playwright
+protobuf
 psycopg2-binary==2.9.9
 pydantic==2.7.0
 pydantic-settings==2.1.0
@@ -17,7 +18,9 @@ python-multipart==0.0.6
 PyYAML==6.0.3
 requests==2.31.0
 scikit-learn
+sentencepiece
 SQLAlchemy==2.0.23
+tiktoken
 torch
 transformers
 uvicorn[standard]==0.24.0

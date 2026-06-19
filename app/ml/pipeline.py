@@ -6,11 +6,10 @@ from threading import Lock
 from typing import Any
 
 import torch
-from transformers import AutoTokenizer
 
 from app.ml.claim_extractor import ClaimExtractor
 from app.ml.fakenews_classifier import FakeNewsClassifier
-from app.ml.multitask_model import MultiTaskBert
+from app.ml.stance_classifier import StanceClassifier
 from app.ml.summarizer import summarizer_service
 
 logger = logging.getLogger(__name__)
@@ -69,22 +68,22 @@ class NewsAnalysisPipeline:
     }
 
     def __init__(self):
-        self.model_dir = os.getenv(
-            "MULTITASK_MODEL_DIR",
-            os.path.join("output", "multitask_bert", "best_model"),
-        )
         configured_fake_news_dir = os.getenv("FAKENEWS_MODEL_DIR")
         self.fake_news_model_dir = self._resolve_fake_news_model_dir(
             configured_fake_news_dir
         )
-        self.base_model_name = os.getenv("MULTITASK_BASE_MODEL", "bert-base-uncased")
-        self.max_seq_length = int(os.getenv("MULTITASK_MAX_SEQ_LENGTH", "512"))
-        self.max_seq_length_liar = int(
-            os.getenv("MULTITASK_MAX_SEQ_LENGTH_LIAR", "128")
-        )
         self.article_fake_risk_threshold = float(
             os.getenv("FAKENEWS_ARTICLE_RISK_THRESHOLD", "0.5")
         )
+        self.article_fake_low_threshold = float(
+            os.getenv("FAKENEWS_ARTICLE_LOW_THRESHOLD", "0.35")
+        )
+        self.article_fake_high_threshold = float(
+            os.getenv("FAKENEWS_ARTICLE_HIGH_THRESHOLD", "0.75")
+        )
+        if self.article_fake_low_threshold >= self.article_fake_high_threshold:
+            self.article_fake_low_threshold = 0.35
+            self.article_fake_high_threshold = 0.75
         self.use_claims = os.getenv("FAKENEWS_USE_CLAIMS", "true").lower() in (
             "1",
             "true",
@@ -94,14 +93,15 @@ class NewsAnalysisPipeline:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._lock = Lock()
         self._loaded = False
-        self.model = None
-        self.tokenizer = None
         self.load_error = None
         self.claim_extractor = ClaimExtractor()
         self.fake_news_classifier = FakeNewsClassifier(
             model_dir=self.fake_news_model_dir,
             device=self.device,
         )
+        configured_stance_dir = os.getenv("STANCE_MODEL_DIR")
+        self.stance_model_dir = self._resolve_stance_model_dir(configured_stance_dir)
+        self.stance_classifier = StanceClassifier(model_dir=self.stance_model_dir, device=self.device)
 
     @staticmethod
     def _resolve_fake_news_model_dir(
@@ -134,63 +134,28 @@ class NewsAnalysisPipeline:
         _, _, best_model_dir = max(candidates, key=lambda item: (item[0], item[1]))
         return best_model_dir
 
-    @property
-    def checkpoint_path(self) -> str:
-        return os.path.join(self.model_dir, "model.pt")
-
     def load(self) -> bool:
-        if self._loaded:
+        if self._loaded and self.fake_news_classifier.loaded:
             return True
 
         with self._lock:
-            if self._loaded:
+            if self._loaded and self.fake_news_classifier.loaded:
                 return True
 
-            if not os.path.exists(self.checkpoint_path):
-                self.load_error = (
-                    "No se encontro el checkpoint entrenado del modelo multitarea en "
-                    f"'{self.checkpoint_path}'. Ejecuta el training y guarda best_model."
-                )
-                logger.warning(self.load_error)
-                return False
+            fake_news_ready = self.fake_news_classifier.load()
+            self.stance_classifier.load()
 
-            tokenizer_source = (
-                self.model_dir
-                if os.path.exists(os.path.join(self.model_dir, "tokenizer_config.json"))
-                else self.base_model_name
-            )
-
-            try:
-                self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_source)
-                if os.path.exists(os.path.join(self.model_dir, "config.json")):
-                    self.model = MultiTaskBert(
-                        encoder_config_path=self.model_dir,
-                        load_pretrained_encoder=False,
-                    )
-                else:
-                    self.model = MultiTaskBert(model_name=self.base_model_name)
-                state_dict = torch.load(self.checkpoint_path, map_location=self.device)
-                self.model.load_state_dict(state_dict)
-                self.model.to(self.device)
-                self.model.eval()
-                self._loaded = True
+            self._loaded = bool(fake_news_ready)
+            if fake_news_ready:
                 self.load_error = None
-                self.base_model_name = (
-                    getattr(self.model.encoder.config, "_name_or_path", None)
-                    or getattr(self.model.encoder.config, "model_type", self.base_model_name)
-                )
-                self.fake_news_classifier.load()
-                logger.info("Multi-task classifier loaded from %s", self.checkpoint_path)
                 return True
-            except Exception as exc:
-                self.load_error = (
-                    "No se pudo cargar el modelo multitarea. Verifica que el checkpoint "
-                    "incluya su config y tokenizer, o configura MULTITASK_BASE_MODEL si "
-                    "estas cargando un checkpoint antiguo. "
-                    f"Detalle: {exc}"
-                )
-                logger.exception("Error loading multi-task classifier")
-                return False
+
+            self.load_error = (
+                self.fake_news_classifier.load_error
+                or "El clasificador dedicado de fake news no esta listo."
+            )
+            logger.warning(self.load_error)
+            return False
 
     def warm_up(self, include_summarizer: bool = False) -> dict[str, Any]:
         classifier_ready = self.load()
@@ -200,14 +165,14 @@ class NewsAnalysisPipeline:
 
     def get_status(self, classifier_ready: bool | None = None) -> dict[str, Any]:
         if classifier_ready is None:
-            classifier_ready = self._loaded or os.path.exists(self.checkpoint_path)
+            classifier_ready = self.fake_news_classifier.loaded
 
         return {
             "classifier_ready": bool(classifier_ready and self._loaded),
-            "classifier_checkpoint_exists": os.path.exists(self.checkpoint_path),
-            "classifier_checkpoint_path": self.checkpoint_path,
+            "pipeline_mode": "dedicated_components",
             "classifier_load_error": self.load_error,
-            "classifier_base_model": self.base_model_name,
+            "claims_enabled": self.use_claims,
+            "claim_extractor": self.claim_extractor.strategy_name,
             "fake_news_classifier_ready": self.fake_news_classifier.loaded,
             "fake_news_classifier_checkpoint_exists": self.fake_news_classifier.checkpoint_exists,
             "fake_news_classifier_checkpoint_path": self.fake_news_model_dir,
@@ -215,7 +180,14 @@ class NewsAnalysisPipeline:
             "fake_news_classifier_source": (
                 self.fake_news_classifier.model_name
                 if self.fake_news_classifier.loaded
-                else "multitask_fallback"
+                else None
+            ),
+            "stance_classifier_ready": self.stance_classifier.loaded,
+            "stance_classifier_checkpoint_exists": self.stance_classifier.checkpoint_exists,
+            "stance_classifier_checkpoint_path": self.stance_model_dir,
+            "stance_classifier_load_error": self.stance_classifier.load_error,
+            "stance_classifier_source": (
+                self.stance_classifier.model_name if self.stance_classifier.loaded else None
             ),
             "summarizer_loaded": summarizer_service.loaded,
             "summarizer_model_name": summarizer_service.model_name,
@@ -244,24 +216,40 @@ class NewsAnalysisPipeline:
         body = normalized_content or normalized_text or article_text
         warnings: list[str] = []
 
-        classifier_ready = self.load()
+        fake_news_ready = self.load()
+        stance_ready = self.stance_classifier.loaded
         stance_result = None
         fake_news_result = None
 
-        if classifier_ready:
+        if not fake_news_ready:
+            raise ModelNotReadyError(self.load_error or "El clasificador de fake news no esta listo.")
+
+        if stance_ready:
             stance_result = self._predict_stance(headline, body)
-            if self.use_claims:
+
+        if self.use_claims:
+            if stance_ready:
                 fake_news_result = self._predict_fake_news_from_claims(
                     headline,
                     body,
                     article_text,
                 )
             else:
-                fake_news_result = self._predict_fake_news(article_text)
-        elif not allow_partial:
-            raise ModelNotReadyError(self.load_error or "El clasificador no esta listo.")
+                if self.stance_classifier.load_error:
+                    warnings.append(
+                        self.stance_classifier.load_error
+                        + " Se agregaron los claims solo con el clasificador de fake news."
+                    )
+                fake_news_result = self._predict_fake_news_from_claims_without_stance(
+                    headline,
+                    body,
+                    article_text,
+                )
         else:
-            warnings.append(self.load_error or "El clasificador multitarea no esta listo.")
+            fake_news_result = self._predict_fake_news(article_text)
+            fake_news_result["claim_based"] = False
+            fake_news_result["aggregation_method"] = "direct_dedicated_classifier"
+            self._attach_risk_triage(fake_news_result)
 
         summary_text = None
         if include_summary and (force_summary or summarizer_service.should_summarize(body)):
@@ -282,45 +270,61 @@ class NewsAnalysisPipeline:
             "stance": stance_result,
             "summary": summary_text,
             "models": {
-                "classifier": "MultiTaskBert",
-                "classifier_checkpoint": self.checkpoint_path,
-                "classifier_base_model": self.base_model_name,
-                "fake_news_classifier": (
-                    self.fake_news_classifier.model_name
-                    if self.fake_news_classifier.loaded
-                    else "multitask_fallback"
-                ),
-                "fake_news_classifier_checkpoint": (
-                    self.fake_news_model_dir
-                    if self.fake_news_classifier.loaded
-                    else self.checkpoint_path
-                ),
+                "pipeline": "dedicated_components",
+                "fake_news_classifier": self.fake_news_classifier.model_name,
+                "fake_news_classifier_checkpoint": self.fake_news_model_dir,
+                "stance_classifier": self.stance_classifier.model_name if stance_ready else None,
+                "stance_classifier_checkpoint": self.stance_model_dir,
+                "claim_extractor": self.claim_extractor.strategy_name,
+                "claims_enabled": self.use_claims,
                 "summarizer": summarizer_service.model_name,
             },
             "warnings": warnings,
         }
 
     def _predict_stance(self, headline: str, body: str) -> dict[str, Any]:
-        encoded = self.tokenizer(
-            headline,
-            body,
-            return_tensors="pt",
-            truncation="only_second",
-            max_length=self.max_seq_length,
-            padding=True,
-        )
-        encoded = {key: value.to(self.device) for key, value in encoded.items()}
+        if not self.stance_classifier.loaded and not self.stance_classifier.load():
+            raise ModelNotReadyError(self.stance_classifier.load_error or "El clasificador de stance no esta listo.")
 
-        with torch.no_grad():
-            outputs = self.model(task="stance", **encoded)
-            probabilities = torch.softmax(outputs["stance_logits"], dim=-1)[0].cpu()
+        prediction = self.stance_classifier.predict(headline, body)
+        selected = self.STANCE_METADATA.get(prediction["label"], {})
+        prediction["display_label"] = selected.get("display", prediction["label"])
+        prediction["description"] = selected.get("description")
+        for item in prediction.get("ranking", []):
+            metadata = self.STANCE_METADATA.get(item["label"], {})
+            item["display"] = metadata.get("display", item["label"])
+        return prediction
 
-        return self._format_prediction(
-            label_names=self.model.STANCE_LABELS,
-            predicted_index=int(probabilities.argmax().item()),
-            probabilities=probabilities,
-            metadata=self.STANCE_METADATA,
-        )
+    @staticmethod
+    def _resolve_stance_model_dir(
+        configured_dir: str | None,
+        *,
+        output_root: str = "output",
+    ) -> str:
+        if configured_dir:
+            return configured_dir
+
+        default_dir = os.path.join(output_root, "stance_bert", "best_model")
+        pattern = os.path.join(output_root, "stance*", "best_model", "serving_config.json")
+        candidates: list[tuple[float, float, str]] = []
+
+        for config_path in glob.glob(pattern):
+            model_dir = os.path.dirname(config_path)
+            score = float("-inf")
+            try:
+                with open(config_path, "r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                validation_metrics = payload.get("validation_metrics") or {}
+                score = float(validation_metrics.get("macro_f1", float("-inf")))
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                logger.warning("Ignoring invalid stance serving config at %s", config_path)
+            candidates.append((score, os.path.getmtime(config_path), model_dir))
+
+        if not candidates:
+            return default_dir
+
+        _, _, best_model_dir = max(candidates, key=lambda item: (item[0], item[1]))
+        return best_model_dir
 
     def _predict_fake_news_from_claims(
         self,
@@ -332,6 +336,10 @@ class NewsAnalysisPipeline:
         if not claims:
             prediction = self._predict_fake_news(article_text)
             prediction["claim_based"] = False
+            prediction["risk_score"] = round(
+                float((prediction.get("probabilities") or {}).get("False", 0.0)),
+                4,
+            )
             prediction["claims"] = {
                 "strategy": self.claim_extractor.strategy_name,
                 "max_claims": self.claim_extractor.config.max_claims,
@@ -339,17 +347,23 @@ class NewsAnalysisPipeline:
                 "items": [],
                 "fallback": "article_text",
             }
+            prediction["aggregation_method"] = "direct_dedicated_classifier"
+            self._attach_risk_triage(prediction)
             return prediction
 
         article_context = self._build_article_context(headline, body)
         claim_items: list[dict[str, Any]] = []
         for claim in claims:
-            claim_prediction = self._predict_fake_news(claim.stance_target)
-            claim_stance = self._predict_stance(claim.stance_target, article_context)
+            claim_model_input = claim.model_input or claim.stance_target
+            claim_prediction = self._predict_fake_news(claim_model_input)
+            claim_stance = self._predict_stance(claim_model_input, article_context)
             claim_analysis = self._build_claim_analysis(
                 claim_text=claim.text,
                 stance_target=claim.stance_target,
+                model_input=claim_model_input,
                 extraction_mode=claim.extraction_mode,
+                quality=claim.quality,
+                quality_reasons=claim.quality_reasons,
                 veracity_prediction=claim_prediction,
                 article_stance=claim_stance,
             )
@@ -365,6 +379,71 @@ class NewsAnalysisPipeline:
             "items": claim_items,
             "aggregation": {
                 "method": "claim_veracity_x_article_stance",
+                "decision_threshold": aggregated.get("decision_threshold"),
+            },
+        }
+        return aggregated
+
+    def _predict_fake_news_from_claims_without_stance(
+        self,
+        headline: str,
+        body: str,
+        article_text: str,
+    ) -> dict[str, Any]:
+        claims = self.claim_extractor.extract_with_metadata(headline, body)
+        if not claims:
+            prediction = self._predict_fake_news(article_text)
+            prediction["claim_based"] = False
+            prediction["risk_score"] = round(
+                float((prediction.get("probabilities") or {}).get("False", 0.0)),
+                4,
+            )
+            prediction["claims"] = {
+                "strategy": self.claim_extractor.strategy_name,
+                "max_claims": self.claim_extractor.config.max_claims,
+                "selected": 0,
+                "items": [],
+                "fallback": "article_text",
+                "aggregation": {
+                    "method": "direct_dedicated_classifier",
+                    "decision_threshold": prediction.get("decision_threshold"),
+                },
+            }
+            prediction["aggregation_method"] = "direct_dedicated_classifier"
+            return prediction
+
+        claim_items: list[dict[str, Any]] = []
+        for claim in claims:
+            claim_model_input = claim.model_input or claim.stance_target
+            claim_prediction = self._predict_fake_news(claim_model_input)
+            false_prob = float((claim_prediction.get("probabilities") or {}).get("False", 0.0))
+            claim_items.append(
+                {
+                    "text": claim.text,
+                    "stance_target": claim.stance_target,
+                    "model_input": claim_model_input,
+                    "extraction_mode": claim.extraction_mode,
+                    "quality": claim.quality,
+                    "quality_reasons": list(claim.quality_reasons),
+                    "prediction": self._compact_fake_news_prediction(claim_prediction),
+                    "article_stance": None,
+                    "signals": {
+                        "support_score": None,
+                        "refute_score": None,
+                        "fake_risk": round(false_prob, 4),
+                        "real_support": round(1.0 - false_prob, 4),
+                    },
+                }
+            )
+
+        aggregated = self._aggregate_claim_predictions_without_stance(claim_items)
+        aggregated["claims"] = {
+            "strategy": self.claim_extractor.strategy_name,
+            "max_claims": self.claim_extractor.config.max_claims,
+            "selected": len(claim_items),
+            "items": claim_items,
+            "aggregation": {
+                "method": "claim_veracity_only",
                 "decision_threshold": aggregated.get("decision_threshold"),
             },
         }
@@ -405,6 +484,42 @@ class NewsAnalysisPipeline:
         prediction["risk_score"] = round(float(false_probability), 4)
         prediction["real_support"] = round(float(real_support), 4)
         prediction["aggregation_method"] = "claim_veracity_x_article_stance"
+        self._attach_risk_triage(prediction)
+        return prediction
+
+    def _aggregate_claim_predictions_without_stance(
+        self,
+        claim_items: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        if not claim_items:
+            raise ValueError("Expected at least one claim item to aggregate.")
+
+        label_names = self._get_fakenews_label_names()
+        risk_score = sum(
+            float((item.get("signals") or {}).get("fake_risk", 0.0))
+            for item in claim_items
+        ) / len(claim_items)
+        true_probability = min(max(1.0 - risk_score, 0.0), 1.0)
+        probabilities_tensor = torch.tensor([risk_score, true_probability])
+        threshold = self.article_fake_risk_threshold
+        predicted_index = 0 if risk_score >= threshold else 1
+
+        prediction = self._format_prediction(
+            label_names=label_names,
+            predicted_index=predicted_index,
+            probabilities=probabilities_tensor,
+            metadata=self.VERACITY_METADATA,
+        )
+        selected = self.VERACITY_METADATA[prediction["label"]]
+        prediction["bucket"] = selected["bucket"]
+        prediction["is_fake"] = selected["is_fake"]
+        prediction["decision_threshold"] = round(float(threshold), 4)
+        prediction["source"] = self._get_fakenews_source()
+        prediction["claim_based"] = True
+        prediction["risk_score"] = round(float(risk_score), 4)
+        prediction["real_support"] = round(float(true_probability), 4)
+        prediction["aggregation_method"] = "claim_veracity_only"
+        self._attach_risk_triage(prediction)
         return prediction
 
     def _build_claim_analysis(
@@ -412,7 +527,10 @@ class NewsAnalysisPipeline:
         *,
         claim_text: str,
         stance_target: str,
+        model_input: str,
         extraction_mode: str,
+        quality: str,
+        quality_reasons: tuple[str, ...],
         veracity_prediction: dict[str, Any],
         article_stance: dict[str, Any],
     ) -> dict[str, Any]:
@@ -433,7 +551,10 @@ class NewsAnalysisPipeline:
         return {
             "text": claim_text,
             "stance_target": stance_target,
+            "model_input": model_input,
             "extraction_mode": extraction_mode,
+            "quality": quality,
+            "quality_reasons": list(quality_reasons),
             "prediction": self._compact_fake_news_prediction(veracity_prediction),
             "article_stance": self._compact_stance_prediction(article_stance),
             "signals": {
@@ -479,8 +600,6 @@ class NewsAnalysisPipeline:
     def _get_fakenews_label_names(self) -> list[str]:
         if self.fake_news_classifier.loaded:
             return list(self.fake_news_classifier.serving_config.label_names)
-        if self.model is not None and hasattr(self.model, "FAKENEWS_LABELS"):
-            return list(self.model.FAKENEWS_LABELS)
         return ["False", "True"]
 
     def _get_fakenews_threshold(self) -> float:
@@ -489,49 +608,47 @@ class NewsAnalysisPipeline:
         return 0.5
 
     def _get_fakenews_source(self) -> str:
-        return (
-            "dedicated_fakenews_classifier"
-            if self.fake_news_classifier.loaded
-            else "multitask_fallback"
-        )
+        return "dedicated_fakenews_classifier"
+
+    def _attach_risk_triage(self, prediction: dict[str, Any]) -> dict[str, Any]:
+        risk_score = float(prediction.get("risk_score", 0.0))
+        if risk_score >= self.article_fake_high_threshold:
+            triage_label = "likely_fake"
+            triage_display = "probable falso"
+        elif risk_score <= self.article_fake_low_threshold:
+            triage_label = "likely_real"
+            triage_display = "probable verdadero"
+        else:
+            triage_label = "indeterminate"
+            triage_display = "indeterminado"
+
+        prediction["triage_label"] = triage_label
+        prediction["triage_display"] = triage_display
+        prediction["triage_thresholds"] = {
+            "low": round(float(self.article_fake_low_threshold), 4),
+            "high": round(float(self.article_fake_high_threshold), 4),
+        }
+        return prediction
 
     def _predict_fake_news(self, text: str) -> dict[str, Any]:
-        if self.fake_news_classifier.loaded:
-            prediction = self.fake_news_classifier.predict(text)
-            selected = self.VERACITY_METADATA[prediction["label"]]
-            prediction["display_label"] = selected["display"]
-            for item in prediction.get("ranking", []):
-                item["display"] = self.VERACITY_METADATA[item["label"]]["display"]
-            prediction["bucket"] = selected["bucket"]
-            prediction["is_fake"] = selected["is_fake"]
-            return prediction
+        if not self.fake_news_classifier.loaded and not self.fake_news_classifier.load():
+            raise ModelNotReadyError(
+                self.fake_news_classifier.load_error
+                or "El clasificador dedicado de fake news no esta listo."
+            )
 
-        return self._predict_fake_news_multitask(text)
-
-    def _predict_fake_news_multitask(self, text: str) -> dict[str, Any]:
-        encoded = self.tokenizer(
-            text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=self.max_seq_length_liar,
-            padding=True,
-        )
-        encoded = {key: value.to(self.device) for key, value in encoded.items()}
-
-        with torch.no_grad():
-            outputs = self.model(task="fakenews", **encoded)
-            probabilities = torch.softmax(outputs["fakenews_logits"], dim=-1)[0].cpu()
-
-        prediction = self._format_prediction(
-            label_names=self.model.FAKENEWS_LABELS,
-            predicted_index=int(probabilities.argmax().item()),
-            probabilities=probabilities,
-            metadata=self.VERACITY_METADATA,
-        )
+        prediction = self.fake_news_classifier.predict(text)
         selected = self.VERACITY_METADATA[prediction["label"]]
+        prediction["display_label"] = selected["display"]
+        for item in prediction.get("ranking", []):
+            item["display"] = self.VERACITY_METADATA[item["label"]]["display"]
         prediction["bucket"] = selected["bucket"]
         prediction["is_fake"] = selected["is_fake"]
-        prediction["source"] = "multitask_fallback"
+        prediction["risk_score"] = round(
+            float((prediction.get("probabilities") or {}).get("False", 0.0)),
+            4,
+        )
+        self._attach_risk_triage(prediction)
         return prediction
 
     def _format_prediction(

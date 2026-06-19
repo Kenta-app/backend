@@ -39,6 +39,7 @@ class AdminController(BaseController):
 
     def postSource(self, name: str, baseUrl: str, type: str, parserKey: str | None = None, sourceAccount: str | None = None) -> dict:
         self._require_moderator()
+        del parserKey, sourceAccount
 
         normalized_type = type.lower()
         if normalized_type not in {"web", "social", "twitter"}:
@@ -51,9 +52,6 @@ class AdminController(BaseController):
             name=name,
             base_url=baseUrl,
             type=normalized_type,
-            parser_key=parserKey,
-            source_account=sourceAccount,
-            source_metadata={},
         )
         source.register()
         self.db.add(source)

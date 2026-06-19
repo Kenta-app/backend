@@ -9,7 +9,7 @@ from app.application_services.clustering_service import ClusteringService
 from app.application_services.pipeline_orchestrator import PipelineOrchestrator
 from app.application_services.preprocessing_service import PreprocessingService
 from app.application_services.publishing_service import PublishingService
-from app.db.database import Base
+from app.db.database import Base, apply_sqlite_schema_translation
 from app.ml.pipeline import ModelNotReadyError
 from app.processed.models import ClusterMember, MlPrediction, NewsCluster, Summary
 from app.processed.summarizers import LocalModelSummarizer
@@ -19,9 +19,11 @@ from app.serving.repository import NewsRepository
 
 class ArchitectureServicesTests(unittest.TestCase):
     def setUp(self):
-        self.engine = create_engine(
-            "sqlite:///:memory:",
-            connect_args={"check_same_thread": False},
+        self.engine = apply_sqlite_schema_translation(
+            create_engine(
+                "sqlite:///:memory:",
+                connect_args={"check_same_thread": False},
+            )
         )
         self.SessionLocal = sessionmaker(bind=self.engine)
         Base.metadata.create_all(bind=self.engine)
@@ -61,7 +63,15 @@ class ArchitectureServicesTests(unittest.TestCase):
                 source_account="fuente-test",
                 original_url="https://example.com/1",
                 title_raw="Congreso aprueba reforma politica",
-                content_raw="Congreso aprueba reforma politica y debate financiamiento de partidos.",
+                content_raw=(
+                    "Congreso aprueba reforma politica y debate financiamiento de partidos. "
+                    "La medida incluye transparencia de aportes, fiscalizacion electoral, "
+                    "rendicion de cuentas, sanciones administrativas, supervision ciudadana, "
+                    "informes tecnicos, cronograma parlamentario, reglas para campanas, "
+                    "autoridades electorales y nuevas obligaciones para organizaciones politicas. "
+                    "Tambien incorpora debates publicos, mecanismos de control, criterios "
+                    "de implementacion gradual y evaluaciones periodicas de cumplimiento."
+                ),
                 status="pending",
             ),
             RawNews(
@@ -71,7 +81,15 @@ class ArchitectureServicesTests(unittest.TestCase):
                 source_account="fuente-test",
                 original_url="https://example.com/2",
                 title_raw="Reforma politica aprobada por el Congreso",
-                content_raw="La reforma politica fue aprobada por el Congreso con cambios en financiamiento de partidos.",
+                content_raw=(
+                    "La reforma politica fue aprobada por el Congreso con cambios en "
+                    "financiamiento de partidos. El texto plantea transparencia de aportes, "
+                    "fiscalizacion electoral, rendicion de cuentas, sanciones administrativas, "
+                    "supervision ciudadana, informes tecnicos, reglas para campanas, "
+                    "autoridades electorales y obligaciones para organizaciones politicas. "
+                    "Tambien incorpora debates publicos, mecanismos de control, criterios "
+                    "de implementacion gradual y evaluaciones periodicas de cumplimiento."
+                ),
                 status="pending",
             ),
             RawNews(
@@ -81,7 +99,15 @@ class ArchitectureServicesTests(unittest.TestCase):
                 source_account="fuente-test",
                 original_url="https://example.com/3",
                 title_raw="Equipo local gana amistoso",
-                content_raw="El equipo local gano un amistoso sin relacion con politica.",
+                content_raw=(
+                    "El equipo local gano un amistoso sin relacion con politica. "
+                    "El entrenador destaco la preparacion fisica, las variantes tacticas, "
+                    "la rotacion de juveniles, el trabajo defensivo, la presion alta, "
+                    "la recuperacion de lesionados, los entrenamientos dobles, el analisis "
+                    "de video y el calendario deportivo del proximo torneo. Tambien se "
+                    "evaluaron juveniles, rutinas de resistencia, jugadas preparadas y "
+                    "planes de viaje para los proximos partidos."
+                ),
                 status="pending",
             ),
         ]
@@ -114,7 +140,7 @@ class ArchitectureServicesTests(unittest.TestCase):
             sentiment_label="discuss",
             sentiment_score=0.77,
             fake_score=0.18,
-            model_version="multitask-test",
+            model_version="dedicated-components-test",
             fake_label="mostly-true",
             fake_bucket="real",
             raw_probabilities={"stance": {"discuss": 0.77}, "fake_news": {"mostly-true": 0.82}},
@@ -129,7 +155,7 @@ class ArchitectureServicesTests(unittest.TestCase):
         self.assertTrue(published.isPublished())
         self.assertEqual(published.summary, "Resumen de prueba")
         self.assertEqual(published.sentiment_label, "discuss")
-        self.assertAlmostEqual(published.fake_score, 0.18)
+        self.assertAlmostEqual(float(published.fake_score), 0.18)
 
     def test_local_model_summarizer_reuses_existing_summary_until_forced(self):
         source = Source(name="Fuente Resumen", base_url="https://resumen.test", type="web")

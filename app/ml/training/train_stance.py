@@ -1,3 +1,12 @@
+"""
+Entry point for dedicated stance fine-tuning on FNC-1.
+
+Usage:
+    python -m app.ml.training.train_stance
+    python -m app.ml.training.train_stance --epochs 8 --batch_size 8
+    python -m app.ml.training.train_stance --model_name bert-base-multilingual-cased
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -17,8 +26,9 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup
 
-from app.ml.fakenews_classifier import FakeNewsServingConfig
-from app.ml.training.fakenews_data import FAKENEWS_LABELS, LIARFakeNewsDataset, available_label_strategies
+from app.ml.stance_classifier import StanceServingConfig
+from app.ml.training.datasets import FNCDataset, FNC_LABEL_MAP
+from app.ml.training.losses import FocalLoss
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,10 +36,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-MODEL_ALIASES = {
-    "PlanTL-GOB-ES/roberta-base-bne": "xlm-roberta-base",
-}
+STANCE_LABELS = [
+    label for label, _ in sorted(FNC_LABEL_MAP.items(), key=lambda item: item[1])
+]
 
 
 def set_seed(seed: int) -> None:
@@ -41,17 +50,20 @@ def set_seed(seed: int) -> None:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Dedicated fake-news fine-tuning on LIAR")
+    parser = argparse.ArgumentParser(description="Dedicated stance fine-tuning on FNC-1")
     parser.add_argument("--model_name", default="xlm-roberta-base")
-    parser.add_argument("--train_path", default="data/liar/train.tsv")
-    parser.add_argument("--validation_path", default="data/liar/validation.tsv")
-    parser.add_argument("--test_path", default="data/liar/test.tsv")
-    parser.add_argument("--output_dir", default="output/fakenews_bert")
-    parser.add_argument("--label_strategy", default="strict", choices=available_label_strategies())
+    parser.add_argument("--fnc_dir", default="data/fnc-1")
+    parser.add_argument("--train_stances", default=None)
+    parser.add_argument("--train_bodies", default=None)
+    parser.add_argument("--val_stances", default=None)
+    parser.add_argument("--val_bodies", default=None)
+    parser.add_argument("--test_stances", default=None)
+    parser.add_argument("--test_bodies", default=None)
+    parser.add_argument("--output_dir", default="output/stance_bert")
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--max_length", type=int, default=128)
+    parser.add_argument("--max_length", type=int, default=512)
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--warmup_ratio", type=float, default=0.1)
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
@@ -63,64 +75,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         choices=("shuffle", "weighted"),
         help="How to sample the training set. 'weighted' oversamples the minority class without discarding data.",
     )
+    parser.add_argument("--no_focal_loss", action="store_true")
     return parser
 
 
-def compute_class_weights(dataset: LIARFakeNewsDataset, device: torch.device) -> torch.Tensor:
-    total = sum(dataset.label_counts.values())
-    num_classes = len(FAKENEWS_LABELS)
-    weights = []
-    for label in range(num_classes):
-        count = max(dataset.label_counts.get(label, 0), 1)
-        weights.append(total / (num_classes * count))
-    return torch.tensor(weights, dtype=torch.float, device=device)
-
-
-def _looks_like_local_path(value: str) -> bool:
-    normalized = value.replace("\\", "/")
-    return (
-        os.path.isabs(value)
-        or value.startswith(".")
-        or "\\" in value
-        or normalized.startswith(("output/", "data/", "app/", "scripts/"))
-        or normalized.count("/") >= 2
-    )
-
-
-def _discover_local_checkpoints(output_root: str = "output") -> list[str]:
-    root = Path(output_root)
-    if not root.exists():
-        return []
-    checkpoints = []
-    for config_path in root.glob("**/best_model/serving_config.json"):
-        checkpoints.append(str(config_path.parent.resolve()))
-    return sorted(checkpoints)
-
-
 def resolve_model_source(model_name_or_path: str) -> str:
-    if model_name_or_path in MODEL_ALIASES:
-        alias = MODEL_ALIASES[model_name_or_path]
-        logger.warning(
-            "Model %s is deprecated or missing weights; using %s instead.",
-            model_name_or_path,
-            alias,
-        )
-        return alias
-
     candidate = Path(model_name_or_path)
     if candidate.exists():
         return str(candidate.resolve())
-
-    if _looks_like_local_path(model_name_or_path):
-        known_checkpoints = _discover_local_checkpoints()
-        suffix = ""
-        if known_checkpoints:
-            suffix = "\nCheckpoints locales disponibles:\n- " + "\n- ".join(known_checkpoints)
+    if os.path.isabs(model_name_or_path) or model_name_or_path.startswith("."):
         raise FileNotFoundError(
-            "No se encontro el checkpoint local indicado en "
-            f"'{model_name_or_path}'.{suffix}"
+            f"No se encontro el checkpoint local indicado en '{model_name_or_path}'."
         )
-
     return model_name_or_path
 
 
@@ -163,8 +129,26 @@ def autocast_context(use_amp: bool):
         return torch.cuda.amp.autocast()
 
 
+def compute_label_counts(dataset: FNCDataset) -> dict[int, int]:
+    counts = {idx: 0 for idx in range(len(STANCE_LABELS))}
+    for sample in dataset.samples:
+        counts[int(sample["label"])] += 1
+    return counts
+
+
+def compute_class_weights(dataset: FNCDataset, device: torch.device) -> torch.Tensor:
+    counts = compute_label_counts(dataset)
+    total = sum(counts.values())
+    num_classes = len(STANCE_LABELS)
+    weights = []
+    for label in range(num_classes):
+        count = max(counts.get(label, 0), 1)
+        weights.append(total / (num_classes * count))
+    return torch.tensor(weights, dtype=torch.float, device=device)
+
+
 def build_train_loader(
-    dataset: LIARFakeNewsDataset,
+    dataset: FNCDataset,
     *,
     batch_size: int,
     sampling: str,
@@ -173,10 +157,11 @@ def build_train_loader(
     if sampling != "weighted":
         return DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
+    counts = compute_label_counts(dataset)
+    total = sum(counts.values())
     sample_weights = []
-    total = sum(dataset.label_counts.values())
-    for example in dataset.examples:
-        count = max(dataset.label_counts.get(example.label, 0), 1)
+    for sample in dataset.samples:
+        count = max(counts.get(sample["label"], 0), 1)
         sample_weights.append(total / count)
 
     generator = torch.Generator()
@@ -190,23 +175,10 @@ def build_train_loader(
     return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
-def find_best_threshold(labels: list[int], probs_true: list[float]) -> tuple[float, float]:
-    candidates = sorted({0.0, 1.0, 0.5, *[float(prob) for prob in probs_true]})
-    best_threshold = 0.5
-    best_score = -1.0
-    for threshold in candidates:
-        predictions = [1 if prob >= threshold else 0 for prob in probs_true]
-        score = f1_score(labels, predictions, average="macro", zero_division=0)
-        if score > best_score or (score == best_score and abs(threshold - 0.5) < abs(best_threshold - 0.5)):
-            best_threshold = float(threshold)
-            best_score = float(score)
-    return best_threshold, best_score
-
-
-def evaluate(model, dataloader, device: torch.device, *, threshold: float | None = None) -> dict:
+def evaluate(model, dataloader, device: torch.device) -> dict:
     model.eval()
     labels: list[int] = []
-    probs_true: list[float] = []
+    predictions: list[int] = []
 
     with torch.no_grad():
         for batch in dataloader:
@@ -217,29 +189,32 @@ def evaluate(model, dataloader, device: torch.device, *, threshold: float | None
                 if key != "labels"
             }
             logits = model(**inputs).logits
-            probabilities = torch.softmax(logits, dim=-1)[:, 1].detach().cpu().tolist()
-            probs_true.extend(float(probability) for probability in probabilities)
+            predictions.extend(logits.argmax(dim=-1).cpu().tolist())
 
-    selected_threshold, macro_f1 = find_best_threshold(labels, probs_true) if threshold is None else (
-        float(threshold),
-        f1_score(labels, [1 if prob >= threshold else 0 for prob in probs_true], average="macro", zero_division=0),
-    )
-    predictions = [1 if prob >= selected_threshold else 0 for prob in probs_true]
     report = classification_report(
         labels,
         predictions,
-        target_names=list(FAKENEWS_LABELS),
+        target_names=STANCE_LABELS,
         output_dict=True,
         zero_division=0,
     )
 
     return {
-        "decision_threshold": float(selected_threshold),
-        "macro_f1": float(macro_f1),
+        "macro_f1": float(f1_score(labels, predictions, average="macro", zero_division=0)),
         "accuracy": float(accuracy_score(labels, predictions)),
         "confusion_matrix": confusion_matrix(labels, predictions).tolist(),
         "classification_report": report,
     }
+
+
+def resolve_fnc_paths(args) -> tuple[str, str, str, str, str | None, str | None]:
+    train_stances = args.train_stances or os.path.join(args.fnc_dir, "train_stances.csv")
+    train_bodies = args.train_bodies or os.path.join(args.fnc_dir, "train_bodies.csv")
+    val_stances = args.val_stances or os.path.join(args.fnc_dir, "competition_test_stances.csv")
+    val_bodies = args.val_bodies or os.path.join(args.fnc_dir, "competition_test_bodies.csv")
+    test_stances = args.test_stances
+    test_bodies = args.test_bodies
+    return train_stances, train_bodies, val_stances, val_bodies, test_stances, test_bodies
 
 
 def save_checkpoint(
@@ -247,7 +222,7 @@ def save_checkpoint(
     model,
     tokenizer,
     output_dir: str,
-    serving_config: FakeNewsServingConfig,
+    serving_config: StanceServingConfig,
     metrics: dict[str, dict],
     history: list[dict],
 ) -> None:
@@ -274,28 +249,25 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     use_amp = torch.cuda.is_available() and device.type == "cuda"
     scaler = create_grad_scaler(use_amp)
+
     model_source = resolve_model_source(args.model_name)
     serving_model_name = resolve_serving_model_name(model_source)
 
     tokenizer = AutoTokenizer.from_pretrained(model_source)
-    train_dataset = LIARFakeNewsDataset(
-        args.train_path,
-        tokenizer,
-        max_length=args.max_length,
-        label_strategy=args.label_strategy,
-    )
-    validation_dataset = LIARFakeNewsDataset(
-        args.validation_path,
-        tokenizer,
-        max_length=args.max_length,
-        label_strategy=args.label_strategy,
-    )
-    test_dataset = LIARFakeNewsDataset(
-        args.test_path,
-        tokenizer,
-        max_length=args.max_length,
-        label_strategy=args.label_strategy,
-    )
+    (
+        train_stances,
+        train_bodies,
+        val_stances,
+        val_bodies,
+        test_stances,
+        test_bodies,
+    ) = resolve_fnc_paths(args)
+
+    train_dataset = FNCDataset(train_stances, train_bodies, tokenizer, max_length=args.max_length)
+    validation_dataset = FNCDataset(val_stances, val_bodies, tokenizer, max_length=args.max_length)
+    test_dataset = None
+    if test_stances and test_bodies:
+        test_dataset = FNCDataset(test_stances, test_bodies, tokenizer, max_length=args.max_length)
 
     train_loader = build_train_loader(
         train_dataset,
@@ -304,32 +276,33 @@ def main() -> None:
         seed=args.seed,
     )
     validation_loader = DataLoader(validation_dataset, batch_size=args.batch_size)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size) if test_dataset else None
 
+    label_counts = compute_label_counts(train_dataset)
     logger.info(
         "Dataset sizes - train=%s validation=%s test=%s",
         len(train_dataset),
         len(validation_dataset),
-        len(test_dataset),
+        len(test_dataset) if test_dataset else 0,
     )
-    logger.info(
-        "Training label counts - False=%s True=%s skipped=%s",
-        train_dataset.label_counts.get(0, 0),
-        train_dataset.label_counts.get(1, 0),
-        dict(train_dataset.skipped_labels),
-    )
+    logger.info("Training label counts: %s", label_counts)
     logger.info("Training sampling strategy: %s", args.train_sampling)
 
     model = AutoModelForSequenceClassification.from_pretrained(
         model_source,
-        num_labels=len(FAKENEWS_LABELS),
+        num_labels=len(STANCE_LABELS),
     ).to(device)
+
     if args.train_sampling == "weighted":
-        criterion = nn.CrossEntropyLoss()
+        class_weights = None
         logger.info("Class-weighted loss disabled because weighted sampling is active.")
     else:
         class_weights = compute_class_weights(train_dataset, device=device)
+
+    if args.no_focal_loss:
         criterion = nn.CrossEntropyLoss(weight=class_weights)
+    else:
+        criterion = FocalLoss(gamma=2.0, weight=class_weights)
 
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     total_steps = len(train_loader) * args.epochs
@@ -341,7 +314,6 @@ def main() -> None:
 
     best_state = None
     best_metrics = None
-    best_threshold = 0.5
     best_score = -1.0
     best_epoch = 0
     epochs_without_improvement = 0
@@ -351,7 +323,7 @@ def main() -> None:
         model.train()
         running_loss = 0.0
 
-        for step, batch in enumerate(train_loader, start=1):
+        for batch in train_loader:
             optimizer.zero_grad()
             labels = batch["labels"].to(device)
             inputs = {
@@ -385,14 +357,12 @@ def main() -> None:
             "train_loss": round(running_loss / max(len(train_loader), 1), 6),
             "validation_macro_f1": round(validation_metrics["macro_f1"], 6),
             "validation_accuracy": round(validation_metrics["accuracy"], 6),
-            "decision_threshold": round(validation_metrics["decision_threshold"], 6),
         }
         history.append(epoch_summary)
         logger.info("Epoch %s summary: %s", epoch, epoch_summary)
 
         if validation_metrics["macro_f1"] > best_score:
             best_score = validation_metrics["macro_f1"]
-            best_threshold = validation_metrics["decision_threshold"]
             best_state = copy.deepcopy(model.state_dict())
             best_metrics = {"validation": validation_metrics}
             best_epoch = epoch
@@ -407,21 +377,25 @@ def main() -> None:
         raise RuntimeError("Training finished without producing a valid checkpoint.")
 
     model.load_state_dict(best_state)
-    test_metrics = evaluate(model, test_loader, device, threshold=best_threshold)
-    best_metrics["test"] = test_metrics
+    test_metrics = evaluate(model, test_loader, device) if test_loader else None
+    if best_metrics is None:
+        best_metrics = {"validation": validation_metrics}
+    if test_metrics:
+        best_metrics["test"] = test_metrics
 
     logger.info("Best validation macro F1: %.4f at epoch %s", best_score, best_epoch)
     logger.info("Validation report:\n%s", json.dumps(best_metrics["validation"]["classification_report"], indent=2))
-    logger.info("Test report:\n%s", json.dumps(best_metrics["test"]["classification_report"], indent=2))
+    if test_metrics:
+        logger.info("Test report:\n%s", json.dumps(best_metrics["test"]["classification_report"], indent=2))
 
-    serving_config = FakeNewsServingConfig(
-        label_names=FAKENEWS_LABELS,
-        label_strategy=args.label_strategy,
-        decision_threshold=best_threshold,
+    serving_config = StanceServingConfig(
+        label_names=tuple(STANCE_LABELS),
+        label_strategy="strict",
+        decision_threshold=0.5,
         max_length=args.max_length,
         model_name=serving_model_name,
-        validation_metrics=best_metrics["validation"],
-        test_metrics=best_metrics["test"],
+        validation_metrics=best_metrics.get("validation"),
+        test_metrics=best_metrics.get("test"),
     )
     save_checkpoint(
         model=model,

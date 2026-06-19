@@ -3,10 +3,12 @@ message: "If you use this repository or dataset, please cite the archived Zenodo
 title: "Spanish-Peruvian Fake News Pipeline and Dataset"
 version: "1.0.0"
 date-released: "2026-06-05"
+doi: "10.5281/zenodo.20563608"
 authors:
   - family-names: "Diaz"
     given-names: "Salvador"
 repository-code: "https://github.com/Kenta-app/backend"
+url: "https://doi.org/10.5281/zenodo.20563608"
 license: "MIT"
 preferred-citation:
   type: dataset
@@ -15,4 +17,5 @@ preferred-citation:
     - family-names: "Diaz"
       given-names: "Salvador"
   year: 2026
-  notes: "Replace this entry with the Zenodo DOI after creating the GitHub release and archiving it in Zenodo."
+  doi: "10.5281/zenodo.20563608"
+  url: "https://doi.org/10.5281/zenodo.20563608"

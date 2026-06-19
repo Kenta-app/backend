@@ -12,6 +12,7 @@ import csv
 import json
 import os
 import random
+from collections import Counter
 from typing import Iterable
 
 
@@ -42,6 +43,13 @@ def load_items(paths: Iterable[str]) -> list[dict]:
                 if item.get("label") in ("true", "false"):
                     items.append(item)
     return items
+
+
+def label_counts(items: Iterable[dict]) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for item in items:
+        counts[str(item.get("label", ""))] += 1
+    return counts
 
 
 def split_items(
@@ -109,6 +117,8 @@ def main() -> None:
     if not items:
         raise SystemExit("No usable items found in inputs.")
 
+    original_counts = label_counts(items)
+
     train, val, test = split_items(
         items,
         args.train_ratio,
@@ -122,8 +132,25 @@ def main() -> None:
     write_tsv(os.path.join(args.output_dir, "validation.tsv"), val)
     write_tsv(os.path.join(args.output_dir, "test.tsv"), test)
 
+    effective_counts = label_counts([*train, *val, *test])
+    train_counts = label_counts(train)
+    val_counts = label_counts(val)
+    test_counts = label_counts(test)
+
     print(
-        f"train={len(train)} val={len(val)} test={len(test)} total={len(items)}"
+        f"train={len(train)} val={len(val)} test={len(test)} "
+        f"effective_total={len(train) + len(val) + len(test)} original_total={len(items)}"
+    )
+    print(
+        "labels "
+        f"original(true={original_counts.get('true', 0)} false={original_counts.get('false', 0)}) "
+        f"effective(true={effective_counts.get('true', 0)} false={effective_counts.get('false', 0)})"
+    )
+    print(
+        "splits "
+        f"train(true={train_counts.get('true', 0)} false={train_counts.get('false', 0)}) "
+        f"val(true={val_counts.get('true', 0)} false={val_counts.get('false', 0)}) "
+        f"test(true={test_counts.get('true', 0)} false={test_counts.get('false', 0)})"
     )
 
 

@@ -16,6 +16,9 @@ cur.execute("ALTER TABLE processed.summaries ALTER COLUMN model_version SET NOT 
 
 # Align ml_predictions table with ORM expectations
 cur.execute("ALTER TABLE processed.ml_predictions ADD COLUMN IF NOT EXISTS fake_score NUMERIC(5,4) NOT NULL DEFAULT 0")
+cur.execute("ALTER TABLE processed.ml_predictions ADD COLUMN IF NOT EXISTS fake_label VARCHAR(50)")
+cur.execute("ALTER TABLE processed.ml_predictions ADD COLUMN IF NOT EXISTS fake_bucket VARCHAR(20)")
+cur.execute("ALTER TABLE processed.ml_predictions ADD COLUMN IF NOT EXISTS raw_probabilities JSONB")
 cur.execute("ALTER TABLE processed.ml_predictions ALTER COLUMN model_version TYPE TEXT")
 cur.execute("ALTER TABLE processed.ml_predictions ALTER COLUMN model_version SET NOT NULL")
 

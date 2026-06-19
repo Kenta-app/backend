@@ -16,5 +16,10 @@ ALTER TABLE processed.ml_predictions
 	ADD COLUMN IF NOT EXISTS fake_score NUMERIC(5,4) NOT NULL DEFAULT 0;
 
 ALTER TABLE processed.ml_predictions
+	ADD COLUMN IF NOT EXISTS fake_label VARCHAR(50),
+	ADD COLUMN IF NOT EXISTS fake_bucket VARCHAR(20),
+	ADD COLUMN IF NOT EXISTS raw_probabilities JSONB;
+
+ALTER TABLE processed.ml_predictions
 	ALTER COLUMN model_version TYPE TEXT,
 	ALTER COLUMN model_version SET NOT NULL;

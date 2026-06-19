@@ -4,8 +4,10 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy.orm import relationship
 
 from app.db.database import Base
+from app.raw.models import Source
 
 
 class User(Base):
@@ -47,6 +49,7 @@ class PublishedNews(Base):
         index=True,
     )
     source_id = Column(Integer, ForeignKey("raw.source.source_id"), nullable=False, index=True)
+    source = relationship(Source)
     title = Column(Text, nullable=False)
     summary = Column(Text, nullable=True)
     original_url = Column(Text, nullable=False)

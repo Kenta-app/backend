@@ -40,6 +40,7 @@ def analyze_news(request: NewsAnalysisRequest):
             text=request.text,
             include_summary=request.include_summary,
             force_summary=request.force_summary,
+            allow_partial=True,
         )
     except ModelNotReadyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -53,6 +54,7 @@ def classify_text(request: TextRequest):
         return news_analysis_pipeline.analyze_news(
             text=request.text,
             include_summary=False,
+            allow_partial=True,
         )
     except ModelNotReadyError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc

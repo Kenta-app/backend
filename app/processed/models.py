@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
 
 from app.db.database import Base
 
@@ -173,6 +173,9 @@ class MlPrediction(Base):
     model_version = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     fake_score = Column(Numeric(5, 4), nullable=False, default=Decimal("0.0000"))
+    fake_label = Column(String(50), nullable=True, index=True)
+    fake_bucket = Column(String(20), nullable=True, index=True)
+    raw_probabilities = Column(JSON, nullable=True)
 
     def updateSentiment(self, label: str, score: float) -> None:
         self.sentiment_label = label

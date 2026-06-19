@@ -1,5 +1,7 @@
 # Spanish-Peruvian Fake News Pipeline
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20563608.svg)](https://doi.org/10.5281/zenodo.20563608)
+
 This repository contains the code, preprocessing scripts, evaluation notes, and public release dataset used for a short-paper fake-news, stance, and summarization pipeline.
 
 ## Public Dataset
@@ -38,11 +40,9 @@ Benchmark results are summarized in `docs/benchmark_results.md`.
 
 ## Release And Citation
 
-Recommended release flow:
+Archived release:
 
-1. Create a GitHub release, for example `v1.0-short-paper`.
-2. Connect the repository to Zenodo and archive that release.
-3. Cite the Zenodo DOI in the paper instead of citing only the GitHub URL.
+Diaz, S. (2026). Spanish-Peruvian Fake News Pipeline and Dataset (Version 1.0.0) [Data set and software]. Zenodo. https://doi.org/10.5281/zenodo.20563608
 
 ## License
 
