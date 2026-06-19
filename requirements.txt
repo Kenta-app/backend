@@ -5,13 +5,15 @@ certifi==2026.1.4
 charset-normalizer==3.4.4
 click==8.3.1
 cloudscraper==1.2.71
+cachetools==5.3.2
 datasets
 fastapi==0.104.1
+google-genai>=1.0.0
 lxml==4.9.3
 playwright
 protobuf
 psycopg2-binary==2.9.9
-pydantic==2.7.0
+pydantic>=2.12.5,<3.0.0
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
 python-multipart==0.0.6

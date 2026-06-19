@@ -17,6 +17,7 @@ from app.ml.pipeline import news_analysis_pipeline
 from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
 from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
+from app.routers.justification_router import router as justification_router
 from app.routers.ml_router import router as ml_router
 from app.serving.models import NewsClick, NewsReaction, NewsView, PublishedNews, User
 from app.tasks.scheduler import ScrapingScheduler
@@ -50,6 +51,7 @@ app.include_router(interaction_router)
 app.include_router(admin_router)
 app.include_router(pipeline_router)
 app.include_router(ml_router, prefix="/ml", tags=["ML"])
+app.include_router(justification_router)
 
 ENABLE_SCHEDULER = os.getenv("ENABLE_SCHEDULER", "true").lower() in {"1", "true", "yes"}
 WARM_UP_CLASSIFIER = os.getenv("ML_WARMUP_ON_STARTUP", "false").lower() in {"1", "true", "yes"}
