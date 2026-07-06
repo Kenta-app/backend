@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from app.processed.models import MlPrediction, Summary
 from app.raw.models import RawNews, Source
-from app.serving.models import NewsClick, NewsReaction, NewsView, PublishedNews, User
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
+    NewsReaction,
+    NewsView,
+    PublishedNews,
+    User,
+    UserAppSession,
+)
 
 
 def serialize_source(source: Source) -> dict:
@@ -26,11 +35,16 @@ def serialize_user(user: User) -> dict:
     }
 
 
-def serialize_published_news(news: PublishedNews) -> dict:
-    return {
+def serialize_published_news(
+    news: PublishedNews,
+    sources: list[dict] | None = None,
+    source_name: str | None = None,
+) -> dict:
+    payload = {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
         "sourceId": news.source_id,
+        "sourceName": source_name,
         "title": news.title,
         "summary": news.summary,
         "originalUrl": news.original_url,
@@ -40,6 +54,9 @@ def serialize_published_news(news: PublishedNews) -> dict:
         "highRisk": float(news.fake_score) >= 0.80,
         "publishedAt": news.published_at.isoformat() if news.published_at else None,
     }
+    if sources is not None:
+        payload["sources"] = sources
+    return payload
 
 
 def serialize_raw_news(raw_news: RawNews) -> dict:
@@ -108,3 +125,38 @@ def serialize_click(item: NewsClick) -> dict:
         "newsId": item.news_id,
         "clickedAt": item.clicked_at.isoformat() if item.clicked_at else None,
     }
+
+
+def serialize_detail_click(item: NewsDetailClick) -> dict:
+    return {
+        "detailClickId": item.detail_click_id,
+        "userId": item.user_id,
+        "newsId": item.news_id,
+        "clickedAt": item.clicked_at.isoformat() if item.clicked_at else None,
+    }
+
+
+def serialize_session(item: UserAppSession) -> dict:
+    return {
+        "sessionId": item.session_id,
+        "userId": item.user_id,
+        "timeSpentSec": item.time_spent_sec,
+        "startedAt": item.started_at.isoformat() if item.started_at else None,
+        "endedAt": item.ended_at.isoformat() if item.ended_at else None,
+    }
+
+
+def serialize_favorite(
+    favorite: NewsFavorite,
+    news: PublishedNews | None,
+    source_name: str | None = None,
+) -> dict:
+    payload = {
+        "favoriteId": favorite.favorite_id,
+        "userId": favorite.user_id,
+        "newsId": favorite.news_id,
+        "savedAt": favorite.saved_at.isoformat() if favorite.saved_at else None,
+    }
+    if news is not None:
+        payload["news"] = serialize_published_news(news, source_name=source_name)
+    return payload

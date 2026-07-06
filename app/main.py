@@ -4,30 +4,34 @@ import logging
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api_controllers import (
     admin_router,
     auth_router,
+    favorites_router,
     interaction_router,
     news_router,
     pipeline_router,
 )
 from app.db.database import Base, SessionLocal, engine
 from app.ml.pipeline import news_analysis_pipeline
-from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
+from app.processed.models import ClusterMember, JustificationSource, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
 from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
 from app.routers.justification_router import router as justification_router
 from app.routers.ml_router import router as ml_router
-from app.serving.models import NewsClick, NewsReaction, NewsView, PublishedNews, User
+from app.serving.models import NewsClick, NewsDetailClick, NewsFavorite, NewsReaction, NewsView, PublishedNews, User, UserAppSession
 from app.tasks.scheduler import ScrapingScheduler
 
 # Register SQLAlchemy models before create_all.
 _ = (
     ClusterMember,
     IngestionLog,
+    JustificationSource,
     MlPrediction,
     NewsClick,
+    NewsDetailClick,
     NewsCluster,
     NewsReaction,
     NewsView,
@@ -38,6 +42,8 @@ _ = (
     Source,
     Summary,
     User,
+    NewsFavorite,
+    UserAppSession,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -52,9 +58,23 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Kenta Backend", version="2.0.0")
 
+_cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 app.include_router(news_router)
 app.include_router(interaction_router)
+app.include_router(favorites_router)
 app.include_router(admin_router)
 app.include_router(pipeline_router)
 app.include_router(ml_router, prefix="/ml", tags=["ML"])

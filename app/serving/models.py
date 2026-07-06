@@ -89,6 +89,8 @@ class NewsReaction(Base):
     reaction_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    reaction = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def setReaction(self, value: int) -> None:
         self.reaction = value
@@ -134,3 +136,45 @@ class NewsClick(Base):
 
     def registerClick(self) -> None:
         self.clicked_at = datetime.utcnow()
+
+
+class NewsDetailClick(Base):
+    __tablename__ = "news_detail_clicks"
+    __table_args__ = {"schema": "serving"}
+
+    detail_click_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def registerClick(self) -> None:
+        self.clicked_at = datetime.utcnow()
+
+
+class UserAppSession(Base):
+    __tablename__ = "user_app_sessions"
+    __table_args__ = {"schema": "serving"}
+
+    session_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    time_spent_sec = Column(Integer, nullable=False, default=0)
+    started_at = Column(DateTime, nullable=False, index=True)
+    ended_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def registerSession(self, timeSpentSec: int, startedAt: datetime) -> None:
+        self.time_spent_sec = int(timeSpentSec)
+        self.started_at = startedAt
+        self.ended_at = datetime.utcnow()
+
+
+class NewsFavorite(Base):
+    __tablename__ = "news_favorites"
+    __table_args__ = (
+        Index("idx_user_news_favorite", "user_id", "news_id", unique=True),
+        {"schema": "serving"},
+    )
+
+    favorite_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    saved_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

@@ -80,7 +80,7 @@ class JustificationController(BaseController):
             logger.error(f"Error al conectar con Gemini: {str(exc)}")
             raise HTTPException(
                 status_code=503,
-                detail="Servicio de justificación no disponible. Intenta nuevamente más tarde.",
+                detail=str(exc),
             ) from exc
 
         except Exception as exc:

@@ -1,5 +1,6 @@
 from app.processed.models import (
     ClusterMember,
+    JustificationSource,
     MlPrediction,
     NewsCluster,
     ProcessedNews,
@@ -9,6 +10,7 @@ from app.processed.models import (
 
 __all__ = [
     "ClusterMember",
+    "JustificationSource",
     "MlPrediction",
     "NewsCluster",
     "ProcessedNews",

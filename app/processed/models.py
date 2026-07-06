@@ -183,3 +183,22 @@ class MlPrediction(Base):
 
     def isHighRisk(self, threshold: float) -> bool:
         return float(self.fake_score) >= float(threshold)
+
+
+class JustificationSource(Base):
+    __tablename__ = "justification_sources"
+    __table_args__ = {"schema": "processed"}
+
+    justification_source_id = Column(Integer, primary_key=True, index=True)
+    prediction_id = Column(
+        Integer,
+        ForeignKey("processed.ml_predictions.prediction_id"),
+        nullable=False,
+        index=True,
+    )
+    url = Column(Text, nullable=False)
+    source = Column(String(255), nullable=False)
+    title = Column(Text, nullable=False)
+    excerpt = Column(Text, nullable=False)
+    model_used = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

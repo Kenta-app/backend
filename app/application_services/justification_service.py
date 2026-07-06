@@ -4,7 +4,6 @@ Fuerza al modelo a generar una respuesta JSON estructurada con fuentes reales de
 """
 
 from __future__ import annotations
-
 import logging
 import os
 import time
@@ -19,8 +18,9 @@ from cachetools import TTLCache
 from sqlalchemy.orm import Session
 
 from app.interfaces.justification_service import IJustificationService
-from app.processed.models import MlPrediction, ProcessedNews
+from app.processed.models import JustificationSource, MlPrediction, ProcessedNews
 from app.raw.models import RawNews
+from app.serving.models import PublishedNews
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +85,137 @@ class GeminiJustificationService(IJustificationService):
         self._cache_stats = {"hits": 0, "misses": 0}
 
         api_key = api_key or os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY no configurada en variables de entorno")
+        self.client = genai.Client(api_key=api_key) if api_key else None
+        if self.client:
+            logger.info("GeminiJustificationService inicializado como generador de evidencia periodística.")
+        else:
+            logger.info("GeminiJustificationService inicializado en modo solo lectura (sin GEMINI_API_KEY).")
 
-        self.client = genai.Client(api_key=api_key)
-        logger.info("GeminiJustificationService inicializado como generador de evidencia periodística.")
+    @staticmethod
+    def _serialize_source_row(row: JustificationSource) -> dict:
+        return {
+            "url": row.url,
+            "source": row.source,
+            "title": row.title,
+            "excerpt": row.excerpt,
+        }
+
+    def persist_sources(
+        self,
+        prediction_id: int,
+        sources: list[dict],
+        model_used: str,
+    ) -> list[dict]:
+        self.db.query(JustificationSource).filter(
+            JustificationSource.prediction_id == prediction_id
+        ).delete(synchronize_session=False)
+
+        created_at = datetime.utcnow()
+        persisted: list[dict] = []
+        for source in sources:
+            row = JustificationSource(
+                prediction_id=prediction_id,
+                url=source["url"],
+                source=source["source"],
+                title=source["title"],
+                excerpt=source["excerpt"],
+                model_used=model_used,
+                created_at=created_at,
+            )
+            self.db.add(row)
+            persisted.append(source)
+
+        self.db.commit()
+        return persisted
+
+    def get_sources_by_prediction_id(self, prediction_id: int) -> list[dict]:
+        rows = (
+            self.db.query(JustificationSource)
+            .filter(JustificationSource.prediction_id == prediction_id)
+            .order_by(JustificationSource.justification_source_id)
+            .all()
+        )
+        return [self._serialize_source_row(row) for row in rows]
+
+    def get_sources_by_news_id(self, news_id: int) -> list[dict]:
+        news = self.db.query(PublishedNews).filter(PublishedNews.news_id == news_id).first()
+        if not news:
+            return []
+
+        prediction = (
+            self.db.query(MlPrediction)
+            .filter(
+                MlPrediction.representative_news_processed_id == news.representative_news_processed_id
+            )
+            .first()
+        )
+        if not prediction:
+            return []
+
+        return self.get_sources_by_prediction_id(prediction.prediction_id)
+
+    def _build_response_from_prediction(
+        self,
+        prediction: MlPrediction,
+        sources: list[dict],
+        *,
+        from_cache: bool = False,
+        generated_at: Optional[datetime] = None,
+    ) -> dict:
+        return {
+            "prediction_id": prediction.prediction_id,
+            "sources": sources,
+            "ml_prediction": {
+                "fake_score": float(prediction.fake_score),
+                "sentiment_label": prediction.sentiment_label,
+            },
+            "from_cache": from_cache,
+            "generated_at": (generated_at or datetime.utcnow()).isoformat(),
+            "model_used": self.GEMINI_MODEL,
+        }
+
+    def _load_persisted_response(self, prediction_id: int) -> Optional[dict]:
+        prediction = self.db.query(MlPrediction).filter(
+            MlPrediction.prediction_id == prediction_id
+        ).first()
+        if not prediction:
+            return None
+
+        rows = (
+            self.db.query(JustificationSource)
+            .filter(JustificationSource.prediction_id == prediction_id)
+            .order_by(JustificationSource.justification_source_id)
+            .all()
+        )
+        if not rows:
+            return None
+
+        return self._build_response_from_prediction(
+            prediction,
+            [self._serialize_source_row(row) for row in rows],
+            from_cache=True,
+            generated_at=rows[0].created_at,
+        )
+
+    def generate_justification_safe(
+        self,
+        prediction_id: int,
+        include_context: bool = True,
+        regenerate: bool = False,
+    ) -> Optional[dict]:
+        try:
+            return self.generate_justification(
+                prediction_id=prediction_id,
+                include_context=include_context,
+                regenerate=regenerate,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Justificación omitida para predicción %s: %s",
+                prediction_id,
+                exc,
+            )
+            return None
 
     def generate_justification(
         self,
@@ -100,11 +226,18 @@ class GeminiJustificationService(IJustificationService):
         """
         Busca evidencias web que respalden o desmientan la noticia y devuelve fuentes estructuradas en JSON.
         """
-        if not regenerate and prediction_id in self._cache:
-            self._cache_stats["hits"] += 1
-            cached = self._cache[prediction_id].copy()
-            cached["from_cache"] = True
-            return cached
+        if not regenerate:
+            if prediction_id in self._cache:
+                self._cache_stats["hits"] += 1
+                cached = self._cache[prediction_id].copy()
+                cached["from_cache"] = True
+                return cached
+
+            persisted = self._load_persisted_response(prediction_id)
+            if persisted:
+                self._cache[prediction_id] = persisted.copy()
+                self._cache_stats["hits"] += 1
+                return persisted
 
         self._cache_stats["misses"] += 1
 
@@ -126,26 +259,16 @@ class GeminiJustificationService(IJustificationService):
                     RawNews.news_raw_id == processed.news_raw_id
                 ).first()
 
-        # Obtenemos el JSON estructurado desde Gemini
         evidence_report = self._generate_with_retries(
             prediction=prediction,
             processed_news=processed if include_context else None,
             raw_news=raw_news if include_context else None,
         )
 
-        response = {
-            "prediction_id": prediction_id,
-            "sources": evidence_report["sources"],
-            "verification_summary": evidence_report["verification_summary"],
-            "ml_prediction": {
-                "fake_score": float(prediction.fake_score),
-                "sentiment_label": prediction.sentiment_label,
-            },
-            "from_cache": False,
-            "generated_at": datetime.utcnow().isoformat(),
-            "model_used": self.GEMINI_MODEL,
-        }
+        sources = evidence_report["sources"]
+        self.persist_sources(prediction_id, sources, self.GEMINI_MODEL)
 
+        response = self._build_response_from_prediction(prediction, sources, from_cache=False)
         self._cache[prediction_id] = response.copy()
         response["from_cache"] = False
 
@@ -196,36 +319,35 @@ class GeminiJustificationService(IJustificationService):
                 return self._generate_with_retries(prediction, processed_news, raw_news, attempt + 1)
             else:
                 raise RuntimeError(f"Error de red tras reintentos: {str(e)}") from e
+        except RuntimeError:
+            raise
         except Exception as e:
             logger.exception("Error generando evidencia periodística")
-            return self._empty_report(
-                f"No se pudo generar evidencia periodística verificable con Gemini y Google Search Grounding: {type(e).__name__}."
-            )
+            raise RuntimeError(
+                f"No se pudo generar evidencia periodística con Gemini: {type(e).__name__}."
+            ) from e
 
     def _generate_gemini_response(self, prompt: str) -> object:
-        configs = [
-            {
-                "tools": [{"google_search": {}}],
-                "response_mime_type": "application/json",
-            },
-            {
-                "tools": [{"google_search": {}}],
-            },
-        ]
+        if self.client is None:
+            raise RuntimeError("GEMINI_API_KEY no configurada para generar justificaciones.")
 
-        last_error: Optional[Exception] = None
-        for config in configs:
-            try:
-                return self.client.models.generate_content(
-                    model=self.GEMINI_MODEL,
-                    contents=prompt,
-                    config=config,
-                )
-            except Exception as exc:
-                last_error = exc
-                logger.warning("Intento de Gemini falló con config %s: %s", config, exc)
+        config = {"tools": [{"google_search": {}}]}
 
-        raise RuntimeError(f"No se pudo invocar Gemini con Google Search Grounding: {last_error}")
+        try:
+            return self.client.models.generate_content(
+                model=self.GEMINI_MODEL,
+                contents=prompt,
+                config=config,
+            )
+        except Exception as exc:
+            message = str(exc)
+            if "429" in message or "RESOURCE_EXHAUSTED" in message:
+                raise RuntimeError(
+                    "Cuota de Gemini agotada. Espera unos minutos o revisa tu plan en Google AI Studio."
+                ) from exc
+            raise RuntimeError(
+                f"No se pudo invocar Gemini con Google Search Grounding: {exc}"
+            ) from exc
 
     def _response_text(self, response: object) -> str:
         text = self._read_attr(response, "text")
@@ -295,16 +417,9 @@ REGLAS DE BÚSQUEDA Y SELECCIÓN:
 12. No traduzcas títulos periodísticos. El campo title debe copiar el título original en español tal como aparece en el medio o resultado de búsqueda.
 13. No inventes ni reformules títulos. Si no puedes confirmar el título exacto, usa el encabezado más cercano devuelto por Google Search Grounding en español.
 
-REGLAS DE REDACCIÓN DE LA CONCLUSIÓN:
-- Debe ser dinámica y basada únicamente en las fuentes periodísticas encontradas.
-- Debe redactarse de forma impersonal.
-- No uses primera persona.
-- No menciones al usuario.
-- No uses estas expresiones: "encontré", "busqué", "verifiqué", "mi análisis", "tu noticia", "tu publicación".
-- No generes una conclusión genérica fija.
-
 FORMATO DE SALIDA:
 Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No incluyas texto fuera del JSON.
+No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las fuentes.
 
 {{
   "sources": [
@@ -314,16 +429,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No i
       "title": "TÍTULO_REAL_DEL_ARTÍCULO",
       "excerpt": "FRASE_CORTA QUE RESUMA LA EVIDENCIA RELEVANTE DEL ARTÍCULO"
     }}
-  ],
-  "verification_summary": {{
-    "supporting_sources": [
-      {{
-        "source": "NOMBRE_DEL_MEDIO",
-        "title": "TÍTULO_REAL_DEL_ARTÍCULO"
-      }}
-    ],
-    "conclusion": "Texto impersonal basado en la evidencia encontrada."
-  }}
+  ]
 }}
 """
         return prompt
@@ -337,9 +443,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No i
         if isinstance(data, list):
             data = {"sources": data}
         if not isinstance(data, dict):
-            return self._empty_report(
-                "No se encontró evidencia periodística verificable suficiente en fuentes confiables mediante Google Search Grounding."
-            )
+            return self._empty_report()
 
         raw_sources = data.get("sources") or []
         sources = [
@@ -372,30 +476,10 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No i
                 if self._is_allowed_source(source)
             ]
 
-        summary = data.get("verification_summary") or {}
-        conclusion = summary.get("conclusion") if isinstance(summary, dict) else None
         if not sources:
-            return self._empty_report(
-                "No se encontró evidencia periodística verificable suficiente en fuentes confiables mediante Google Search Grounding."
-            )
+            return self._empty_report()
 
-        if (
-            not conclusion
-            or self._has_forbidden_conclusion_terms(conclusion)
-            or self._is_insufficient_conclusion(conclusion)
-        ):
-            conclusion = self._build_default_conclusion(sources)
-
-        return {
-            "sources": sources,
-            "verification_summary": {
-                "supporting_sources": [
-                    {"source": source["source"], "title": source["title"]}
-                    for source in sources
-                ],
-                "conclusion": conclusion.strip(),
-            },
-        }
+        return {"sources": sources}
 
     def _sanitize_source(
         self,
@@ -596,19 +680,6 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No i
         return os.getenv("JUSTIFICATION_DEBUG", "").lower() in {"1", "true", "yes", "on"}
 
     @staticmethod
-    def _has_forbidden_conclusion_terms(conclusion: str) -> bool:
-        forbidden_terms = (
-            "encontré",
-            "busqué",
-            "verifiqué",
-            "mi análisis",
-            "tu noticia",
-            "tu publicación",
-        )
-        conclusion_lower = conclusion.lower()
-        return any(term in conclusion_lower for term in forbidden_terms)
-
-    @staticmethod
     def _looks_english(text: str) -> bool:
         english_markers = {
             " will ",
@@ -624,50 +695,35 @@ Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No i
         return any(marker in normalized for marker in english_markers)
 
     @staticmethod
-    def _is_insufficient_conclusion(conclusion: str) -> bool:
-        conclusion_lower = conclusion.lower()
-        insufficient_markers = (
-            "no se encontró evidencia",
-            "no se encontro evidencia",
-            "no existe evidencia",
-            "evidencia insuficiente",
-            "no hay evidencia",
-        )
-        return any(marker in conclusion_lower for marker in insufficient_markers)
-
-    @staticmethod
-    def _build_default_conclusion(sources: list[dict]) -> str:
-        if len(sources) == 1:
-            return (
-                "La evidencia periodística disponible se sustenta en un reporte de "
-                f"{sources[0]['source']} relacionado con la afirmación analizada."
-            )
-        source_names = ", ".join(source["source"] for source in sources[:3])
-        return (
-            "La información difundida coincide con reportes publicados por varias "
-            f"fuentes periodísticas confiables, entre ellas {source_names}, que documentan "
-            "elementos relacionados con la afirmación analizada."
-        )
-
-    @staticmethod
-    def _empty_report(conclusion: str) -> dict:
-        return {
-            "sources": [],
-            "verification_summary": {
-                "supporting_sources": [],
-                "conclusion": conclusion,
-            },
-        }
+    def _empty_report() -> dict:
+        return {"sources": []}
 
     def clear_cache(self, prediction_id: Optional[int] = None) -> dict:
+        db_cleared = 0
         if prediction_id is not None:
             existed = prediction_id in self._cache
             self._cache.pop(prediction_id, None)
-            return {"cleared": 1 if existed else 0, "cache_size": len(self._cache)}
+            db_cleared = (
+                self.db.query(JustificationSource)
+                .filter(JustificationSource.prediction_id == prediction_id)
+                .delete(synchronize_session=False)
+            )
+            self.db.commit()
+            return {
+                "cleared": 1 if existed else 0,
+                "db_cleared": db_cleared,
+                "cache_size": len(self._cache),
+            }
 
         cleared = len(self._cache)
         self._cache.clear()
-        return {"cleared": cleared, "cache_size": len(self._cache)}
+        db_cleared = self.db.query(JustificationSource).delete(synchronize_session=False)
+        self.db.commit()
+        return {
+            "cleared": cleared,
+            "db_cleared": db_cleared,
+            "cache_size": len(self._cache),
+        }
 
     def get_cache_stats(self) -> dict:
         total_requests = self._cache_stats["hits"] + self._cache_stats["misses"]

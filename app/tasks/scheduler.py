@@ -14,6 +14,7 @@ from app.application_services.prediction_service import PredictionService
 from app.application_services.preprocessing_service import PreprocessingService
 from app.application_services.publishing_service import PublishingService
 from app.application_services.summarization_service import SummarizationService
+from app.dependencies import build_justification_service_optional
 from app.db.database import SessionLocal
 from app.processed.predictors import SentimentPrediction
 from app.processed.summarizers import LocalModelSummarizer
@@ -80,6 +81,7 @@ class ScrapingScheduler:
         summarization_service = SummarizationService(LocalModelSummarizer(db))
         prediction_service = PredictionService(SentimentPrediction(db))
         publishing_service = PublishingService(db, NewsRepository(db))
+        justification_service = build_justification_service_optional(db)
         return PipelineOrchestrator(
             ingestion_service,
             preprocessing_service,
@@ -87,4 +89,5 @@ class ScrapingScheduler:
             summarization_service,
             prediction_service,
             publishing_service,
+            justification_service,
         )
