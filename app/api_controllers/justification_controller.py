@@ -1,4 +1,4 @@
-﻿"""
+"""
 Controlador API para justificaciones de predicciones.
 """
 
@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 class JustificationController(BaseController):
     """
-    Controlador para operaciones de justificaci?n de predicciones.
-    Maneja requests de generaci?n, recuperaci?n de cach? y limpieza.
+    Controlador para operaciones de justificación de predicciones.
+    Maneja requests de generación, recuperación de caché y limpieza.
     """
 
     def __init__(
@@ -36,7 +36,7 @@ class JustificationController(BaseController):
         Inicializa el controlador.
 
         Args:
-            justification_service: Servicio de justificaci?n inyectado
+            justification_service: Servicio de justificación inyectado
             current_user: Usuario actual del contexto de request
         """
         super().__init__(current_user)
@@ -44,7 +44,7 @@ class JustificationController(BaseController):
 
     def generate_justification(self, request: JustificationRequest) -> dict:
         """
-        Genera una justificaci?n para una predicci?n espec?fica.
+        Genera una justificación para una predicción específica.
 
         Args:
             request: JustificationRequest con prediction_id y opciones
@@ -53,11 +53,11 @@ class JustificationController(BaseController):
             Respuesta exitosa con JustificationResponse
 
         Raises:
-            HTTPException: En caso de errores de validaci?n o procesamiento
+            HTTPException: En caso de errores de validación o procesamiento
         """
         try:
             logger.info(
-                f"Generando justificaci?n para predicci?n {request.prediction_id} "
+                f"Generando justificación para predicción {request.prediction_id} "
                 f"(regenerate={request.regenerate}, include_context={request.include_context})"
             )
 
@@ -70,21 +70,21 @@ class JustificationController(BaseController):
             return self.successResponse(result)
 
         except ValueError as exc:
-            logger.warning(f"Predicci?n no encontrada: {str(exc)}")
+            logger.warning(f"Predicción no encontrada: {str(exc)}")
             raise HTTPException(
                 status_code=404,
-                detail=f"Predicci?n no encontrada: {str(exc)}",
+                detail=f"Predicción no encontrada: {str(exc)}",
             ) from exc
 
         except RuntimeError as exc:
             logger.error(f"Error al conectar con Gemini: {str(exc)}")
             raise HTTPException(
                 status_code=503,
-                detail="Servicio de justificaci?n no disponible. Intenta nuevamente m?s tarde.",
+                detail=str(exc),
             ) from exc
 
         except Exception as exc:
-            logger.error(f"Error inesperado en justificaci?n: {str(exc)}")
+            logger.error(f"Error inesperado en justificación: {str(exc)}")
             raise HTTPException(
                 status_code=500,
                 detail="Error interno del servidor",
@@ -92,16 +92,16 @@ class JustificationController(BaseController):
 
     def get_justification(self, prediction_id: int) -> dict:
         """
-        Obtiene la justificaci?n de una predicci?n (desde cach? si existe).
+        Obtiene la justificación de una predicción (desde caché si existe).
 
         Args:
-            prediction_id: ID de la predicci?n
+            prediction_id: ID de la predicción
 
         Returns:
             Respuesta con JustificationResponse
 
         Raises:
-            HTTPException: Si la predicci?n no existe o hay error
+            HTTPException: Si la predicción no existe o hay error
         """
         try:
             request = JustificationRequest(
@@ -115,7 +115,7 @@ class JustificationController(BaseController):
             raise
 
         except Exception as exc:
-            logger.error(f"Error al obtener justificaci?n: {str(exc)}")
+            logger.error(f"Error al obtener justificación: {str(exc)}")
             raise HTTPException(
                 status_code=500,
                 detail="Error interno del servidor",
@@ -123,38 +123,38 @@ class JustificationController(BaseController):
 
     def clear_cache(self, prediction_id: Optional[int] = None) -> dict:
         """
-        Limpia el cach? de justificaciones.
+        Limpia el caché de justificaciones.
 
         Args:
-            prediction_id: ID espec?fico a limpiar, o None para limpiar
+            prediction_id: ID específico a limpiar, o None para limpiar
 
         Returns:
-            Respuesta con estad?sticas de limpieza
+            Respuesta con estadísticas de limpieza
 
         Raises:
             HTTPException: En caso de error
         """
         try:
             logger.info(
-                f"Limpiando cach? de justificaciones (prediction_id={prediction_id})"
+                f"Limpiando caché de justificaciones (prediction_id={prediction_id})"
             )
 
             stats = self.justification_service.clear_cache(prediction_id)
             return self.successResponse(stats)
 
         except Exception as exc:
-            logger.error(f"Error al limpiar cach?: {str(exc)}")
+            logger.error(f"Error al limpiar caché: {str(exc)}")
             raise HTTPException(
                 status_code=500,
-                detail="Error al limpiar cach?",
+                detail="Error al limpiar caché",
             ) from exc
 
     def get_cache_stats(self) -> dict:
         """
-        Obtiene estad?sticas del cach?.
+        Obtiene estadísticas del caché.
 
         Returns:
-            Respuesta con estad?sticas de uso
+            Respuesta con estadísticas de uso
 
         Raises:
             HTTPException: En caso de error
@@ -164,9 +164,9 @@ class JustificationController(BaseController):
             return self.successResponse(stats)
 
         except Exception as exc:
-            logger.error(f"Error al obtener estad?sticas: {str(exc)}")
+            logger.error(f"Error al obtener estadísticas: {str(exc)}")
             raise HTTPException(
                 status_code=500,
-                detail="Error al obtener estad?sticas",
+                detail="Error al obtener estadísticas",
             ) from exc
 

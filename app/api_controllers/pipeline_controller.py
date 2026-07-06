@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 from app.api_controllers.base_controller import BaseController
 from app.api_controllers.serializers import serialize_published_news
 from app.application_services.clustering_service import ClusteringService
+from app.application_services.justification_pipeline import auto_justify_prediction
 from app.application_services.prediction_service import PredictionService
 from app.application_services.preprocessing_service import PreprocessingService
 from app.application_services.publishing_service import PublishingService
 from app.application_services.summarization_service import SummarizationService
 from app.db.database import get_db
 from app.dependencies import (
+    build_justification_service_optional,
     get_clustering_service,
     get_current_user,
     get_prediction_service,
@@ -21,6 +23,7 @@ from app.dependencies import (
     get_publishing_service,
     get_summarization_service,
 )
+from app.interfaces.justification_service import IJustificationService
 from app.ml.pipeline import ModelNotReadyError
 from app.processed.models import ClusterMember, NewsCluster, ProcessedNews
 from app.raw.models import RawNews
@@ -39,6 +42,7 @@ class PipelineController(BaseController):
         summarizationService: SummarizationService,
         predictionService: PredictionService,
         publishingService: PublishingService,
+        justificationService: IJustificationService | None = None,
         current_user: User | None = None,
     ):
         super().__init__(current_user)
@@ -48,6 +52,7 @@ class PipelineController(BaseController):
         self.summarizationService = summarizationService
         self.predictionService = predictionService
         self.publishingService = publishingService
+        self.justificationService = justificationService
 
     def postRunPipeline(self, sourceId: int) -> dict:
         self._require_moderator()
@@ -133,7 +138,8 @@ class PipelineController(BaseController):
         if not predictions_enabled:
             return False
         try:
-            self.predictionService.predictAll(representative_id)
+            prediction = self.predictionService.predictAll(representative_id)
+            auto_justify_prediction(self.justificationService, prediction.prediction_id)
             return True
         except ModelNotReadyError as exc:
             logger.warning(
@@ -186,6 +192,7 @@ def get_pipeline_controller(
         summarization_service,
         prediction_service,
         publishing_service,
+        build_justification_service_optional(db),
         current_user,
     )
 

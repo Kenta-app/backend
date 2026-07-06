@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.api_controllers.base_controller import BaseController
-from app.api_controllers.serializers import serialize_click, serialize_reaction, serialize_view
+from app.api_controllers.serializers import (
+    serialize_click,
+    serialize_detail_click,
+    serialize_reaction,
+    serialize_session,
+    serialize_view,
+)
 from app.application_services.interaction_service import InteractionService
 from app.dependencies import get_current_user, get_interaction_service
 from app.serving.models import User
@@ -24,6 +32,15 @@ class ViewRequest(BaseModel):
 
 class ClickRequest(BaseModel):
     newsId: int
+
+
+class DetailClickRequest(BaseModel):
+    newsId: int
+
+
+class SessionRequest(BaseModel):
+    timeSpentSec: int
+    startedAt: datetime | None = None
 
 
 class InteractionController(BaseController):
@@ -50,6 +67,19 @@ class InteractionController(BaseController):
         user = self.requireAuth()
         item = self.interactionService.recordClick(user.user_id, newsId)
         return self.successResponse(serialize_click(item))
+
+    def postDetailClick(self, newsId: int) -> dict:
+        user = self.requireAuth()
+        item = self.interactionService.recordDetailClick(user.user_id, newsId)
+        return self.successResponse(serialize_detail_click(item))
+
+    def postSession(self, timeSpentSec: int, startedAt: datetime | None = None) -> dict:
+        user = self.requireAuth()
+        try:
+            item = self.interactionService.recordSession(user.user_id, timeSpentSec, startedAt)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return self.successResponse(serialize_session(item))
 
 
 def get_interaction_controller(
@@ -89,3 +119,19 @@ def post_click(
     controller: InteractionController = Depends(get_interaction_controller),
 ):
     return controller.postClick(payload.newsId)
+
+
+@router.post("/detail-click")
+def post_detail_click(
+    payload: DetailClickRequest,
+    controller: InteractionController = Depends(get_interaction_controller),
+):
+    return controller.postDetailClick(payload.newsId)
+
+
+@router.post("/session")
+def post_session(
+    payload: SessionRequest,
+    controller: InteractionController = Depends(get_interaction_controller),
+):
+    return controller.postSession(payload.timeSpentSec, payload.startedAt)

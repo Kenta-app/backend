@@ -1,5 +1,5 @@
-﻿"""
-Interfaz del servicio de justificaci?n de predicciones.
+"""
+Interfaz del servicio de justificación de predicciones.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from typing import Optional
 
 class IJustificationService(ABC):
     """
-    Interfaz para servicios de justificaci?n de predicciones.
+    Interfaz para servicios de justificación de predicciones.
     Define el contrato que deben cumplir las implementaciones.
     """
 
@@ -22,18 +22,18 @@ class IJustificationService(ABC):
         regenerate: bool = False,
     ) -> dict:
         """
-        Genera una justificaci?n para una predicci?n.
+        Genera una justificación para una predicción.
 
         Args:
-            prediction_id: ID de la predicci?n a justificar
-            include_context: Incluir contexto adicional del art?culo
-            regenerate: Forzar regeneraci?n ignorando cach?
+            prediction_id: ID de la predicción a justificar
+            include_context: Incluir contexto adicional del artículo
+            regenerate: Forzar regeneración ignorando caché
 
         Returns:
-            Diccionario con la justificaci?n y metadatos
+            Diccionario con la justificación y metadatos
 
         Raises:
-            ValueError: Si la predicci?n no existe
+            ValueError: Si la predicción no existe
             RuntimeError: Si hay error al conectar con la API
         """
         pass
@@ -41,23 +41,23 @@ class IJustificationService(ABC):
     @abstractmethod
     def clear_cache(self, prediction_id: Optional[int] = None) -> dict:
         """
-        Limpia el cach? de justificaciones.
+        Limpia el caché de justificaciones.
 
         Args:
-            prediction_id: ID espec?fico a limpiar, o None para limpiar
+            prediction_id: ID específico a limpiar, o None para limpiar
 
         Returns:
-            Diccionario con estad?sticas de limpieza
+            Diccionario con estadísticas de limpieza
         """
         pass
 
     @abstractmethod
     def get_cache_stats(self) -> dict:
         """
-        Obtiene estad?sticas del cach?.
+        Obtiene estadísticas del caché.
 
         Returns:
-            Diccionario con m?tricas del cach?
+            Diccionario con métricas del caché
         """
         pass
 

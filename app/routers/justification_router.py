@@ -1,5 +1,5 @@
-﻿"""
-Router para endpoints de justificaci?n de predicciones.
+"""
+Router para endpoints de justificación de predicciones.
 Define los endpoints POST, GET y DELETE para justificaciones.
 """
 
@@ -29,7 +29,7 @@ def get_justification_controller(
     Dependency injection del controlador de justificaciones.
 
     Args:
-        justification_service: Servicio de justificaci?n
+        justification_service: Servicio de justificación
         current_user: Usuario actual del contexto
 
     Returns:
@@ -38,22 +38,22 @@ def get_justification_controller(
     return JustificationController(justification_service, current_user)
 
 
-@router.post("/generate", summary="Generar justificaci?n para una predicci?n")
+@router.post("/generate", summary="Generar justificación para una predicción")
 def generate_justification(
     request: JustificationRequest,
     controller: JustificationController = Depends(get_justification_controller),
 ) -> dict:
     """
-    Genera una justificaci?n para una predicci?n espec?fica.
+    Genera una justificación para una predicción específica.
 
     **Request Body:**
-    - `prediction_id` (int, requerido): ID de la predicci?n a justificar
-    - `include_context` (bool, default=True): Incluir contexto del art?culo
-    - `regenerate` (bool, default=False): Forzar regeneraci?n sin usar cach?
+    - `prediction_id` (int, requerido): ID de la predicción a justificar
+    - `include_context` (bool, default=True): Incluir contexto del artículo
+    - `regenerate` (bool, default=False): Forzar regeneración sin usar caché
 
     **Responses:**
-    - 200: Justificaci?n generada exitosamente
-    - 404: Predicci?n no encontrada
+    - 200: Justificación generada exitosamente
+    - 404: Predicción no encontrada
     - 503: Servicio de Gemini no disponible
     - 500: Error interno del servidor
 
@@ -69,43 +69,43 @@ def generate_justification(
     return controller.generate_justification(request)
 
 
-@router.get("/{prediction_id}", summary="Obtener justificaci?n de una predicci?n")
+@router.get("/{prediction_id}", summary="Obtener justificación de una predicción")
 def get_justification(
-    prediction_id: int = Path(..., description="ID de la predicci?n"),
+    prediction_id: int = Path(..., description="ID de la predicción"),
     controller: JustificationController = Depends(get_justification_controller),
 ) -> dict:
     """
-    Obtiene la justificaci?n de una predicci?n (desde cach? si existe).
+    Obtiene la justificación de una predicción (desde caché si existe).
 
     **Path Parameters:**
-    - `prediction_id` (int): ID de la predicci?n
+    - `prediction_id` (int): ID de la predicción
 
     **Responses:**
-    - 200: Justificaci?n obtenida (desde cach? o generada)
-    - 404: Predicci?n no encontrada
+    - 200: Justificación obtenida (desde caché o generada)
+    - 404: Predicción no encontrada
     - 503: Servicio no disponible
     - 500: Error interno del servidor
     """
     return controller.get_justification(prediction_id)
 
 
-@router.delete("/cache", summary="Limpiar cach? de justificaciones")
+@router.delete("/cache", summary="Limpiar caché de justificaciones")
 def clear_cache(
     prediction_id: Optional[int] = Query(
         default=None,
-        description="ID espec?fico a limpiar. Si es None, limpia todo el cach?",
+        description="ID específico a limpiar. Si es None, limpia todo el caché",
     ),
     controller: JustificationController = Depends(get_justification_controller),
 ) -> dict:
     """
-    Limpia el cach? de justificaciones.
+    Limpia el caché de justificaciones.
 
     **Query Parameters:**
-    - `prediction_id` (int, opcional): ID espec?fico a limpiar, o None
+    - `prediction_id` (int, opcional): ID específico a limpiar, o None
 
     **Responses:**
-    - 200: Cach? limpiado exitosamente
-    - 500: Error al limpiar cach?
+    - 200: Caché limpiado exitosamente
+    - 500: Error al limpiar caché
 
     **Ejemplo de respuesta:**
     ```json
@@ -122,15 +122,15 @@ def clear_cache(
     return controller.clear_cache(prediction_id)
 
 
-@router.get("/stats/cache", summary="Obtener estad?sticas del cach?")
+@router.get("/stats/cache", summary="Obtener estadísticas del caché")
 def get_cache_stats(
     controller: JustificationController = Depends(get_justification_controller),
 ) -> dict:
     """
-    Obtiene estad?sticas de uso del cach? de justificaciones.
+    Obtiene estadísticas de uso del caché de justificaciones.
 
     **Responses:**
-    - 200: Estad?sticas obtenidas
+    - 200: Estadísticas obtenidas
 
     **Ejemplo de respuesta:**
     ```json
