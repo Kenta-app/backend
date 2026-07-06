@@ -87,7 +87,10 @@ CREATE TABLE processed.ml_predictions (
     sentiment_score DECIMAL(5,4) NOT NULL DEFAULT 0,
     model_version TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL,
-    fake_score DECIMAL(5,4) NOT NULL DEFAULT 0
+    fake_score DECIMAL(5,4) NOT NULL DEFAULT 0,
+    fake_label VARCHAR(50),
+    fake_bucket VARCHAR(20),
+    raw_probabilities JSONB
 );
 
 CREATE TABLE processed.summaries (

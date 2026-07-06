@@ -48,13 +48,6 @@ _ = (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-print("=" * 60)
-try:
-    print(f"🔍 URL DE CONEXIÓN DETECTADA: {engine.url}")
-except Exception as e:
-    print(f"❌ No se pudo leer la URL del engine: {e}")
-print("=" * 60)
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Kenta Backend", version="2.0.0")
 
@@ -99,6 +92,13 @@ def healthcheck():
 @app.on_event("startup")
 async def startup_event():
     """Initialize optional services on startup."""
+    try:
+        logger.info("DB URL -> %s", engine.url.render_as_string(hide_password=True))
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+        logger.info("Tables created or already present")
+    except Exception as exc:
+        logger.error("Error creating tables: %s", exc)
+
     if SEED_DEFAULT_SOURCES:
         db = SessionLocal()
         try:

@@ -6,14 +6,15 @@ import json
 import logging
 import os
 import random
+from contextlib import nullcontext
+from pathlib import Path
 
 import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
-from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup
 
 from app.ml.fakenews_classifier import FakeNewsServingConfig
@@ -24,6 +25,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+MODEL_ALIASES = {
+    "PlanTL-GOB-ES/roberta-base-bne": "xlm-roberta-base",
+}
 
 
 def set_seed(seed: int) -> None:
@@ -51,6 +57,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--train_sampling",
+        default="shuffle",
+        choices=("shuffle", "weighted"),
+        help="How to sample the training set. 'weighted' oversamples the minority class without discarding data.",
+    )
     return parser
 
 
@@ -62,6 +74,120 @@ def compute_class_weights(dataset: LIARFakeNewsDataset, device: torch.device) ->
         count = max(dataset.label_counts.get(label, 0), 1)
         weights.append(total / (num_classes * count))
     return torch.tensor(weights, dtype=torch.float, device=device)
+
+
+def _looks_like_local_path(value: str) -> bool:
+    normalized = value.replace("\\", "/")
+    return (
+        os.path.isabs(value)
+        or value.startswith(".")
+        or "\\" in value
+        or normalized.startswith(("output/", "data/", "app/", "scripts/"))
+        or normalized.count("/") >= 2
+    )
+
+
+def _discover_local_checkpoints(output_root: str = "output") -> list[str]:
+    root = Path(output_root)
+    if not root.exists():
+        return []
+    checkpoints = []
+    for config_path in root.glob("**/best_model/serving_config.json"):
+        checkpoints.append(str(config_path.parent.resolve()))
+    return sorted(checkpoints)
+
+
+def resolve_model_source(model_name_or_path: str) -> str:
+    if model_name_or_path in MODEL_ALIASES:
+        alias = MODEL_ALIASES[model_name_or_path]
+        logger.warning(
+            "Model %s is deprecated or missing weights; using %s instead.",
+            model_name_or_path,
+            alias,
+        )
+        return alias
+
+    candidate = Path(model_name_or_path)
+    if candidate.exists():
+        return str(candidate.resolve())
+
+    if _looks_like_local_path(model_name_or_path):
+        known_checkpoints = _discover_local_checkpoints()
+        suffix = ""
+        if known_checkpoints:
+            suffix = "\nCheckpoints locales disponibles:\n- " + "\n- ".join(known_checkpoints)
+        raise FileNotFoundError(
+            "No se encontro el checkpoint local indicado en "
+            f"'{model_name_or_path}'.{suffix}"
+        )
+
+    return model_name_or_path
+
+
+def resolve_serving_model_name(model_source: str) -> str:
+    source_path = Path(model_source)
+    if not source_path.exists():
+        return model_source
+
+    config_path = source_path / "serving_config.json"
+    if config_path.exists():
+        try:
+            with open(config_path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            model_name = payload.get("model_name")
+            if model_name:
+                return str(model_name)
+        except (OSError, ValueError, TypeError):
+            logger.warning("No se pudo leer serving_config.json desde %s", source_path)
+
+    return str(source_path.resolve())
+
+
+def create_grad_scaler(use_amp: bool):
+    if not use_amp:
+        return None
+
+    try:
+        return torch.amp.GradScaler("cuda")
+    except (AttributeError, TypeError):
+        return torch.cuda.amp.GradScaler()
+
+
+def autocast_context(use_amp: bool):
+    if not use_amp:
+        return nullcontext()
+
+    try:
+        return torch.amp.autocast("cuda")
+    except (AttributeError, TypeError):
+        return torch.cuda.amp.autocast()
+
+
+def build_train_loader(
+    dataset: LIARFakeNewsDataset,
+    *,
+    batch_size: int,
+    sampling: str,
+    seed: int,
+) -> DataLoader:
+    if sampling != "weighted":
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    sample_weights = []
+    total = sum(dataset.label_counts.values())
+    for example in dataset.examples:
+        count = max(dataset.label_counts.get(example.label, 0), 1)
+        sample_weights.append(total / count)
+
+    generator = torch.Generator()
+    generator.manual_seed(seed)
+    sampler = WeightedRandomSampler(
+        weights=torch.tensor(sample_weights, dtype=torch.double),
+        num_samples=len(sample_weights),
+        replacement=True,
+        generator=generator,
+    )
+    return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
 
 
 def find_best_threshold(labels: list[int], probs_true: list[float]) -> tuple[float, float]:
@@ -147,9 +273,11 @@ def main() -> None:
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     use_amp = torch.cuda.is_available() and device.type == "cuda"
-    scaler = GradScaler() if use_amp else None
+    scaler = create_grad_scaler(use_amp)
+    model_source = resolve_model_source(args.model_name)
+    serving_model_name = resolve_serving_model_name(model_source)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_source)
     train_dataset = LIARFakeNewsDataset(
         args.train_path,
         tokenizer,
@@ -169,7 +297,12 @@ def main() -> None:
         label_strategy=args.label_strategy,
     )
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    train_loader = build_train_loader(
+        train_dataset,
+        batch_size=args.batch_size,
+        sampling=args.train_sampling,
+        seed=args.seed,
+    )
     validation_loader = DataLoader(validation_dataset, batch_size=args.batch_size)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
 
@@ -185,13 +318,18 @@ def main() -> None:
         train_dataset.label_counts.get(1, 0),
         dict(train_dataset.skipped_labels),
     )
+    logger.info("Training sampling strategy: %s", args.train_sampling)
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        args.model_name,
+        model_source,
         num_labels=len(FAKENEWS_LABELS),
     ).to(device)
-    class_weights = compute_class_weights(train_dataset, device=device)
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    if args.train_sampling == "weighted":
+        criterion = nn.CrossEntropyLoss()
+        logger.info("Class-weighted loss disabled because weighted sampling is active.")
+    else:
+        class_weights = compute_class_weights(train_dataset, device=device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     total_steps = len(train_loader) * args.epochs
@@ -223,7 +361,7 @@ def main() -> None:
             }
 
             if use_amp:
-                with autocast():
+                with autocast_context(use_amp):
                     logits = model(**inputs).logits
                     loss = criterion(logits, labels)
                 scaler.scale(loss).backward()
@@ -281,7 +419,7 @@ def main() -> None:
         label_strategy=args.label_strategy,
         decision_threshold=best_threshold,
         max_length=args.max_length,
-        model_name=args.model_name,
+        model_name=serving_model_name,
         validation_metrics=best_metrics["validation"],
         test_metrics=best_metrics["test"],
     )

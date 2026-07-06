@@ -118,4 +118,3 @@ def build_justification_reader(db: Session) -> GeminiJustificationService:
         max_retries=int(os.getenv("JUSTIFICATION_MAX_RETRIES", "3")),
         retry_delay=float(os.getenv("JUSTIFICATION_RETRY_DELAY", "2.0")),
     )
-

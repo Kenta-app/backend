@@ -145,10 +145,13 @@ def select_targets(db, args: argparse.Namespace) -> list[TargetRecord]:
 def print_runtime_header() -> None:
     status = news_analysis_pipeline.warm_up(include_summarizer=False)
     print("Active ML configuration")
-    print(f"  stance checkpoint : {status['classifier_checkpoint_path']}")
+    print(f"  pipeline mode     : {status['pipeline_mode']}")
     print(f"  fake checkpoint   : {status['fake_news_classifier_checkpoint_path']}")
     print(f"  fake source       : {status['fake_news_classifier_source']}")
-    print(f"  claims enabled    : {news_analysis_pipeline.use_claims}")
+    print(f"  stance checkpoint : {status['stance_classifier_checkpoint_path']}")
+    print(f"  stance source     : {status['stance_classifier_source'] or 'unavailable'}")
+    print(f"  claims enabled    : {status['claims_enabled']}")
+    print(f"  claim extractor   : {status['claim_extractor']}")
     print("")
 
 
@@ -167,6 +170,7 @@ def inspect_targets(args: argparse.Namespace) -> int:
                 title=target.raw_news.title_raw,
                 content=target.processed.clean_text,
                 include_summary=False,
+                allow_partial=True,
             )
             payload = build_inspection_payload(target, result)
 
@@ -258,16 +262,23 @@ def build_inspection_payload(target: TargetRecord, result: dict) -> dict:
             "is_fake": fake_news.get("is_fake"),
             "decision_threshold": fake_news.get("decision_threshold"),
             "risk_score": fake_news.get("risk_score"),
+            "triage_label": fake_news.get("triage_label"),
+            "triage_display": fake_news.get("triage_display"),
+            "triage_thresholds": fake_news.get("triage_thresholds"),
             "real_support": fake_news.get("real_support"),
             "probabilities": fake_news.get("probabilities"),
             "source": fake_news.get("source"),
             "claim_based": fake_news.get("claim_based"),
         },
+        "warnings": result.get("warnings") or [],
         "claims": [
             {
                 "text": item.get("text"),
                 "stance_target": item.get("stance_target"),
+                "model_input": item.get("model_input"),
                 "extraction_mode": item.get("extraction_mode"),
+                "quality": item.get("quality"),
+                "quality_reasons": item.get("quality_reasons"),
                 "label": (item.get("prediction") or {}).get("label"),
                 "confidence": (item.get("prediction") or {}).get("confidence"),
                 "probabilities": (item.get("prediction") or {}).get("probabilities"),
@@ -296,11 +307,14 @@ def print_human_inspection(index: int, total: int, payload: dict) -> None:
         f"fake : label={fake_news.get('label')} "
         f"display={fake_news.get('display_label')} "
         f"risk={fake_news.get('risk_score')} "
+        f"triage={fake_news.get('triage_display')} "
         f"p_false={probabilities.get('False')} "
         f"p_true={probabilities.get('True')} "
         f"threshold_false={fake_news.get('decision_threshold')} "
         f"claim_based={fake_news.get('claim_based')}"
     )
+    for warning in payload.get("warnings") or []:
+        print(f"warning: {warning}")
 
     if not payload["claims"]:
         print("claims: none")
@@ -317,6 +331,13 @@ def print_human_inspection(index: int, total: int, payload: dict) -> None:
             f"     mode={claim.get('extraction_mode')} "
             f"target={claim.get('stance_target')}"
         )
+        if claim.get("model_input") and claim.get("model_input") != claim.get("stance_target"):
+            print(f"     model_input={claim.get('model_input')}")
+        if claim.get("quality") and claim.get("quality") != "usable":
+            print(
+                f"     quality={claim.get('quality')} "
+                f"reasons={claim.get('quality_reasons')}"
+            )
         print(
             f"     label={claim.get('label')} "
             f"confidence={claim.get('confidence')} "

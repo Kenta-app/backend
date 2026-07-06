@@ -25,7 +25,7 @@ class SentimentPrediction(IPredictionService):
 
     def __init__(self, db: Session, modelPath: str | None = None, threshold: float = 0.6):
         self.db = db
-        self.modelPath = modelPath or news_analysis_pipeline.checkpoint_path
+        self.modelPath = modelPath or news_analysis_pipeline.fake_news_model_dir
         self.threshold = float(threshold)
 
     def predictSentiment(self, representativeNewsProcessedId: int) -> MlPrediction:
@@ -43,8 +43,8 @@ class SentimentPrediction(IPredictionService):
             }
         )
 
-        stance = raw_result["stance"]
-        fake_news = raw_result["fake_news"]
+        stance = raw_result.get("stance") or {"label": "unrelated", "confidence": 0.0, "probabilities": {}}
+        fake_news = raw_result.get("fake_news") or {}
         fake_score = self._calculate_fake_score(fake_news["probabilities"])
 
         prediction = (
@@ -75,28 +75,25 @@ class SentimentPrediction(IPredictionService):
         return prediction
 
     def getModelVersion(self) -> str:
-        fake_classifier_name = (
-            news_analysis_pipeline.fake_news_classifier.model_name
-            if news_analysis_pipeline.fake_news_classifier.loaded
-            else news_analysis_pipeline.base_model_name
-        )
-        fake_classifier_path = (
-            news_analysis_pipeline.fake_news_model_dir
-            if news_analysis_pipeline.fake_news_classifier.loaded
-            else news_analysis_pipeline.checkpoint_path
+        fake_classifier_name = news_analysis_pipeline.fake_news_classifier.model_name
+        fake_classifier_path = news_analysis_pipeline.fake_news_model_dir
+        stance_classifier_name = (
+            news_analysis_pipeline.stance_classifier.model_name
+            if news_analysis_pipeline.stance_classifier.loaded
+            else "unavailable"
         )
         return (
-            f"stance={news_analysis_pipeline.base_model_name}:{news_analysis_pipeline.checkpoint_path}"
+            f"stance={stance_classifier_name}:{news_analysis_pipeline.stance_model_dir}"
             f"|fake={fake_classifier_name}:{fake_classifier_path}"
         )
 
     def tokenize(self, text: str) -> list[int]:
         if not news_analysis_pipeline.load():
             raise RuntimeError(news_analysis_pipeline.load_error or "Modelo no disponible.")
-        encoded = news_analysis_pipeline.tokenizer(
+        encoded = news_analysis_pipeline.fake_news_classifier.tokenizer(
             text,
             truncation=True,
-            max_length=news_analysis_pipeline.max_seq_length_liar,
+            max_length=news_analysis_pipeline.fake_news_classifier.serving_config.max_length,
         )
         return encoded["input_ids"]
 
@@ -105,6 +102,7 @@ class SentimentPrediction(IPredictionService):
             title=tokens.get("title"),
             content=tokens.get("content"),
             include_summary=False,
+            allow_partial=True,
         )
 
     def _load_processed_raw_pair(self, representativeNewsProcessedId: int) -> tuple[ProcessedNews, RawNews]:

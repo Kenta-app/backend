@@ -19,3 +19,11 @@ class INewsRepository(ABC):
     @abstractmethod
     def save(self, news: "PublishedNews") -> "PublishedNews":
         """Persist a published news item."""
+
+    @abstractmethod
+    def findBySourceId(self, sourceId: int) -> List["PublishedNews"]:
+        """Return published news items for a source identifier."""
+
+    @abstractmethod
+    def findBySourceName(self, sourceName: str) -> List["PublishedNews"]:
+        """Return published news items for a source name."""

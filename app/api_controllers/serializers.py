@@ -44,7 +44,7 @@ def serialize_published_news(
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
         "sourceId": news.source_id,
-        "sourceName": source_name,
+        "sourceName": source_name or (news.source.name if news.source else None),
         "title": news.title,
         "summary": news.summary,
         "originalUrl": news.original_url,

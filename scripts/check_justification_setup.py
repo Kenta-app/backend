@@ -42,7 +42,7 @@ def main():
         with open(req_file) as f:
             content = f.read()
             deps = {
-                "google-generativeai": "Google Gemini API",
+                "google-genai": "Google Gemini API",
                 "cachetools": "Cache con TTL",
                 "fastapi": "Framework API",
                 "sqlalchemy": "ORM Database",
