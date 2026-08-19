@@ -256,7 +256,7 @@ class ArchitectureServicesTests(unittest.TestCase):
 
         result = orchestrator.run_source_pipeline(1)
 
-        summarization.generateSummary.assert_called_once_with(42)
+        summarization.generateSummaryForPipeline.assert_called_once_with(42)
         prediction.predictAll.assert_called_once_with(42)
         publishing.publishRepresentative.assert_called_once_with(42)
         self.assertEqual(result["published_count"], 1)

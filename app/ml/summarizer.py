@@ -1,6 +1,6 @@
 import logging
 import os
-from threading import Lock
+from threading import BoundedSemaphore, Lock
 
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -15,9 +15,14 @@ class SummarizerService:
         self.max_input_length = int(os.getenv("SUMMARY_MAX_INPUT_LENGTH", "1024"))
         self.max_summary_length = int(os.getenv("SUMMARY_MAX_LENGTH", "120"))
         self.min_summary_length = int(os.getenv("SUMMARY_MIN_LENGTH", "60"))
-        self.num_beams = int(os.getenv("SUMMARY_NUM_BEAMS", "6"))
+        self.num_beams = int(os.getenv("SUMMARY_NUM_BEAMS", "4"))
+        self.max_concurrent_generations = max(
+            1,
+            int(os.getenv("SUMMARY_MAX_CONCURRENT_GENERATIONS", "1")),
+        )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._lock = Lock()
+        self._generation_slots = BoundedSemaphore(self.max_concurrent_generations)
         self.loaded = False
         self.load_error = None
         self.tokenizer = None
@@ -66,17 +71,18 @@ class SummarizerService:
             truncation=True,
         ).to(self.device)
 
-        with torch.no_grad():
-            summary_ids = self.model.generate(
-                inputs["input_ids"],
-                attention_mask=inputs.get("attention_mask"),
-                num_beams=self.num_beams,
-                max_length=self.max_summary_length,
-                min_length=self.min_summary_length,
-                no_repeat_ngram_size=3,
-                length_penalty=1.5,
-                early_stopping=True,
-            )
+        with self._generation_slots:
+            with torch.no_grad():
+                summary_ids = self.model.generate(
+                    inputs["input_ids"],
+                    attention_mask=inputs.get("attention_mask"),
+                    num_beams=self.num_beams,
+                    max_length=self.max_summary_length,
+                    min_length=self.min_summary_length,
+                    no_repeat_ngram_size=3,
+                    length_penalty=1.5,
+                    early_stopping=True,
+                )
 
         return self.tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 

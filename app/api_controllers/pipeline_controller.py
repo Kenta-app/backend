@@ -102,7 +102,7 @@ class PipelineController(BaseController):
         predictions_enabled = True
         try:
             for representative_id in representative_ids:
-                self.summarizationService.generateSummary(representative_id)
+                self.summarizationService.generateSummaryForPipeline(representative_id)
                 predictions_enabled = self._predict_if_available(
                     representative_id,
                     predictions_enabled,
@@ -126,7 +126,7 @@ class PipelineController(BaseController):
             if not cluster or not cluster.representative_news_processed_id:
                 continue
             representative_id = cluster.representative_news_processed_id
-            self.summarizationService.generateSummary(representative_id)
+            self.summarizationService.generateSummaryForPipeline(representative_id)
             predictions_enabled = self._predict_if_available(
                 representative_id,
                 predictions_enabled,

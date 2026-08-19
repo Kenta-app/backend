@@ -93,7 +93,7 @@ class PipelineOrchestrator:
             if not cluster or not cluster.representative_news_processed_id:
                 continue
             representative_id = cluster.representative_news_processed_id
-            self.summarizationService.generateSummary(representative_id)
+            self.summarizationService.generateSummaryForPipeline(representative_id)
 
             if predictions_enabled:
                 try:
