@@ -9,6 +9,7 @@ from app.application_services.analytics_service import AnalyticsService
 from app.application_services.auth_service import AuthService
 from app.application_services.favorite_service import FavoriteService
 from app.application_services.clustering_service import ClusteringService
+from app.application_services.favorite_service import FavoriteService
 from app.application_services.ingestion_service import IngestionService
 from app.application_services.interaction_service import InteractionService
 from app.application_services.justification_service import GeminiJustificationService

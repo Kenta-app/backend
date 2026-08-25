@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from app.api_controllers.base_controller import BaseController
 from app.api_controllers.serializers import (
@@ -43,6 +44,25 @@ class SessionRequest(BaseModel):
     startedAt: datetime | None = None
 
 
+class InteractionEventRequest(BaseModel):
+    type: Literal["view", "click", "detail-click", "session"]
+    newsId: int | None = Field(default=None, gt=0)
+    timeSpentSec: int | None = Field(default=None, ge=0)
+    startedAt: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if self.type in {"view", "click", "detail-click"} and self.newsId is None:
+            raise ValueError("newsId es obligatorio para este tipo de evento.")
+        if self.type in {"view", "session"} and self.timeSpentSec is None:
+            raise ValueError("timeSpentSec es obligatorio para este tipo de evento.")
+        return self
+
+
+class InteractionBatchRequest(BaseModel):
+    events: list[InteractionEventRequest] = Field(min_length=1, max_length=100)
+
+
 class InteractionController(BaseController):
     def __init__(self, interactionService: InteractionService, current_user: User | None = None):
         super().__init__(current_user)
@@ -80,6 +100,19 @@ class InteractionController(BaseController):
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return self.successResponse(serialize_session(item))
+
+    def postBatch(self, events: list[InteractionEventRequest]) -> dict:
+        user = self.requireAuth()
+        if user.canModerate():
+            return self.successResponse(
+                {"ignored": True, "reason": "staff_user", "total": 0}
+            )
+
+        counts = self.interactionService.recordBatch(
+            user.user_id,
+            [event.model_dump() for event in events],
+        )
+        return self.successResponse({"ignored": False, **counts})
 
 
 def get_interaction_controller(
@@ -135,3 +168,11 @@ def post_session(
     controller: InteractionController = Depends(get_interaction_controller),
 ):
     return controller.postSession(payload.timeSpentSec, payload.startedAt)
+
+
+@router.post("/batch")
+def post_batch(
+    payload: InteractionBatchRequest,
+    controller: InteractionController = Depends(get_interaction_controller),
+):
+    return controller.postBatch(payload.events)

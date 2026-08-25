@@ -12,6 +12,7 @@ CREATE TABLE raw.source (
     source_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     base_url VARCHAR(500) NOT NULL,
+    source_account VARCHAR(100),
     created_at TIMESTAMP NOT NULL,
     type VARCHAR(50) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true
@@ -33,6 +34,7 @@ CREATE TABLE raw.news_raw (
     platform VARCHAR(50) NOT NULL,
     source_acronym VARCHAR(50),
     original_url TEXT NOT NULL,
+    image_url TEXT,
     title_raw TEXT NOT NULL,
     content_raw TEXT NOT NULL,
     author_raw VARCHAR(255),
@@ -106,9 +108,11 @@ CREATE TABLE processed.summaries (
 -- =========================
 CREATE TABLE serving.users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
+    birth_date DATE,
+    gender VARCHAR(50),
     role VARCHAR(50),
     created_at TIMESTAMP NOT NULL
 );
@@ -120,6 +124,7 @@ CREATE TABLE serving.news (
     title TEXT NOT NULL,
     summary TEXT,
     original_url TEXT,
+    image_url TEXT,
     sentiment_label VARCHAR(20),
     sentiment_score DECIMAL(4,3),
     fake_score DECIMAL(4,3),

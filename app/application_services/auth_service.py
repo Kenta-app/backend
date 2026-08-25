@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import os
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,14 @@ class AuthService:
     def __init__(self, db: Session):
         self.db = db
 
-    def register(self, username: str, email: str, password: str) -> User:
+    def register(
+        self,
+        username: str,
+        email: str,
+        password: str,
+        birthDate: date,
+        gender: str,
+    ) -> User:
         existing = (
             self.db.query(User)
             .filter((User.username == username) | (User.email == email))
@@ -27,6 +35,8 @@ class AuthService:
             username=username,
             email=email,
             password_hash=self.hashPassword(password),
+            birth_date=birthDate,
+            gender=gender.strip().lower(),
             role="user",
         )
         user.register()
@@ -35,8 +45,8 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def login(self, email: str, password: str) -> User:
-        user = self.db.query(User).filter(User.email == email).first()
+    def login(self, username: str, password: str) -> User:
+        user = self.db.query(User).filter(User.username == username).first()
         if not user or not self.verifyPassword(password, user.password_hash):
             raise ValueError("Credenciales invalidas.")
         return user

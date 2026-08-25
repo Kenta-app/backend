@@ -3,10 +3,18 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import case, cast, Date, func
+from sqlalchemy import Date, case, cast, func
 from sqlalchemy.orm import Session
 
-from app.serving.models import NewsClick, NewsDetailClick, NewsReaction, NewsView, PublishedNews, User, UserAppSession
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsReaction,
+    NewsView,
+    PublishedNews,
+    User,
+    UserAppSession,
+)
 
 
 class AnalyticsService:

@@ -33,6 +33,13 @@ class NewsRepository(INewsRepository):
             .all()
         )
 
+    def countPublished(self) -> int:
+        return (
+            self.db.query(PublishedNews)
+            .filter(PublishedNews.published_at.isnot(None))
+            .count()
+        )
+
     def save(self, news: PublishedNews) -> PublishedNews:
         self.db.add(news)
         self.db.commit()

@@ -5,6 +5,12 @@ from threading import BoundedSemaphore, Lock
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
+from app.processed.text_utils import (
+    finish_truncated,
+    normalize_summary_text,
+    repair_english_intrusions,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +19,7 @@ class SummarizerService:
         self.model_name = os.getenv("SUMMARIZER_MODEL_NAME", "facebook/bart-large-cnn")
         self.summary_min_chars = int(os.getenv("SUMMARY_MIN_CHARS", "700"))
         self.max_input_length = int(os.getenv("SUMMARY_MAX_INPUT_LENGTH", "1024"))
-        self.max_summary_length = int(os.getenv("SUMMARY_MAX_LENGTH", "120"))
+        self.max_summary_length = int(os.getenv("SUMMARY_MAX_LENGTH", "150"))
         self.min_summary_length = int(os.getenv("SUMMARY_MIN_LENGTH", "60"))
         self.num_beams = int(os.getenv("SUMMARY_NUM_BEAMS", "4"))
         self.max_concurrent_generations = max(
@@ -84,7 +90,16 @@ class SummarizerService:
                     early_stopping=True,
                 )
 
-        return self.tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        generated_tokens = summary_ids[0]
+        summary = normalize_summary_text(
+            self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        )
+        summary = repair_english_intrusions(summary, article)
+
+        # BART can force an EOS token when max_length is reached, so checking
+        # eos_token_id alone does not prove that generation ended naturally.
+        reached_limit = generated_tokens.shape[-1] >= self.max_summary_length
+        return finish_truncated(summary) if reached_limit else summary
 
 
 summarizer_service = SummarizerService()

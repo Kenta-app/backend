@@ -21,7 +21,16 @@ from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
 from app.routers.justification_router import router as justification_router
 from app.routers.ml_router import router as ml_router
-from app.serving.models import NewsClick, NewsDetailClick, NewsFavorite, NewsReaction, NewsView, PublishedNews, User, UserAppSession
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
+    NewsReaction,
+    NewsView,
+    PublishedNews,
+    User,
+    UserAppSession,
+)
 from app.tasks.scheduler import ScrapingScheduler
 
 # Register SQLAlchemy models before create_all.
@@ -32,6 +41,7 @@ _ = (
     MlPrediction,
     NewsClick,
     NewsDetailClick,
+    NewsFavorite,
     NewsCluster,
     NewsReaction,
     NewsView,
@@ -42,7 +52,6 @@ _ = (
     Source,
     Summary,
     User,
-    NewsFavorite,
     UserAppSession,
 )
 
