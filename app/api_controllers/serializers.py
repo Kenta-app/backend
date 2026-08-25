@@ -61,6 +61,9 @@ def serialize_published_news(
         "highRisk": float(news.fake_score) >= 0.80,
         "publishedAt": news.published_at.isoformat() if news.published_at else None,
     }
+    if sources is not None:
+        payload["sources"] = sources
+    return payload
 
 
 def serialize_raw_news(raw_news: RawNews) -> dict:

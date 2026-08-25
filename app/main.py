@@ -4,6 +4,7 @@ import logging
 import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api_controllers import (
     admin_router,
@@ -15,7 +16,7 @@ from app.api_controllers import (
 )
 from app.db.database import Base, SessionLocal, engine
 from app.ml.pipeline import news_analysis_pipeline
-from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
+from app.processed.models import ClusterMember, JustificationSource, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
 from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
 from app.routers.justification_router import router as justification_router
@@ -36,6 +37,7 @@ from app.tasks.scheduler import ScrapingScheduler
 _ = (
     ClusterMember,
     IngestionLog,
+    JustificationSource,
     MlPrediction,
     NewsClick,
     NewsDetailClick,
@@ -57,6 +59,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Kenta Backend", version="2.0.0")
+
+_cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 app.include_router(news_router)

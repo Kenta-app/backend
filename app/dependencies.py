@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.application_services.analytics_service import AnalyticsService
 from app.application_services.auth_service import AuthService
+from app.application_services.favorite_service import FavoriteService
 from app.application_services.clustering_service import ClusteringService
 from app.application_services.favorite_service import FavoriteService
 from app.application_services.ingestion_service import IngestionService
@@ -75,6 +76,9 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
 
 
 def get_justification_service(db: Session = Depends(get_db)) -> GeminiJustificationService:
+    """
+    Inyecta el servicio de justificación con configuración desde variables de entorno.
+    """
     cache_ttl = int(os.getenv("JUSTIFICATION_CACHE_TTL", "3600"))
     max_retries = int(os.getenv("JUSTIFICATION_MAX_RETRIES", "3"))
     retry_delay = float(os.getenv("JUSTIFICATION_RETRY_DELAY", "2.0"))
@@ -84,4 +88,34 @@ def get_justification_service(db: Session = Depends(get_db)) -> GeminiJustificat
         cache_ttl=cache_ttl,
         max_retries=max_retries,
         retry_delay=retry_delay,
+    )
+
+
+def is_justification_auto_enabled() -> bool:
+    return os.getenv("JUSTIFICATION_AUTO_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
+
+
+def build_justification_service_optional(db: Session) -> GeminiJustificationService | None:
+    if not is_justification_auto_enabled() or not os.getenv("GEMINI_API_KEY"):
+        return None
+
+    cache_ttl = int(os.getenv("JUSTIFICATION_CACHE_TTL", "3600"))
+    max_retries = int(os.getenv("JUSTIFICATION_MAX_RETRIES", "3"))
+    retry_delay = float(os.getenv("JUSTIFICATION_RETRY_DELAY", "2.0"))
+
+    return GeminiJustificationService(
+        db=db,
+        cache_ttl=cache_ttl,
+        max_retries=max_retries,
+        retry_delay=retry_delay,
+    )
+
+
+def build_justification_reader(db: Session) -> GeminiJustificationService:
+    return GeminiJustificationService(
+        db=db,
+        api_key=None,
+        cache_ttl=int(os.getenv("JUSTIFICATION_CACHE_TTL", "3600")),
+        max_retries=int(os.getenv("JUSTIFICATION_MAX_RETRIES", "3")),
+        retry_delay=float(os.getenv("JUSTIFICATION_RETRY_DELAY", "2.0")),
     )

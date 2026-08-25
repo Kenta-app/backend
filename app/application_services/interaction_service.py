@@ -20,6 +20,7 @@ class InteractionService:
         if not item:
             item = NewsReaction(user_id=userId, news_id=newsId, reaction=reaction)
             item.setReaction(reaction)
+            item.created_at = datetime.utcnow()
         else:
             item.changeReaction(reaction)
         self.db.add(item)

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from app.application_services.clustering_service import ClusteringService
 from app.application_services.ingestion_service import IngestionService
+from app.application_services.justification_pipeline import auto_justify_prediction
 from app.application_services.prediction_service import PredictionService
 from app.application_services.preprocessing_service import PreprocessingService
 from app.application_services.publishing_service import PublishingService
 from app.application_services.summarization_service import SummarizationService
+from app.interfaces.justification_service import IJustificationService
 from app.ml.pipeline import ModelNotReadyError
 from app.processed.models import ClusterMember, NewsCluster, ProcessedNews
 
@@ -23,6 +26,7 @@ class PipelineOrchestrator:
         summarizationService: SummarizationService,
         predictionService: PredictionService,
         publishingService: PublishingService,
+        justificationService: Optional[IJustificationService] = None,
     ):
         self.ingestionService = ingestionService
         self.preprocessingService = preprocessingService
@@ -30,6 +34,7 @@ class PipelineOrchestrator:
         self.summarizationService = summarizationService
         self.predictionService = predictionService
         self.publishingService = publishingService
+        self.justificationService = justificationService
 
     def run_source_pipeline(self, sourceId: int) -> dict:
         raw_news_items = self.ingestionService.ingestFromSource(sourceId)
@@ -88,11 +93,12 @@ class PipelineOrchestrator:
             if not cluster or not cluster.representative_news_processed_id:
                 continue
             representative_id = cluster.representative_news_processed_id
-            self.summarizationService.generateSummary(representative_id)
+            self.summarizationService.generateSummaryForPipeline(representative_id)
 
             if predictions_enabled:
                 try:
-                    self.predictionService.predictAll(representative_id)
+                    prediction = self.predictionService.predictAll(representative_id)
+                    auto_justify_prediction(self.justificationService, prediction.prediction_id)
                 except ModelNotReadyError as exc:
                     predictions_enabled = False
                     logger.warning(
