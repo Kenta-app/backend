@@ -1,8 +1,18 @@
 from __future__ import annotations
 
 from app.processed.models import MlPrediction, Summary
+from app.processed.text_utils import finish_truncated, repair_english_intrusions
 from app.raw.models import RawNews, Source
-from app.serving.models import NewsClick, NewsReaction, NewsView, PublishedNews, User
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
+    NewsReaction,
+    NewsView,
+    PublishedNews,
+    User,
+    UserAppSession,
+)
 
 
 def serialize_source(source: Source) -> dict:
@@ -10,6 +20,7 @@ def serialize_source(source: Source) -> dict:
         "sourceId": source.source_id,
         "name": source.name,
         "baseUrl": source.base_url,
+        "sourceAccount": source.source_account,
         "type": source.type,
         "isActive": source.is_active,
         "createdAt": source.created_at.isoformat() if source.created_at else None,
@@ -21,20 +32,29 @@ def serialize_user(user: User) -> dict:
         "userId": user.user_id,
         "username": user.username,
         "email": user.email,
-        "role": user.role,
+        "birthDate": user.birth_date.isoformat() if user.birth_date else None,
+        "gender": user.gender,
+        "role": (user.role or "user").lower(),
         "createdAt": user.created_at.isoformat() if user.created_at else None,
     }
 
 
-def serialize_published_news(news: PublishedNews) -> dict:
+def serialize_published_news(
+    news: PublishedNews,
+    *,
+    source_name: str | None = None,
+    prediction_id: int | None = None,
+) -> dict:
     return {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
+        "predictionId": prediction_id,
         "sourceId": news.source_id,
-        "sourceName": news.source.name if news.source else None,
+        "sourceName": source_name or (news.source.name if news.source else None),
         "title": news.title,
-        "summary": news.summary,
+        "summary": finish_truncated(repair_english_intrusions(news.summary)),
         "originalUrl": news.original_url,
+        "imageUrl": news.image_url,
         "sentimentLabel": news.sentiment_label,
         "sentimentScore": float(news.sentiment_score),
         "fakeScore": float(news.fake_score),
@@ -51,6 +71,7 @@ def serialize_raw_news(raw_news: RawNews) -> dict:
         "platform": raw_news.platform,
         "sourceAccount": raw_news.source_account,
         "originalUrl": raw_news.original_url,
+        "imageUrl": raw_news.image_url,
         "titleRaw": raw_news.title_raw,
         "authorRaw": raw_news.author_raw,
         "publishedAt": raw_news.published_at.isoformat() if raw_news.published_at else None,
@@ -109,3 +130,39 @@ def serialize_click(item: NewsClick) -> dict:
         "newsId": item.news_id,
         "clickedAt": item.clicked_at.isoformat() if item.clicked_at else None,
     }
+
+
+def serialize_detail_click(item: NewsDetailClick) -> dict:
+    return {
+        "detailClickId": item.detail_click_id,
+        "userId": item.user_id,
+        "newsId": item.news_id,
+        "clickedAt": item.clicked_at.isoformat() if item.clicked_at else None,
+    }
+
+
+def serialize_session(item: UserAppSession) -> dict:
+    return {
+        "sessionId": item.session_id,
+        "userId": item.user_id,
+        "timeSpentSec": item.time_spent_sec,
+        "startedAt": item.started_at.isoformat() if item.started_at else None,
+        "endedAt": item.ended_at.isoformat() if item.ended_at else None,
+    }
+
+
+def serialize_favorite(
+    favorite: NewsFavorite,
+    news: PublishedNews | None = None,
+    source_name: str | None = None,
+) -> dict:
+    payload = {
+        "favoriteId": favorite.favorite_id,
+        "userId": favorite.user_id,
+        "newsId": favorite.news_id,
+        "savedAt": favorite.saved_at.isoformat() if favorite.saved_at else None,
+        "isFavorite": True,
+    }
+    if news is not None:
+        payload["news"] = serialize_published_news(news, source_name=source_name)
+    return payload

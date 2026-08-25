@@ -5,8 +5,10 @@ import os
 from fastapi import Depends, Header
 from sqlalchemy.orm import Session
 
+from app.application_services.analytics_service import AnalyticsService
 from app.application_services.auth_service import AuthService
 from app.application_services.clustering_service import ClusteringService
+from app.application_services.favorite_service import FavoriteService
 from app.application_services.ingestion_service import IngestionService
 from app.application_services.interaction_service import InteractionService
 from app.application_services.justification_service import GeminiJustificationService
@@ -58,6 +60,14 @@ def get_publishing_service(db: Session = Depends(get_db)) -> PublishingService:
 
 def get_interaction_service(db: Session = Depends(get_db)) -> InteractionService:
     return InteractionService(db)
+
+
+def get_favorite_service(db: Session = Depends(get_db)) -> FavoriteService:
+    return FavoriteService(db)
+
+
+def get_analytics_service(db: Session = Depends(get_db)) -> AnalyticsService:
+    return AnalyticsService(db)
 
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:

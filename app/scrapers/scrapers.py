@@ -56,6 +56,7 @@ class ElComercioScraper(BaseScraper):
         return {
             'title': self.clean_text(title_elem.get_text()),
             'url': article_url,
+            'image_url': self.extract_image_url(article_soup, article_url),
             'summary': self.clean_text(summary_elem.get_text()) if summary_elem else None,
             'content': content_text,
             'source': self.source_name,
@@ -127,6 +128,7 @@ class LaRepublicaScraper(BaseScraper):
         return {
             'title': self.clean_text(title_elem.get_text()),
             'url': article_url,
+            'image_url': self.extract_image_url(article_soup, article_url),
             'summary': self.clean_text(summary_elem.get_text()) if summary_elem else None,
             'content': content_text,
             'source': self.source_name,
@@ -197,6 +199,7 @@ class Peru21Scraper(BaseScraper):
         return {
             'title': self.clean_text(title_elem.get_text()),
             'url': article_url,
+            'image_url': self.extract_image_url(article_soup, article_url),
             'summary': self.clean_text(summary_elem.get_text()) if summary_elem else None,
             'content': content_text,
             'source': self.source_name,
@@ -271,6 +274,7 @@ class RPPNoticiasScraper(BaseScraper):
         return {
             'title': self.clean_text(title_elem.get_text()),
             'url': article_url,
+            'image_url': self.extract_image_url(article_soup, article_url),
             'summary': self.clean_text(summary_elem.get_text()) if summary_elem else None,
             'content': content_text,
             'source': self.source_name,

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from app.api_controllers import (
     admin_router,
     auth_router,
+    favorites_router,
     interaction_router,
     news_router,
     pipeline_router,
@@ -19,7 +20,16 @@ from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
 from app.routers.justification_router import router as justification_router
 from app.routers.ml_router import router as ml_router
-from app.serving.models import NewsClick, NewsReaction, NewsView, PublishedNews, User
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
+    NewsReaction,
+    NewsView,
+    PublishedNews,
+    User,
+    UserAppSession,
+)
 from app.tasks.scheduler import ScrapingScheduler
 
 # Register SQLAlchemy models before create_all.
@@ -28,6 +38,8 @@ _ = (
     IngestionLog,
     MlPrediction,
     NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
     NewsCluster,
     NewsReaction,
     NewsView,
@@ -38,6 +50,7 @@ _ = (
     Source,
     Summary,
     User,
+    UserAppSession,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -48,6 +61,7 @@ app = FastAPI(title="Kenta Backend", version="2.0.0")
 app.include_router(auth_router)
 app.include_router(news_router)
 app.include_router(interaction_router)
+app.include_router(favorites_router)
 app.include_router(admin_router)
 app.include_router(pipeline_router)
 app.include_router(ml_router, prefix="/ml", tags=["ML"])

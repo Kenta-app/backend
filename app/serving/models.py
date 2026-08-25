@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -18,6 +18,8 @@ class User(Base):
     username = Column(String(100), nullable=False, unique=True, index=True)
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
+    birth_date = Column(Date, nullable=True)
+    gender = Column(String(50), nullable=True)
     role = Column(String(50), nullable=False, default="user", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
@@ -29,10 +31,10 @@ class User(Base):
         return self.password_hash == passwordHash
 
     def changeRole(self, role: str) -> None:
-        self.role = role
+        self.role = (role or "user").strip().lower()
 
     def canModerate(self) -> bool:
-        return self.role in {"admin", "moderator"}
+        return (self.role or "").lower() in {"admin", "moderator"}
 
 
 class PublishedNews(Base):
@@ -53,6 +55,7 @@ class PublishedNews(Base):
     title = Column(Text, nullable=False)
     summary = Column(Text, nullable=True)
     original_url = Column(Text, nullable=False)
+    image_url = Column(Text, nullable=True)
     sentiment_label = Column(String(20), nullable=True, index=True)
     sentiment_score = Column(Numeric(5, 4), nullable=False, default=Decimal("0.0000"))
     fake_score = Column(Numeric(5, 4), nullable=False, default=Decimal("0.0000"))
@@ -92,6 +95,8 @@ class NewsReaction(Base):
     reaction_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    reaction = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def setReaction(self, value: int) -> None:
         self.reaction = value
@@ -137,3 +142,40 @@ class NewsClick(Base):
 
     def registerClick(self) -> None:
         self.clicked_at = datetime.utcnow()
+
+
+class NewsDetailClick(Base):
+    __tablename__ = "news_detail_clicks"
+    __table_args__ = {"schema": "serving"}
+
+    detail_click_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def registerClick(self) -> None:
+        self.clicked_at = datetime.utcnow()
+
+
+class UserAppSession(Base):
+    __tablename__ = "user_app_sessions"
+    __table_args__ = {"schema": "serving"}
+
+    session_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    time_spent_sec = Column(Integer, nullable=False, default=0)
+    started_at = Column(DateTime, nullable=False, index=True)
+    ended_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class NewsFavorite(Base):
+    __tablename__ = "news_favorites"
+    __table_args__ = (
+        Index("idx_user_news_favorite", "user_id", "news_id", unique=True),
+        {"schema": "serving"},
+    )
+
+    favorite_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    saved_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

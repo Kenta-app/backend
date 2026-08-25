@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -58,6 +58,7 @@ class WebScraperIngestion(IIngestionStrategy):
                 platform="web",
                 source_account=source.name[:50],
                 original_url=item.get("original_url") or source.base_url,
+                image_url=item.get("image_url"),
                 title_raw=item.get("title_raw"),
                 content_raw=self._coerce_text(item.get("content_raw")),
                 author_raw=item.get("author_raw"),
@@ -111,6 +112,7 @@ class WebScraperIngestion(IIngestionStrategy):
                 normalized.append(
                     {
                         "original_url": item.get("url"),
+                        "image_url": item.get("image_url"),
                         "title_raw": item.get("title"),
                         "content_raw": self._coerce_text(item.get("content")),
                         "author_raw": item.get("author"),
@@ -162,10 +164,19 @@ class WebScraperIngestion(IIngestionStrategy):
 
 
 class TwitterApiIngestion(IIngestionStrategy):
-    def __init__(self, db: Session, apiKey: str | None = None, account: str | None = None):
+    API_BASE_URL = "https://api.x.com/2"
+
+    def __init__(
+        self,
+        db: Session,
+        apiKey: str | None = None,
+        account: str | None = None,
+        httpClient: requests.Session | None = None,
+    ):
         self.db = db
         self.apiKey = apiKey or os.getenv("TWITTER_API_KEY") or os.getenv("TWITTER_BEARER_TOKEN")
         self.account = account
+        self.httpClient = httpClient or requests.Session()
 
     def ingest(self, source_id: int) -> list[RawNews]:
         source = self.db.query(Source).filter(Source.source_id == source_id).first()
@@ -176,7 +187,12 @@ class TwitterApiIngestion(IIngestionStrategy):
         if not source.is_active:
             return []
 
-        account = self.account or source.name
+        account = (
+            self.account
+            or source.source_account
+            or self._account_from_url(source.base_url)
+            or source.name
+        )
         tweets = self.fetchTweets(account)
         raw_items: list[RawNews] = []
         for tweet in tweets:
@@ -187,6 +203,7 @@ class TwitterApiIngestion(IIngestionStrategy):
                     platform="twitter",
                     source_account=account[:50],
                     original_url=tweet.get("url") or source.base_url,
+                    image_url=tweet.get("image_url"),
                     title_raw=tweet.get("title") or tweet.get("text"),
                     content_raw=tweet.get("text"),
                     author_raw=tweet.get("author") or account,
@@ -204,10 +221,91 @@ class TwitterApiIngestion(IIngestionStrategy):
         if not account:
             return []
         if not self.apiKey:
-            logger.warning("Twitter API key no configurada. Se devuelve una lista vacia.")
-            return []
-        logger.info(
-            "Twitter ingestion is configured for account %s but no live client is wired yet.",
-            account,
+            raise ValueError("TWITTER_BEARER_TOKEN no esta configurado.")
+
+        username = account.strip().lstrip("@")
+        headers = {"Authorization": f"Bearer {self.apiKey}"}
+        user_response = self.httpClient.get(
+            f"{self.API_BASE_URL}/users/by/username/{quote(username, safe='')}",
+            headers=headers,
+            timeout=20,
         )
-        return []
+        user_response.raise_for_status()
+        user_data = user_response.json().get("data") or {}
+        user_id = user_data.get("id")
+        resolved_username = user_data.get("username") or username
+        if not user_id:
+            raise ValueError(f"La cuenta de X @{username} no existe o no es accesible.")
+
+        max_results = self._max_results()
+        timeline_response = self.httpClient.get(
+            f"{self.API_BASE_URL}/users/{quote(str(user_id), safe='')}/tweets",
+            headers=headers,
+            params={
+                "max_results": max_results,
+                "exclude": "retweets,replies",
+                "tweet.fields": "created_at,attachments",
+                "expansions": "attachments.media_keys",
+                "media.fields": "media_key,type,url,preview_image_url",
+            },
+            timeout=20,
+        )
+        timeline_response.raise_for_status()
+        payload = timeline_response.json()
+        media_by_key = {
+            media.get("media_key"): media
+            for media in (payload.get("includes") or {}).get("media", [])
+            if media.get("media_key")
+        }
+
+        tweets: list[dict[str, Any]] = []
+        for item in payload.get("data") or []:
+            tweet_id = item.get("id")
+            text = " ".join((item.get("text") or "").split())
+            if not tweet_id or not text:
+                continue
+            media_keys = (item.get("attachments") or {}).get("media_keys") or []
+            tweets.append(
+                {
+                    "id": str(tweet_id),
+                    "title": text,
+                    "text": text,
+                    "author": f"@{resolved_username}",
+                    "url": f"https://x.com/{resolved_username}/status/{tweet_id}",
+                    "published_at": item.get("created_at"),
+                    "image_url": self._first_media_image(media_keys, media_by_key),
+                }
+            )
+        return tweets
+
+    @staticmethod
+    def _first_media_image(
+        media_keys: list[str],
+        media_by_key: dict[str, dict[str, Any]],
+    ) -> str | None:
+        for media_key in media_keys:
+            media = media_by_key.get(media_key) or {}
+            media_type = media.get("type")
+            if media_type == "photo" and media.get("url"):
+                return str(media["url"])
+            if media_type in {"video", "animated_gif"} and media.get("preview_image_url"):
+                return str(media["preview_image_url"])
+        return None
+
+    @staticmethod
+    def _account_from_url(value: str | None) -> str | None:
+        if not value:
+            return None
+        parsed = urlparse(value)
+        if parsed.netloc.lower() not in {"x.com", "www.x.com", "twitter.com", "www.twitter.com"}:
+            return None
+        path_parts = [part for part in parsed.path.split("/") if part]
+        return path_parts[0].lstrip("@") if path_parts else None
+
+    @staticmethod
+    def _max_results() -> int:
+        try:
+            configured = int(os.getenv("TWITTER_MAX_RESULTS", "10"))
+        except ValueError:
+            configured = 10
+        return min(max(configured, 5), 100)

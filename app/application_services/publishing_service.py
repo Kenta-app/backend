@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.interfaces.news_repository import INewsRepository
 from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, Summary
+from app.processed.text_utils import clip_readable, finish_truncated, repair_english_intrusions
 from app.raw.models import RawNews
 from app.serving.models import PublishedNews
 
@@ -58,7 +59,14 @@ class PublishingService:
         news.source_id = processed.source_id
         news.title = raw_news.title_raw or (processed.clean_text or "")[:160]
         news.original_url = raw_news.original_url
-        news.updateSummary(summary.summary_text if summary else (processed.clean_text or "")[:800])
+        news.image_url = raw_news.image_url
+        news.updateSummary(
+            finish_truncated(
+                repair_english_intrusions(summary.summary_text, processed.clean_text)
+            )
+            if summary
+            else clip_readable(processed.clean_text, 900)
+        )
 
         if prediction:
             news.updatePrediction(
