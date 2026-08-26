@@ -61,15 +61,14 @@ class NewsController(BaseController):
 
         published_items = [item for item in items if item.isPublished()]
         if source_id or source_name:
+            total = len(published_items)
             offset = max(page - 1, 0) * pageSize
             published_items = published_items[offset : offset + pageSize]
+        else:
+            total = self.publishingService.newsRepository.countPublished()
 
-        source_names = self._source_name_map(published_items)
-        serialized = [
-            serialize_published_news(item, source_name=source_names.get(item.source_id))
-            for item in published_items
-        ]
-        return self.successResponse(self.paginate(serialized, page, pageSize))
+        serialized = [serialize_published_news(item) for item in published_items]
+        return self.successResponse(self.paginate(serialized, page, pageSize, total))
 
     def getNewsDetail(self, newsId: int) -> dict:
         news = self.publishingService.newsRepository.findById(newsId)

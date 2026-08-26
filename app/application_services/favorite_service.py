@@ -19,14 +19,13 @@ class FavoriteService:
 
     def addFavorite(self, userId: int, newsId: int) -> NewsFavorite:
         self._getPublishedNews(newsId)
-
-        item = (
+        existing = (
             self.db.query(NewsFavorite)
             .filter(NewsFavorite.user_id == userId, NewsFavorite.news_id == newsId)
             .first()
         )
-        if item:
-            return item  # idempotente: ya existía
+        if existing:
+            return existing
 
         item = NewsFavorite(user_id=userId, news_id=newsId)
         self.db.add(item)
@@ -40,29 +39,26 @@ class FavoriteService:
             .filter(NewsFavorite.user_id == userId, NewsFavorite.news_id == newsId)
             .first()
         )
-        if not item:
-            raise ValueError("Favorito no encontrado.")
-
-        self.db.delete(item)
-        self.db.commit()
+        if item:
+            self.db.delete(item)
+            self.db.commit()
 
     def isFavorite(self, userId: int, newsId: int) -> bool:
-        item = (
+        return (
             self.db.query(NewsFavorite)
             .filter(NewsFavorite.user_id == userId, NewsFavorite.news_id == newsId)
             .first()
+            is not None
         )
-        return item is not None
 
     def listFavorites(
         self,
         userId: int,
-        page: int,
-        pageSize: int,
+        page: int = 1,
+        pageSize: int = 10,
     ) -> list[tuple[NewsFavorite, PublishedNews]]:
         offset = max(page - 1, 0) * pageSize
-
-        rows = (
+        return (
             self.db.query(NewsFavorite, PublishedNews)
             .join(PublishedNews, PublishedNews.news_id == NewsFavorite.news_id)
             .filter(NewsFavorite.user_id == userId)
@@ -70,12 +66,4 @@ class FavoriteService:
             .offset(offset)
             .limit(pageSize)
             .all()
-        )
-        return rows
-
-    def countFavorites(self, userId: int) -> int:
-        return (
-            self.db.query(NewsFavorite)
-            .filter(NewsFavorite.user_id == userId)
-            .count()
         )

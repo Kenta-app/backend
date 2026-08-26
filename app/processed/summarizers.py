@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.interfaces.summarizer_service import ISummarizerService
 from app.ml.summarizer import summarizer_service
 from app.processed.models import ProcessedNews, Summary
+from app.processed.text_utils import clip_readable, finish_truncated
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,11 @@ class _SummaryPersistenceMixin:
         if not summary:
             summary = Summary(
                 representative_news_processed_id=representativeNewsProcessedId,
-                summary_text=summary_text,
+                summary_text=finish_truncated(summary_text),
                 model_version=self.getModelVersion(),
             )
         else:
-            summary.updateText(summary_text)
+            summary.updateText(finish_truncated(summary_text))
             summary.model_version = self.getModelVersion()
 
         self.db.add(summary)
@@ -161,4 +162,4 @@ class LocalModelSummarizer(_SummaryPersistenceMixin, ISummarizerService):
         if summarizer_service.should_summarize(text):
             self.loadModel()
             return summarizer_service.summarize(text)
-        return text[: min(len(text), self.maxTokens * 5)]
+        return clip_readable(text, max(self.maxTokens * 8, 700))

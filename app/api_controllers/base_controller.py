@@ -30,10 +30,10 @@ class BaseController:
     def errorResponse(self, message: str, code: int) -> dict:
         return {"success": False, "error": {"message": message, "code": code}}
 
-    def paginate(self, items: list, page: int, pageSize: int) -> dict:
+    def paginate(self, items: list, page: int, pageSize: int, total: int | None = None) -> dict:
         return {
             "items": items,
             "page": page,
             "pageSize": pageSize,
-            "count": len(items),
+            "count": len(items) if total is None else total,
         }

@@ -17,6 +17,10 @@ class INewsRepository(ABC):
         """Return a paginated collection of published news items."""
 
     @abstractmethod
+    def countPublished(self) -> int:
+        """Return the total number of published news items."""
+
+    @abstractmethod
     def save(self, news: "PublishedNews") -> "PublishedNews":
         """Persist a published news item."""
 

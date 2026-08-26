@@ -12,7 +12,12 @@ from app.application_services.analytics_service import AnalyticsService
 from app.application_services.ingestion_service import IngestionService
 from app.application_services.publishing_service import PublishingService
 from app.db.database import get_db
-from app.dependencies import get_analytics_service, get_current_user, get_ingestion_service, get_publishing_service
+from app.dependencies import (
+    get_analytics_service,
+    get_current_user,
+    get_ingestion_service,
+    get_publishing_service,
+)
 from app.raw.models import Source
 from app.serving.models import User
 
@@ -44,7 +49,7 @@ class AdminController(BaseController):
 
     def postSource(self, name: str, baseUrl: str, type: str, parserKey: str | None = None, sourceAccount: str | None = None) -> dict:
         self._require_moderator()
-        del parserKey, sourceAccount
+        del parserKey
 
         normalized_type = type.lower()
         if normalized_type not in {"web", "social", "twitter"}:
@@ -56,6 +61,7 @@ class AdminController(BaseController):
         source = Source(
             name=name,
             base_url=baseUrl,
+            source_account=(sourceAccount or "").strip().lstrip("@") or None,
             type=normalized_type,
         )
         source.register()

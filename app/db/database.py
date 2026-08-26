@@ -3,7 +3,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(encoding="utf-8-sig")
 
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv(
     "MYSQL_DATABASE_URL",

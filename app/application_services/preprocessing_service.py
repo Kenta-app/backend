@@ -86,6 +86,12 @@ class PreprocessingService:
         text = re.sub(r"<[^>]+>", " ", text)
         text = re.sub(r"https?://\S+|www\.\S+", " ", text)
         text = re.sub(r"[@#]\w+", " ", text)
+        text = re.sub(
+            r"\b(?:leer\s+(?:el\s+)?resumen|leer\s+m[aá]s|publicidad|compartir)\b",
+            " ",
+            text,
+            flags=re.IGNORECASE,
+        )
         text = re.sub(r"[^\w\s.,;:!?áéíóúÁÉÍÓÚñÑ-]", " ", text)
         text = re.sub(r"\s+", " ", text)
         return text.strip()

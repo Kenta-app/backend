@@ -3,6 +3,7 @@ from typing import List, Dict
 import requests
 from bs4 import BeautifulSoup
 import logging
+from urllib.parse import urljoin, urlparse
 
 try:
     import cloudscraper
@@ -11,6 +12,32 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def extract_representative_image_url(soup: BeautifulSoup, page_url: str) -> str | None:
+    """Extrae una URL HTTP(S) representativa desde metadatos sociales."""
+    selectors = (
+        'meta[property="og:image:secure_url"]',
+        'meta[property="og:image"]',
+        'meta[name="twitter:image"]',
+        'meta[property="twitter:image"]',
+    )
+    for selector in selectors:
+        element = soup.select_one(selector)
+        content = element.get("content") if element else None
+        if not content:
+            continue
+
+        image_url = urljoin(page_url, content.strip())
+        parsed = urlparse(image_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            continue
+
+        if parsed.scheme == "http":
+            image_url = parsed._replace(scheme="https").geturl()
+        return image_url
+
+    return None
 
 class BaseScraper(ABC):
     def __init__(self, source_name: str, base_url: str):
@@ -58,3 +85,7 @@ class BaseScraper(ABC):
         if not text:
             return ""
         return " ".join(text.split()).strip()
+
+    def extract_image_url(self, soup: BeautifulSoup, page_url: str) -> str | None:
+        """Extrae la imagen representativa publicada en los metadatos del artículo."""
+        return extract_representative_image_url(soup, page_url)
