@@ -1,4 +1,6 @@
+import os
 import unittest
+from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -8,12 +10,26 @@ from sqlalchemy.pool import StaticPool
 
 from app.api_controllers import admin_router, auth_router, news_router
 from app.db.database import Base, apply_sqlite_schema_translation, get_db
+from app.dependencies import get_email_sender
 from app.raw.models import Source
 from app.serving.models import PublishedNews, User
 
 
+class FakeEmailSender:
+    def __init__(self):
+        self.messages = []
+
+    def sendVerificationCode(self, email: str, code: str) -> None:
+        self.messages.append({"email": email, "code": code})
+
+
 class ApiControllersTests(unittest.TestCase):
     def setUp(self):
+        self.environment = patch.dict(
+            os.environ,
+            {"EMAIL_VERIFICATION_SECRET": "test-verification-secret"},
+        )
+        self.environment.start()
         self.engine = apply_sqlite_schema_translation(
             create_engine(
                 "sqlite://",
@@ -37,12 +53,15 @@ class ApiControllersTests(unittest.TestCase):
                 pass
 
         app.dependency_overrides[get_db] = override_get_db
+        self.emailSender = FakeEmailSender()
+        app.dependency_overrides[get_email_sender] = lambda: self.emailSender
         self.client = TestClient(app)
 
     def tearDown(self):
         self.db.close()
         Base.metadata.drop_all(bind=self.engine)
         self.engine.dispose()
+        self.environment.stop()
 
     def test_auth_register_and_login(self):
         register_response = self.client.post(
@@ -51,7 +70,18 @@ class ApiControllersTests(unittest.TestCase):
                 "username": "bob",
                 "email": "bob@example.com",
                 "password": "123456",
+                "acceptedTerms": True,
+                "termsVersion": "2026-08-28",
+                "privacyPolicyVersion": "2026-08-28",
             },
+        )
+        unverified_login_response = self.client.post(
+            "/auth/login",
+            json={"email": "bob@example.com", "password": "123456"},
+        )
+        verification_response = self.client.post(
+            "/auth/verify-email",
+            json={"email": "bob@example.com", "code": self.emailSender.messages[-1]["code"]},
         )
         login_response = self.client.post(
             "/auth/login",
@@ -59,7 +89,9 @@ class ApiControllersTests(unittest.TestCase):
         )
 
         self.assertEqual(register_response.status_code, 200)
-        self.assertEqual(register_response.json()["data"]["username"], "bob")
+        self.assertTrue(register_response.json()["data"]["verificationRequired"])
+        self.assertEqual(unverified_login_response.status_code, 403)
+        self.assertEqual(verification_response.status_code, 200)
         self.assertEqual(login_response.status_code, 200)
         self.assertEqual(login_response.json()["data"]["email"], "bob@example.com")
 

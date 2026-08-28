@@ -22,6 +22,15 @@ class User(Base):
     gender = Column(String(50), nullable=True)
     role = Column(String(50), nullable=False, default="user", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    email_verified_at = Column(DateTime, nullable=True, index=True)
+    email_verification_code_hash = Column(String(128), nullable=True)
+    email_verification_expires_at = Column(DateTime, nullable=True)
+    email_verification_sent_at = Column(DateTime, nullable=True)
+    email_verification_attempts = Column(Integer, nullable=False, default=0)
+    terms_version = Column(String(32), nullable=True)
+    terms_accepted_at = Column(DateTime, nullable=True)
+    privacy_policy_version = Column(String(32), nullable=True)
+    privacy_policy_accepted_at = Column(DateTime, nullable=True)
 
     def register(self) -> None:
         if not self.created_at:

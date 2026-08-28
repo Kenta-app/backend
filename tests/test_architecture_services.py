@@ -17,6 +17,14 @@ from app.raw.models import IngestionLog, RawNews, Source
 from app.serving.repository import NewsRepository
 
 
+class FakeEmailSender:
+    def __init__(self):
+        self.messages = []
+
+    def sendVerificationCode(self, email: str, code: str) -> None:
+        self.messages.append({"email": email, "code": code})
+
+
 class ArchitectureServicesTests(unittest.TestCase):
     def setUp(self):
         self.engine = apply_sqlite_schema_translation(
@@ -35,12 +43,24 @@ class ArchitectureServicesTests(unittest.TestCase):
         self.engine.dispose()
 
     def test_auth_service_registers_and_verifies_password(self):
-        service = AuthService(self.db)
+        email_sender = FakeEmailSender()
+        service = AuthService(
+            self.db,
+            email_sender,
+            verificationSecret="test-verification-secret",
+        )
 
-        user = service.register("alice", "alice@example.com", "super-secret")
+        user = service.register(
+            "alice",
+            "alice@example.com",
+            "super-secret",
+            termsVersion="2026-08-28",
+            privacyPolicyVersion="2026-08-28",
+        )
 
         self.assertNotEqual(user.password_hash, "super-secret")
         self.assertTrue(service.verifyPassword("super-secret", user.password_hash))
+        service.verifyEmail("alice@example.com", email_sender.messages[-1]["code"])
         self.assertEqual(service.login("alice@example.com", "super-secret").user_id, user.user_id)
 
     def test_preprocess_cluster_and_publish_pipeline_snapshot(self):
