@@ -20,6 +20,13 @@ def main() -> None:
             return
 
         statements = [
+            # Migraciones históricas requeridas por los modelos actuales.
+            "ALTER TABLE raw.source ADD COLUMN IF NOT EXISTS source_account VARCHAR(100)",
+            "ALTER TABLE raw.news_raw ADD COLUMN IF NOT EXISTS image_url TEXT",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS image_url TEXT",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS birth_date DATE",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS gender VARCHAR(50)",
+            # Verificación de correo y evidencia de aceptación de documentos.
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS email_verification_code_hash VARCHAR(128)",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMP",

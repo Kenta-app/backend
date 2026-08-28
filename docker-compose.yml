@@ -104,7 +104,7 @@ services:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/${NGINX_CONFIG_FILE:-nginx.conf}:/etc/nginx/nginx.conf:ro
       - ./docker/certbot/www:/var/www/certbot:ro
       - ./docker/certbot/conf:/etc/letsencrypt:ro
     depends_on:
@@ -145,6 +145,19 @@ services:
       - ./output:/app/output:ro
       - ./data:/app/data:ro
       - hf_cache:/root/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  news-images-backfill:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - jobs
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-kenta}
+    command: ["python", "scripts/backfill_news_images.py", "--apply"]
     depends_on:
       postgres:
         condition: service_healthy
