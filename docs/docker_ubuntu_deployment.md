@@ -10,6 +10,8 @@ el proceso FastAPI. Por eso hay una sola imagen backend:
 - `nginx`: reverse proxy HTTP.
 - `summary-backfill`: job opcional que usa la misma imagen de `api` para generar
   resumenes fuera del request.
+- `news-images-backfill`: job de una sola ejecución que completa las URLs de
+  imagen de noticias ya publicadas que aún no la tienen.
 
 PostgreSQL queda solo en la red interna de Docker. En producción no se publica
 `5432` hacia internet.
@@ -110,6 +112,30 @@ Cambiar limite:
 
 ```bash
 SUMMARY_BACKFILL_LIMIT=50 docker compose --profile jobs run --rm summary-backfill
+```
+
+## Backfill de imágenes de noticias
+
+Se usa solo cuando se añade `image_url` a una base de datos que ya contiene
+noticias. El job consulta exclusivamente filas de `serving.news` sin imagen; no
+sobrescribe URLs existentes ni crea o elimina noticias. Primero ejecuta una
+vista previa de 10 filas:
+
+```bash
+docker compose exec -T api python scripts/backfill_news_images.py --limit 10
+```
+
+Si las URLs mostradas son correctas, ejecútelo una sola vez. Se ejecuta en un
+contenedor temporal y no reinicia `api`, `frontend` ni `nginx`:
+
+```bash
+docker compose --profile jobs run --rm news-images-backfill
+```
+
+Al terminar, comprueba cuántas noticias quedaron con imagen:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT COUNT(*) AS total, COUNT(image_url) AS con_imagen FROM serving.news;"'
 ```
 
 ## Reglas para 4 GB RAM
