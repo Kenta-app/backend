@@ -23,6 +23,7 @@ from app.processed.summarizers import LocalModelSummarizer
 from app.raw.ingestion_strategies import TwitterApiIngestion, WebScraperIngestion
 from app.serving.models import User
 from app.serving.repository import NewsRepository
+from app.services.email_service import ResendEmailSender
 
 
 def get_current_user(
@@ -71,8 +72,15 @@ def get_analytics_service(db: Session = Depends(get_db)) -> AnalyticsService:
     return AnalyticsService(db)
 
 
-def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
-    return AuthService(db)
+def get_email_sender() -> ResendEmailSender:
+    return ResendEmailSender()
+
+
+def get_auth_service(
+    db: Session = Depends(get_db),
+    email_sender: ResendEmailSender = Depends(get_email_sender),
+) -> AuthService:
+    return AuthService(db, email_sender)
 
 
 def get_justification_service(db: Session = Depends(get_db)) -> GeminiJustificationService:
