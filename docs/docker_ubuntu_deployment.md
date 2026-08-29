@@ -114,6 +114,31 @@ Cambiar limite:
 SUMMARY_BACKFILL_LIMIT=50 docker compose --profile jobs run --rm summary-backfill
 ```
 
+## Búsqueda reciente en X/Twitter
+
+Para leer publicaciones públicas se requiere `TWITTER_BEARER_TOKEN`; el
+Consumer Key y el Access Token de usuario no reemplazan ese token. Configurar
+en `.env` un Bearer Token de lectura y una consulta específica de hasta 512
+caracteres:
+
+```env
+TWITTER_BEARER_TOKEN=pega_el_bearer_token_solo_en_el_servidor
+TWITTER_MAX_RESULTS=10
+TWITTER_SEARCH_QUERY="(Perú OR peruano) (Congreso OR Gobierno OR elecciones OR política OR presidenta OR presidente) lang:es -is:retweet -is:reply"
+```
+
+Después de desplegar, registra o actualiza la fuente una sola vez. El comando
+no consulta X ni procesa noticias; solo guarda la consulta en PostgreSQL:
+
+```bash
+docker compose exec -T api python scripts/configure_twitter_search_source.py
+```
+
+El scheduler procesa la fuente como `twitter` en su siguiente ejecución. La
+consulta devuelve solo una página de hasta `TWITTER_MAX_RESULTS` publicaciones
+para limitar el costo y el volumen. No pongas tokens en Git, en código ni en
+mensajes de chat.
+
 ## Backfill de imágenes de noticias
 
 Se usa solo cuando se añade `image_url` a una base de datos que ya contiene

@@ -22,6 +22,7 @@ def main() -> None:
         statements = [
             # Migraciones históricas requeridas por los modelos actuales.
             "ALTER TABLE raw.source ADD COLUMN IF NOT EXISTS source_account VARCHAR(100)",
+            "ALTER TABLE raw.source ADD COLUMN IF NOT EXISTS search_query VARCHAR(512)",
             "ALTER TABLE raw.news_raw ADD COLUMN IF NOT EXISTS image_url TEXT",
             "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS image_url TEXT",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS birth_date DATE",

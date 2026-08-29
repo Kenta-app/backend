@@ -136,6 +136,38 @@ class ApiControllersTests(unittest.TestCase):
             "Fuente Demo",
         )
 
+    def test_news_detail_returns_published_news_with_empty_evidence(self):
+        source = Source(
+            name="Fuente Detalle",
+            base_url="https://example.com",
+            type="web",
+        )
+        source.register()
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+
+        news = PublishedNews(
+            representative_news_processed_id=2,
+            source_id=source.source_id,
+            title="Noticia de detalle",
+            summary="Resumen de detalle",
+            original_url="https://example.com/detail",
+            sentiment_label="discuss",
+            sentiment_score=0.8,
+            fake_score=0.2,
+        )
+        news.publish()
+        self.db.add(news)
+        self.db.commit()
+        self.db.refresh(news)
+
+        response = self.client.get(f"/news/{news.news_id}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["newsId"], news.news_id)
+        self.assertEqual(response.json()["data"]["sources"], [])
+
     def test_admin_can_create_source(self):
         admin = User(
             username="admin",

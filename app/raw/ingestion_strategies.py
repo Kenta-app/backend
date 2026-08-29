@@ -193,15 +193,17 @@ class TwitterApiIngestion(IIngestionStrategy):
             or self._account_from_url(source.base_url)
             or source.name
         )
-        tweets = self.fetchTweets(account)
+        search_query = " ".join((source.search_query or "").split())
+        tweets = self.searchRecentPosts(search_query) if search_query else self.fetchTweets(account)
         raw_items: list[RawNews] = []
         for tweet in tweets:
+            tweet_account = str(tweet.get("account") or account).lstrip("@")
             raw_items.append(
                 RawNews(
                     source_id=source.source_id,
                     log_id=0,
                     platform="twitter",
-                    source_account=account[:50],
+                    source_account=tweet_account[:50],
                     original_url=tweet.get("url") or source.base_url,
                     image_url=tweet.get("image_url"),
                     title_raw=tweet.get("title") or tweet.get("text"),
@@ -271,7 +273,71 @@ class TwitterApiIngestion(IIngestionStrategy):
                     "title": text,
                     "text": text,
                     "author": f"@{resolved_username}",
+                    "account": resolved_username,
                     "url": f"https://x.com/{resolved_username}/status/{tweet_id}",
+                    "published_at": item.get("created_at"),
+                    "image_url": self._first_media_image(media_keys, media_by_key),
+                }
+            )
+        return tweets
+
+    def searchRecentPosts(self, query: str) -> list[dict[str, Any]]:
+        """Busca una página reciente para mantener el gasto y el ruido acotados."""
+        if not self.apiKey:
+            raise ValueError("TWITTER_BEARER_TOKEN no esta configurado.")
+
+        normalized_query = " ".join((query or "").split())
+        if not normalized_query:
+            return []
+        if len(normalized_query) > 512:
+            raise ValueError("La consulta de X no puede superar 512 caracteres.")
+
+        response = self.httpClient.get(
+            f"{self.API_BASE_URL}/tweets/search/recent",
+            headers={"Authorization": f"Bearer {self.apiKey}"},
+            params={
+                "query": normalized_query,
+                "max_results": self._search_max_results(),
+                "tweet.fields": "created_at,attachments,author_id,lang,public_metrics",
+                "expansions": "author_id,attachments.media_keys",
+                "user.fields": "username,name,verified",
+                "media.fields": "media_key,type,url,preview_image_url",
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        media_by_key = {
+            media.get("media_key"): media
+            for media in (payload.get("includes") or {}).get("media", [])
+            if media.get("media_key")
+        }
+        username_by_author_id = {
+            user.get("id"): user.get("username")
+            for user in (payload.get("includes") or {}).get("users", [])
+            if user.get("id") and user.get("username")
+        }
+
+        tweets: list[dict[str, Any]] = []
+        for item in payload.get("data") or []:
+            tweet_id = item.get("id")
+            text = " ".join((item.get("text") or "").split())
+            if not tweet_id or not text:
+                continue
+            username = username_by_author_id.get(item.get("author_id"))
+            media_keys = (item.get("attachments") or {}).get("media_keys") or []
+            tweets.append(
+                {
+                    "id": str(tweet_id),
+                    "title": text,
+                    "text": text,
+                    "author": f"@{username}" if username else "X",
+                    "account": username,
+                    "url": (
+                        f"https://x.com/{username}/status/{tweet_id}"
+                        if username
+                        else f"https://x.com/i/web/status/{tweet_id}"
+                    ),
                     "published_at": item.get("created_at"),
                     "image_url": self._first_media_image(media_keys, media_by_key),
                 }
@@ -309,3 +375,7 @@ class TwitterApiIngestion(IIngestionStrategy):
         except ValueError:
             configured = 10
         return min(max(configured, 5), 100)
+
+    @staticmethod
+    def _search_max_results() -> int:
+        return min(max(TwitterApiIngestion._max_results(), 10), 100)
