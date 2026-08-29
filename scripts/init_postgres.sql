@@ -13,6 +13,7 @@ CREATE TABLE raw.source (
     name VARCHAR(255) NOT NULL,
     base_url VARCHAR(500) NOT NULL,
     source_account VARCHAR(100),
+    search_query VARCHAR(512),
     created_at TIMESTAMP NOT NULL,
     type VARCHAR(50) NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true

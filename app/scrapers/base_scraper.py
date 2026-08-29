@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
+import os
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -48,6 +49,15 @@ class BaseScraper(ABC):
             'Accept-Language': 'es-PE,es;q=0.9,en;q=0.8',
         }
         self._cloudscraper_client = None
+
+    @property
+    def max_articles_per_run(self) -> int:
+        """Evita que una fuente lenta bloquee el ciclo completo de scraping."""
+        try:
+            configured = int(os.getenv("SCRAPER_MAX_ARTICLES_PER_SOURCE", "10"))
+        except ValueError:
+            configured = 10
+        return min(max(configured, 1), 50)
 
     def fetch_page(self, url: str) -> BeautifulSoup:
         """Obtiene y parsea una página"""

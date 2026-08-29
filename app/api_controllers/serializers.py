@@ -21,6 +21,7 @@ def serialize_source(source: Source) -> dict:
         "name": source.name,
         "baseUrl": source.base_url,
         "sourceAccount": source.source_account,
+        "searchQuery": source.search_query,
         "type": source.type,
         "isActive": source.is_active,
         "createdAt": source.created_at.isoformat() if source.created_at else None,
@@ -44,8 +45,9 @@ def serialize_published_news(
     *,
     source_name: str | None = None,
     prediction_id: int | None = None,
+    sources: list[dict] | None = None,
 ) -> dict:
-    return {
+    payload = {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
         "predictionId": prediction_id,

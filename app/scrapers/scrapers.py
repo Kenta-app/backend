@@ -74,6 +74,8 @@ class ElComercioScraper(BaseScraper):
             containers = soup.select('div.story-item')
 
             for container in containers:
+                if len(articles) >= self.max_articles_per_run:
+                    break
                 #if len(articles) >= 5:
                 #    return articles
 
@@ -155,6 +157,8 @@ class LaRepublicaScraper(BaseScraper):
             # Other news
             other_news = soup.select('div.ListSection_list__section--item__zeP_z')
             for container in other_news:
+                if len(articles) >= self.max_articles_per_run:
+                    break
                 link = container.select_one('a.extend-link')
                 if not link or not link.get('href'):
                     continue
@@ -217,6 +221,8 @@ class Peru21Scraper(BaseScraper):
 
 
             for container in containers:
+                if len(articles) >= self.max_articles_per_run:
+                    break
                 fecha_html = container.select_one('.field--name-field-fecha-actualizacion')
                 if not fecha_html:
                     continue
@@ -306,6 +312,8 @@ class RPPNoticiasScraper(BaseScraper):
             containers = big_container.select('article.news') if big_container else []
 
             for container in containers:
+                if len(articles) >= self.max_articles_per_run:
+                    break
                 #if len(articles) >= 5:
                 #    return articles
                 link = container.select_one('a')

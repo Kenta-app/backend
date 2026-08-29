@@ -30,6 +30,7 @@ class SourceCreateRequest(BaseModel):
     type: str
     parserKey: str | None = None
     sourceAccount: str | None = None
+    searchQuery: str | None = None
 
 
 class AdminController(BaseController):
@@ -47,13 +48,29 @@ class AdminController(BaseController):
         self.publishingService = publishingService
         self.analyticsService = analyticsService
 
-    def postSource(self, name: str, baseUrl: str, type: str, parserKey: str | None = None, sourceAccount: str | None = None) -> dict:
+    def postSource(
+        self,
+        name: str,
+        baseUrl: str,
+        type: str,
+        parserKey: str | None = None,
+        sourceAccount: str | None = None,
+        searchQuery: str | None = None,
+    ) -> dict:
         self._require_moderator()
         del parserKey
 
         normalized_type = type.lower()
         if normalized_type not in {"web", "social", "twitter"}:
             raise HTTPException(status_code=400, detail="Tipo de fuente no soportado.")
+        normalized_query = " ".join((searchQuery or "").split()) or None
+        if normalized_query and normalized_type not in {"social", "twitter"}:
+            raise HTTPException(
+                status_code=400,
+                detail="searchQuery solo se admite para fuentes de X/Twitter.",
+            )
+        if normalized_query and len(normalized_query) > 512:
+            raise HTTPException(status_code=400, detail="searchQuery no puede superar 512 caracteres.")
         existing = self.db.query(Source).filter(Source.name == name).first()
         if existing:
             raise HTTPException(status_code=400, detail="La fuente ya existe.")
@@ -62,6 +79,7 @@ class AdminController(BaseController):
             name=name,
             base_url=baseUrl,
             source_account=(sourceAccount or "").strip().lstrip("@") or None,
+            search_query=normalized_query,
             type=normalized_type,
         )
         source.register()
@@ -146,6 +164,7 @@ def post_source(
         payload.type,
         payload.parserKey,
         payload.sourceAccount,
+        payload.searchQuery,
     )
 
 
