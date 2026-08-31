@@ -78,7 +78,7 @@ class PublishedNews(Base):
     def publish(self) -> None:
         self.published_at = datetime.utcnow()
 
-    def updateSummary(self, summary: str) -> None:
+    def updateSummary(self, summary: str | None) -> None:
         self.summary = summary
 
     def updatePrediction(

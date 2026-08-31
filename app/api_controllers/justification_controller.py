@@ -92,30 +92,54 @@ class JustificationController(BaseController):
 
     def get_justification(self, prediction_id: int) -> dict:
         """
-        Obtiene la justificación de una predicción (desde caché si existe).
+        Obtiene fuentes persistidas para una predicción sin generar llamadas nuevas a Gemini.
 
         Args:
             prediction_id: ID de la predicción
 
         Returns:
-            Respuesta con JustificationResponse
+            Respuesta con fuentes persistidas
 
         Raises:
-            HTTPException: Si la predicción no existe o hay error
+            HTTPException: Si no hay fuentes persistidas o hay error
         """
         try:
-            request = JustificationRequest(
-                prediction_id=prediction_id,
-                include_context=True,
-                regenerate=False,
-            )
-            return self.generate_justification(request)
+            result = self.justification_service.get_persisted_justification(prediction_id)
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No hay fuentes relacionadas guardadas para esta predicción.",
+                )
+            return self.successResponse(result)
 
         except HTTPException:
             raise
 
         except Exception as exc:
-            logger.error(f"Error al obtener justificación: {str(exc)}")
+            logger.error(f"Error al obtener fuentes persistidas: {str(exc)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Error interno del servidor",
+            ) from exc
+
+    def get_news_justification(self, news_id: int) -> dict:
+        """
+        Obtiene fuentes persistidas para una noticia publicada sin generar llamadas nuevas a Gemini.
+        """
+        try:
+            result = self.justification_service.get_persisted_justification_by_news_id(news_id)
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No hay fuentes relacionadas guardadas para esta noticia.",
+                )
+            return self.successResponse(result)
+
+        except HTTPException:
+            raise
+
+        except Exception as exc:
+            logger.error(f"Error al obtener fuentes persistidas por noticia: {str(exc)}")
             raise HTTPException(
                 status_code=500,
                 detail="Error interno del servidor",

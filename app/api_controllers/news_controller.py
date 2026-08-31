@@ -9,6 +9,7 @@ from app.application_services.publishing_service import PublishingService
 from app.db.database import get_db
 from app.dependencies import build_justification_reader, get_current_user, get_publishing_service
 from app.interfaces.justification_service import IJustificationService
+from app.processed.models import MlPrediction
 from app.raw.models import Source
 from app.serving.models import PublishedNews, User
 
@@ -79,12 +80,21 @@ class NewsController(BaseController):
         evidence_sources: list[dict] = []
         if self.justificationService is not None:
             evidence_sources = self.justificationService.get_sources_by_news_id(newsId)
+        prediction = (
+            self.db.query(MlPrediction)
+            .filter(
+                MlPrediction.representative_news_processed_id
+                == news.representative_news_processed_id
+            )
+            .first()
+        )
 
         return self.successResponse(
             serialize_published_news(
                 news,
                 sources=evidence_sources,
                 source_name=source.name if source else None,
+                prediction_id=prediction.prediction_id if prediction else None,
             )
         )
 

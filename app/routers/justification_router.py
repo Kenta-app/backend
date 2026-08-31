@@ -69,26 +69,6 @@ def generate_justification(
     return controller.generate_justification(request)
 
 
-@router.get("/{prediction_id}", summary="Obtener justificación de una predicción")
-def get_justification(
-    prediction_id: int = Path(..., description="ID de la predicción"),
-    controller: JustificationController = Depends(get_justification_controller),
-) -> dict:
-    """
-    Obtiene la justificación de una predicción (desde caché si existe).
-
-    **Path Parameters:**
-    - `prediction_id` (int): ID de la predicción
-
-    **Responses:**
-    - 200: Justificación obtenida (desde caché o generada)
-    - 404: Predicción no encontrada
-    - 503: Servicio no disponible
-    - 500: Error interno del servidor
-    """
-    return controller.get_justification(prediction_id)
-
-
 @router.delete("/cache", summary="Limpiar caché de justificaciones")
 def clear_cache(
     prediction_id: Optional[int] = Query(
@@ -151,4 +131,28 @@ def get_cache_stats(
     ```
     """
     return controller.get_cache_stats()
+
+
+@router.get("/news/{news_id}", summary="Obtener fuentes guardadas de una noticia")
+def get_news_justification(
+    news_id: int = Path(..., description="ID de la noticia publicada"),
+    controller: JustificationController = Depends(get_justification_controller),
+) -> dict:
+    """
+    Obtiene fuentes relacionadas ya guardadas para una noticia publicada.
+    Este endpoint no invoca Gemini ni genera costos nuevos.
+    """
+    return controller.get_news_justification(news_id)
+
+
+@router.get("/{prediction_id}", summary="Obtener fuentes guardadas de una predicción")
+def get_justification(
+    prediction_id: int = Path(..., description="ID de la predicción"),
+    controller: JustificationController = Depends(get_justification_controller),
+) -> dict:
+    """
+    Obtiene fuentes relacionadas ya guardadas para una predicción.
+    Este endpoint no invoca Gemini ni genera costos nuevos.
+    """
+    return controller.get_justification(prediction_id)
 

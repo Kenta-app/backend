@@ -50,6 +50,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       JUSTIFICATION_AUTO_ENABLED: ${JUSTIFICATION_AUTO_ENABLED:-false}
+      JUSTIFICATION_MODEL: ${JUSTIFICATION_MODEL:-gemini-2.5-flash}
+      JUSTIFICATION_MAX_SOURCES: ${JUSTIFICATION_MAX_SOURCES:-4}
       JUSTIFICATION_CACHE_TTL: ${JUSTIFICATION_CACHE_TTL:-3600}
       JUSTIFICATION_MAX_RETRIES: ${JUSTIFICATION_MAX_RETRIES:-3}
       JUSTIFICATION_RETRY_DELAY: ${JUSTIFICATION_RETRY_DELAY:-2}
@@ -164,6 +166,33 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-kenta}
     command: ["python", "scripts/backfill_news_images.py", "--apply"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  related-sources:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - jobs
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-kenta}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      JUSTIFICATION_MODEL: ${JUSTIFICATION_MODEL:-gemini-2.5-flash}
+      JUSTIFICATION_MAX_SOURCES: ${JUSTIFICATION_MAX_SOURCES:-4}
+      JUSTIFICATION_CACHE_TTL: ${JUSTIFICATION_CACHE_TTL:-3600}
+      JUSTIFICATION_MAX_RETRIES: ${JUSTIFICATION_MAX_RETRIES:-3}
+      JUSTIFICATION_RETRY_DELAY: ${JUSTIFICATION_RETRY_DELAY:-2}
+    command:
+      [
+        "python",
+        "scripts/generate_related_sources.py",
+        "--limit",
+        "${RELATED_SOURCES_LIMIT:-20}",
+        "--sleep",
+        "${RELATED_SOURCES_SLEEP:-2}",
+      ]
     depends_on:
       postgres:
         condition: service_healthy

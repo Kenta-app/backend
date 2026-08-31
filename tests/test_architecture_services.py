@@ -231,6 +231,58 @@ class ArchitectureServicesTests(unittest.TestCase):
         self.assertNotIn("https://", published.display_text)
         self.assertIn("Texto duplicado", published.display_text)
 
+    def test_publish_social_post_hides_redundant_summary(self):
+        source = Source(
+            name="Cuenta Social",
+            base_url="https://x.com/social",
+            source_account="social",
+            type="twitter",
+        )
+        source.register()
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+
+        log = IngestionLog(source_id=source.source_id, ingestion_type="twitter", status="running")
+        self.db.add(log)
+        self.db.commit()
+        self.db.refresh(log)
+
+        text = (
+            "Hay nuevas denuncias electorales en redes sociales y autoridades pidieron "
+            "verificar la informacion antes de compartirla."
+        )
+        raw_news = RawNews(
+            source_id=source.source_id,
+            log_id=log.log_id,
+            platform="twitter",
+            source_account="social",
+            original_url="https://x.com/social/status/456",
+            title_raw=text,
+            content_raw=text,
+            status="pending",
+        )
+        self.db.add(raw_news)
+        self.db.commit()
+        self.db.refresh(raw_news)
+
+        processed = PreprocessingService(self.db).preprocess(raw_news.news_raw_id)
+        self.db.add(
+            Summary(
+                representative_news_processed_id=processed.news_processed_id,
+                summary_text=f"{text} {text}",
+                model_version="old-bart",
+            )
+        )
+        self.db.commit()
+
+        published = PublishingService(self.db, NewsRepository(self.db)).publishRepresentative(
+            processed.news_processed_id
+        )
+
+        self.assertEqual(published.display_text, text)
+        self.assertIsNone(published.summary)
+
     def test_local_model_summarizer_reuses_existing_summary_until_forced(self):
         source = Source(name="Fuente Resumen", base_url="https://resumen.test", type="web")
         source.register()

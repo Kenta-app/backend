@@ -2,6 +2,7 @@ import os
 import unittest
 from unittest.mock import patch
 
+from fastapi import HTTPException
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -9,8 +10,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api_controllers import admin_router, auth_router, news_router
+from app.api_controllers.justification_controller import JustificationController
 from app.db.database import Base, apply_sqlite_schema_translation, get_db
 from app.dependencies import get_email_sender
+from app.processed.models import MlPrediction
 from app.raw.models import Source
 from app.serving.models import PublishedNews, User
 
@@ -21,6 +24,18 @@ class FakeEmailSender:
 
     def sendVerificationCode(self, email: str, code: str) -> None:
         self.messages.append({"email": email, "code": code})
+
+
+class ReadOnlyJustificationService:
+    def __init__(self):
+        self.generated = False
+
+    def get_persisted_justification(self, prediction_id: int):
+        return None
+
+    def generate_justification(self, *args, **kwargs):
+        self.generated = True
+        raise AssertionError("GET must not generate Gemini sources")
 
 
 class ApiControllersTests(unittest.TestCase):
@@ -204,11 +219,33 @@ class ApiControllersTests(unittest.TestCase):
         self.db.commit()
         self.db.refresh(news)
 
+        prediction = MlPrediction(
+            representative_news_processed_id=2,
+            sentiment_label="discuss",
+            sentiment_score=0.8,
+            fake_score=0.2,
+            model_version="test",
+        )
+        self.db.add(prediction)
+        self.db.commit()
+        self.db.refresh(prediction)
+
         response = self.client.get(f"/news/{news.news_id}")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["newsId"], news.news_id)
+        self.assertEqual(response.json()["data"]["predictionId"], prediction.prediction_id)
         self.assertEqual(response.json()["data"]["sources"], [])
+
+    def test_get_justification_does_not_generate_when_missing(self):
+        service = ReadOnlyJustificationService()
+        controller = JustificationController(service)
+
+        with self.assertRaises(HTTPException) as ctx:
+            controller.get_justification(42)
+
+        self.assertEqual(ctx.exception.status_code, 404)
+        self.assertFalse(service.generated)
 
     def test_admin_can_create_source(self):
         admin = User(
