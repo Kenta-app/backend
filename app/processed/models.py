@@ -205,3 +205,24 @@ class JustificationSource(Base):
     excerpt = Column(Text, nullable=False)
     model_used = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class JustificationRun(Base):
+    __tablename__ = "justification_runs"
+    __table_args__ = (
+        Index("idx_justification_run_prediction_status", "prediction_id", "status"),
+        {"schema": "processed"},
+    )
+
+    run_id = Column(Integer, primary_key=True, index=True)
+    prediction_id = Column(
+        Integer,
+        ForeignKey("processed.ml_predictions.prediction_id"),
+        nullable=False,
+        index=True,
+    )
+    status = Column(String(30), nullable=False, index=True)
+    source_count = Column(Integer, nullable=False, default=0)
+    model_used = Column(String(100), nullable=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
