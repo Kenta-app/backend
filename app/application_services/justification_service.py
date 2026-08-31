@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Optional
 from urllib.parse import urlparse
 
+import requests
 from google import genai
 from cachetools import TTLCache
 from sqlalchemy.orm import Session
@@ -28,6 +29,14 @@ logger = logging.getLogger(__name__)
 class GeminiJustificationService(IJustificationService):
     GEMINI_MODEL = "gemini-2.5-flash"
     MAX_DEBUG_TEXT_LENGTH = 4000
+    URL_CHECK_TIMEOUT_SECONDS = 8
+    URL_CHECK_HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
     JOURNALISTIC_SOURCES = {
         "andina": ("andina.pe",),
         "afp factual": ("factual.afp.com",),
@@ -482,6 +491,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         ]
         sources = [source for source in sources if source]
         sources = self._exclude_original_sources(sources, excluded_urls)
+        sources = self._filter_reachable_sources(sources)
         if grounded_urls:
             before_grounding_filter = len(sources)
             sources = [
@@ -499,6 +509,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
                 ]
                 sources = [source for source in sources if source]
                 sources = self._exclude_original_sources(sources, excluded_urls)
+                sources = self._filter_reachable_sources(sources)
 
         if not sources and grounding_sources:
             sources = [
@@ -507,6 +518,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
                 if self._is_allowed_source(source)
             ]
             sources = self._exclude_original_sources(sources, excluded_urls)
+            sources = self._filter_reachable_sources(sources)
 
         if not sources:
             return self._empty_report()
@@ -526,6 +538,14 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         if not all([url, source_name, title, excerpt]):
             return None
 
+        grounded_match = self._matching_grounding_source(url, title, grounding_sources)
+        if grounded_match:
+            url = grounded_match["url"]
+            source_name = grounded_match.get("source") or source_name
+            grounded_title = str(grounded_match.get("title") or "").strip()
+            if grounded_title and not self._looks_english(grounded_title):
+                title = grounded_title
+
         if self._looks_english(title):
             title = self._replacement_title(url, grounding_sources) or self._title_from_url(url) or title
 
@@ -535,6 +555,51 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
             "title": title,
             "excerpt": excerpt,
         }
+
+    def _filter_reachable_sources(self, sources: list[dict]) -> list[dict]:
+        if os.getenv("JUSTIFICATION_VALIDATE_URLS", "true").lower() not in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }:
+            return sources
+
+        reachable: list[dict] = []
+        seen_urls: set[str] = set()
+        for source in sources:
+            url = source["url"]
+            normalized = self._normalize_url_for_match(url)
+            if normalized in seen_urls:
+                continue
+            seen_urls.add(normalized)
+            if self._is_reachable_url(url):
+                reachable.append(source)
+            else:
+                logger.info("Fuente descartada por URL no accesible: %s", url)
+        return reachable
+
+    @classmethod
+    def _is_reachable_url(cls, url: str) -> bool:
+        try:
+            response = requests.head(
+                url,
+                allow_redirects=True,
+                timeout=cls.URL_CHECK_TIMEOUT_SECONDS,
+                headers=cls.URL_CHECK_HEADERS,
+            )
+            if response.status_code in {405, 429}:
+                response = requests.get(
+                    url,
+                    allow_redirects=True,
+                    timeout=cls.URL_CHECK_TIMEOUT_SECONDS,
+                    headers=cls.URL_CHECK_HEADERS,
+                    stream=True,
+                )
+            status = response.status_code
+            return 200 <= status < 400 or status in {401, 403}
+        except requests.RequestException:
+            return False
 
     def _sources_from_grounding(self, response: object) -> list[dict]:
         sources: list[dict] = []
@@ -606,6 +671,52 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
 
         return None
 
+    def _matching_grounding_source(
+        self,
+        url: str,
+        title: str,
+        grounding_sources: Optional[list[dict]],
+    ) -> Optional[dict]:
+        if not grounding_sources:
+            return None
+
+        normalized_url = self._normalize_url_for_match(url)
+        domain = self._domain_from_url(url)
+        best_source = None
+        best_score = 0.0
+        for source in grounding_sources:
+            grounded_url = str(source.get("url") or "").strip()
+            if not grounded_url:
+                continue
+            if normalized_url == self._normalize_url_for_match(grounded_url):
+                return source
+            if domain != self._domain_from_url(grounded_url):
+                continue
+            score = self._title_overlap(title, str(source.get("title") or ""))
+            if score > best_score:
+                best_score = score
+                best_source = source
+
+        if best_source and best_score >= 0.45:
+            return best_source
+        return None
+
+    @staticmethod
+    def _title_overlap(left: str, right: str) -> float:
+        left_tokens = {
+            token
+            for token in re.findall(r"\w+", (left or "").casefold(), flags=re.UNICODE)
+            if len(token) >= 4
+        }
+        right_tokens = {
+            token
+            for token in re.findall(r"\w+", (right or "").casefold(), flags=re.UNICODE)
+            if len(token) >= 4
+        }
+        if not left_tokens or not right_tokens:
+            return 0.0
+        return len(left_tokens & right_tokens) / max(len(left_tokens), 1)
+
     @classmethod
     def _title_from_url(cls, url: str) -> Optional[str]:
         path = urlparse(url).path.strip("/")
@@ -667,10 +778,8 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
     @classmethod
     def _url_was_grounded(cls, url: str, grounded_urls: set[str]) -> bool:
         normalized_url = cls._normalize_url_for_match(url)
-        source_domain = cls._domain_from_url(url)
         return any(
             normalized_url == cls._normalize_url_for_match(grounded_url)
-            or source_domain == cls._domain_from_url(grounded_url)
             for grounded_url in grounded_urls
         )
 
