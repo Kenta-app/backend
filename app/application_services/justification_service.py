@@ -326,6 +326,7 @@ class GeminiJustificationService(IJustificationService):
                     data,
                     grounded_urls=grounded_urls,
                     grounding_sources=grounded_sources,
+                    excluded_urls=self._excluded_original_urls(raw_news),
                 )
             except json.JSONDecodeError:
                 # Si por alguna razón no es JSON válido, intentamos limpiar bloques markdown si los hay.
@@ -334,6 +335,7 @@ class GeminiJustificationService(IJustificationService):
                     self._parse_json_response(cleaned_text),
                     grounded_urls=grounded_urls,
                     grounding_sources=grounded_sources,
+                    excluded_urls=self._excluded_original_urls(raw_news),
                 )
 
         except (ConnectionError, TimeoutError) as e:
@@ -435,12 +437,13 @@ REGLAS DE BÚSQUEDA Y SELECCIÓN:
 5. No uses como evidencia principal Wikipedia, blogs personales, foros, Reddit, Quora, sitios de contenido generado por usuarios, agregadores automáticos, redes sociales ni páginas sin autor identificable.
 6. Si existen fuentes periodísticas y fuentes no periodísticas, usa únicamente las periodísticas.
 7. Devuelve URLs directas y limpias del medio; no uses enlaces de Google, Vertex AI Search ni redireccionadores.
-8. Selecciona entre 1 y {self.max_sources} fuentes como máximo. Prefiere diversidad de medios antes que repetir la misma cobertura.
-9. Si no existe evidencia periodística suficiente o los resultados no están claramente relacionados, deja sources vacío.
-10. Cada excerpt debe explicar de forma neutral por qué esa fuente ayuda a investigar el tema, sin afirmar que la publicación original es verdadera o falsa.
-11. Todo el JSON debe estar redactado en español.
-12. No traduzcas títulos periodísticos. El campo title debe copiar el título original en español tal como aparece en el medio o resultado de búsqueda.
-13. No inventes ni reformules títulos. Si no puedes confirmar el título exacto, usa el encabezado más cercano devuelto por Google Search Grounding en español.
+8. No incluyas la URL original indicada arriba como fuente relacionada. Busca otras coberturas, contexto o verificaciones independientes.
+9. Selecciona entre 1 y {self.max_sources} fuentes como máximo. Prefiere diversidad de medios antes que repetir la misma cobertura.
+10. Si no existe evidencia periodística suficiente o los resultados no están claramente relacionados, deja sources vacío.
+11. Cada excerpt debe explicar de forma neutral por qué esa fuente ayuda a investigar el tema, sin afirmar que la publicación original es verdadera o falsa.
+12. Todo el JSON debe estar redactado en español.
+13. No traduzcas títulos periodísticos. El campo title debe copiar el título original en español tal como aparece en el medio o resultado de búsqueda.
+14. No inventes ni reformules títulos. Si no puedes confirmar el título exacto, usa el encabezado más cercano devuelto por Google Search Grounding en español.
 
 FORMATO DE SALIDA:
 Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No incluyas texto fuera del JSON.
@@ -464,6 +467,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         data: object,
         grounded_urls: Optional[set[str]] = None,
         grounding_sources: Optional[list[dict]] = None,
+        excluded_urls: Optional[set[str]] = None,
     ) -> dict:
         if isinstance(data, list):
             data = {"sources": data}
@@ -477,6 +481,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
             if isinstance(source, dict) and self._is_allowed_source(source)
         ]
         sources = [source for source in sources if source]
+        sources = self._exclude_original_sources(sources, excluded_urls)
         if grounded_urls:
             before_grounding_filter = len(sources)
             sources = [
@@ -493,6 +498,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
                     if isinstance(source, dict) and self._is_allowed_source(source)
                 ]
                 sources = [source for source in sources if source]
+                sources = self._exclude_original_sources(sources, excluded_urls)
 
         if not sources and grounding_sources:
             sources = [
@@ -500,6 +506,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
                 for source in grounding_sources
                 if self._is_allowed_source(source)
             ]
+            sources = self._exclude_original_sources(sources, excluded_urls)
 
         if not sources:
             return self._empty_report()
@@ -703,6 +710,30 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
     @staticmethod
     def _debug_enabled() -> bool:
         return os.getenv("JUSTIFICATION_DEBUG", "").lower() in {"1", "true", "yes", "on"}
+
+    @staticmethod
+    def _excluded_original_urls(raw_news: Optional[RawNews]) -> set[str]:
+        if raw_news is None or not raw_news.original_url:
+            return set()
+        return {raw_news.original_url.strip()}
+
+    @classmethod
+    def _exclude_original_sources(
+        cls,
+        sources: list[dict],
+        excluded_urls: Optional[set[str]],
+    ) -> list[dict]:
+        if not excluded_urls:
+            return sources
+        return [
+            source
+            for source in sources
+            if not any(cls._same_url(source["url"], excluded_url) for excluded_url in excluded_urls)
+        ]
+
+    @classmethod
+    def _same_url(cls, left: str, right: str) -> bool:
+        return cls._normalize_url_for_match(left) == cls._normalize_url_for_match(right)
 
     @staticmethod
     def _configured_max_sources() -> int:
