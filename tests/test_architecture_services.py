@@ -152,7 +152,7 @@ class ArchitectureServicesTests(unittest.TestCase):
 
         summary = Summary(
             representative_news_processed_id=representative_id,
-            summary_text="Resumen de prueba",
+            summary_text="Resumen de prueba.",
             model_version="local-test",
         )
         prediction = MlPrediction(
@@ -173,9 +173,63 @@ class ArchitectureServicesTests(unittest.TestCase):
         published = publishing.publishRepresentative(representative_id)
 
         self.assertTrue(published.isPublished())
-        self.assertEqual(published.summary, "Resumen de prueba")
+        self.assertEqual(published.summary, "Resumen de prueba.")
         self.assertEqual(published.sentiment_label, "discuss")
         self.assertAlmostEqual(float(published.fake_score), 0.18)
+
+    def test_publish_social_post_uses_display_title_and_clean_text(self):
+        source = Source(
+            name="Cuenta Politica",
+            base_url="https://x.com/cuenta",
+            source_account="cuenta",
+            type="twitter",
+        )
+        source.register()
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+
+        log = IngestionLog(source_id=source.source_id, ingestion_type="twitter", status="running")
+        self.db.add(log)
+        self.db.commit()
+        self.db.refresh(log)
+
+        raw_news = RawNews(
+            source_id=source.source_id,
+            log_id=log.log_id,
+            platform="twitter",
+            source_account="cuenta",
+            original_url="https://x.com/cuenta/status/123",
+            title_raw="Texto duplicado https://t.co/abc",
+            content_raw=(
+                "Texto duplicado con contexto politico y una fuente externa "
+                "https://example.com/contexto carajo"
+            ),
+            status="pending",
+        )
+        self.db.add(raw_news)
+        self.db.commit()
+        self.db.refresh(raw_news)
+
+        processed = PreprocessingService(self.db).preprocess(raw_news.news_raw_id)
+        summary = Summary(
+            representative_news_processed_id=processed.news_processed_id,
+            summary_text="Resumen social",
+            model_version="local-test",
+        )
+        self.db.add(summary)
+        self.db.commit()
+
+        published = PublishingService(self.db, NewsRepository(self.db)).publishRepresentative(
+            processed.news_processed_id
+        )
+
+        self.assertEqual(published.title, "Publicación de @cuenta")
+        self.assertEqual(published.content_type, "social_post")
+        self.assertEqual(published.content_warning, "strong_language")
+        self.assertEqual(published.external_links, ["https://example.com/contexto"])
+        self.assertNotIn("https://", published.display_text)
+        self.assertIn("Texto duplicado", published.display_text)
 
     def test_local_model_summarizer_reuses_existing_summary_until_forced(self):
         source = Source(name="Fuente Resumen", base_url="https://resumen.test", type="web")
@@ -214,7 +268,7 @@ class ArchitectureServicesTests(unittest.TestCase):
         processed = PreprocessingService(self.db).preprocess(raw_news.news_raw_id)
         existing = Summary(
             representative_news_processed_id=processed.news_processed_id,
-            summary_text="Resumen existente",
+            summary_text="Resumen existente.",
             model_version="local-test",
         )
         self.db.add(existing)
@@ -231,12 +285,12 @@ class ArchitectureServicesTests(unittest.TestCase):
             reused = summarizer.generateSummary(processed.news_processed_id)
 
         self.assertEqual(reused.summary_id, existing.summary_id)
-        self.assertEqual(reused.summary_text, "Resumen existente")
+        self.assertEqual(reused.summary_text, "Resumen existente.")
 
         with patch.object(
             LocalModelSummarizer,
             "runInference",
-            return_value="Resumen regenerado",
+            return_value="Resumen regenerado.",
         ) as mock_run_inference:
             regenerated = summarizer.generateSummary(
                 processed.news_processed_id,
@@ -244,7 +298,7 @@ class ArchitectureServicesTests(unittest.TestCase):
             )
 
         self.assertEqual(regenerated.summary_id, existing.summary_id)
-        self.assertEqual(regenerated.summary_text, "Resumen regenerado")
+        self.assertEqual(regenerated.summary_text, "Resumen regenerado.")
         mock_run_inference.assert_called_once()
 
     def test_pipeline_orchestrator_continues_when_classifier_checkpoint_is_missing(self):

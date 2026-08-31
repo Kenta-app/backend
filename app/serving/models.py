@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -61,8 +61,13 @@ class PublishedNews(Base):
     )
     source_id = Column(Integer, ForeignKey("raw.source.source_id"), nullable=False, index=True)
     source = relationship(Source)
+    source_account = Column(String(100), nullable=True)
     title = Column(Text, nullable=False)
     summary = Column(Text, nullable=True)
+    display_text = Column(Text, nullable=True)
+    content_type = Column(String(30), nullable=False, default="article", index=True)
+    content_warning = Column(String(50), nullable=True, index=True)
+    external_links = Column(JSON, nullable=True)
     original_url = Column(Text, nullable=False)
     image_url = Column(Text, nullable=True)
     sentiment_label = Column(String(20), nullable=True, index=True)
