@@ -6,6 +6,7 @@ from app.interfaces.news_repository import INewsRepository
 from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, Summary
 from app.processed.text_utils import clip_readable, finish_truncated, repair_english_intrusions
 from app.raw.models import RawNews
+from app.serving.content_normalization import build_display_content
 from app.serving.models import PublishedNews
 
 
@@ -48,16 +49,22 @@ class PublishingService:
             .filter(PublishedNews.representative_news_processed_id == representativeNewsProcessedId)
             .first()
         )
+        display = build_display_content(raw_news, processed.clean_text)
         if not news:
             news = PublishedNews(
                 representative_news_processed_id=representativeNewsProcessedId,
                 source_id=processed.source_id,
-                title=raw_news.title_raw or (processed.clean_text or "")[:160],
+                title=display.display_title,
                 original_url=raw_news.original_url,
             )
 
         news.source_id = processed.source_id
-        news.title = raw_news.title_raw or (processed.clean_text or "")[:160]
+        news.source_account = raw_news.source_account
+        news.title = display.display_title
+        news.display_text = display.display_text
+        news.content_type = display.content_type
+        news.content_warning = display.content_warning
+        news.external_links = display.external_links
         news.original_url = raw_news.original_url
         news.image_url = raw_news.image_url
         news.updateSummary(

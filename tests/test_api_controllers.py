@@ -136,6 +136,48 @@ class ApiControllersTests(unittest.TestCase):
             "Fuente Demo",
         )
 
+    def test_news_feed_serializes_social_display_fields(self):
+        source = Source(
+            name="Cuenta X",
+            base_url="https://x.com/cuenta",
+            source_account="cuenta",
+            type="twitter",
+        )
+        source.register()
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+
+        news = PublishedNews(
+            representative_news_processed_id=3,
+            source_id=source.source_id,
+            source_account="cuenta",
+            title="Publicación de @cuenta",
+            summary="Resumen generado del post.",
+            display_text="Texto limpio sin enlace.",
+            content_type="social_post",
+            content_warning="strong_language",
+            external_links=["https://example.com/contexto"],
+            original_url="https://x.com/cuenta/status/1",
+            sentiment_label="discuss",
+            sentiment_score=0.8,
+            fake_score=0.2,
+        )
+        news.publish()
+        self.db.add(news)
+        self.db.commit()
+
+        response = self.client.get("/news")
+        item = response.json()["data"]["items"][0]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(item["title"], "Publicación de @cuenta")
+        self.assertEqual(item["displayText"], "Texto limpio sin enlace.")
+        self.assertEqual(item["contentType"], "social_post")
+        self.assertEqual(item["contentWarning"], "strong_language")
+        self.assertEqual(item["externalLinks"], ["https://example.com/contexto"])
+        self.assertEqual(item["sourceAccount"], "cuenta")
+
     def test_news_detail_returns_published_news_with_empty_evidence(self):
         source = Source(
             name="Fuente Detalle",

@@ -206,7 +206,11 @@ class TwitterApiIngestion(IIngestionStrategy):
                     source_account=tweet_account[:50],
                     original_url=tweet.get("url") or source.base_url,
                     image_url=tweet.get("image_url"),
-                    title_raw=tweet.get("title") or tweet.get("text"),
+                    title_raw=(
+                        f"Publicación de @{tweet_account}"
+                        if tweet_account
+                        else "Publicación en X"
+                    ),
                     content_raw=tweet.get("text"),
                     author_raw=tweet.get("author") or account,
                     published_at=WebScraperIngestion._coerce_datetime(tweet.get("published_at")),

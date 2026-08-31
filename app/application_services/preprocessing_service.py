@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.processed.logging import create_processing_log
 from app.processed.models import ProcessedNews, ProcessingLog
 from app.raw.models import RawNews
+from app.serving.content_normalization import clean_social_text
 
 
 class PreprocessingService:
@@ -31,7 +32,7 @@ class PreprocessingService:
                 source_id=raw_news.source_id,
             )
 
-        raw_text = "\n".join(filter(None, [raw_news.title_raw, raw_news.content_raw]))
+        raw_text = self._build_raw_text(raw_news)
         clean_text = self.cleanText(raw_text)
         language = self.detectLanguage(clean_text)
         token_count = self.countTokens(clean_text)
@@ -95,6 +96,11 @@ class PreprocessingService:
         text = re.sub(r"[^\w\s.,;:!?áéíóúÁÉÍÓÚñÑ-]", " ", text)
         text = re.sub(r"\s+", " ", text)
         return text.strip()
+
+    def _build_raw_text(self, raw_news: RawNews) -> str:
+        if (raw_news.platform or "").lower() in {"twitter", "x", "social"}:
+            return clean_social_text(raw_news.content_raw or raw_news.title_raw)
+        return "\n".join(filter(None, [raw_news.title_raw, raw_news.content_raw]))
 
     def detectLanguage(self, text: str) -> str:
         lower = f" {text.lower()} "
