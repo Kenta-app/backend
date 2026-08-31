@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-
+node_modules/**
 # Python/runtime artifacts
 .venv/
 venv/

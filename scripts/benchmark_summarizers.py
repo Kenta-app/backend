@@ -27,6 +27,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from app.processed.text_utils import (
+    finish_truncated,
+    normalize_summary_text,
+    repair_english_intrusions,
+)
+
 
 TOKEN_RE = re.compile(r"\w+", flags=re.UNICODE)
 
@@ -58,6 +64,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max_summary_length", type=int, default=120)
     parser.add_argument("--min_summary_length", type=int, default=40)
     parser.add_argument("--num_beams", type=int, default=4)
+    parser.add_argument(
+        "--apply_deployment_postprocessing",
+        action="store_true",
+        help=(
+            "Apply the same normalization, English-connector repair, and truncation "
+            "handling used by SummarizerService before scoring."
+        ),
+    )
     parser.add_argument("--output_json", default="output/summarizer_benchmark.json")
     parser.add_argument("--output_csv", default="output/summarizer_benchmark.csv")
     return parser
@@ -252,7 +266,13 @@ def summarize(model_name: str, examples: list[SummaryExample], args: argparse.Na
                 length_penalty=1.5,
                 early_stopping=True,
             )
-        prediction = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        generated_tokens = output_ids[0]
+        prediction = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        if args.apply_deployment_postprocessing:
+            prediction = normalize_summary_text(prediction)
+            prediction = repair_english_intrusions(prediction, example.article)
+            if generated_tokens.shape[-1] >= args.max_summary_length:
+                prediction = finish_truncated(prediction)
         elapsed_ms = int((perf_counter() - started) * 1000)
         metrics = rouge_scores(prediction, example.reference)
         rows.append(
@@ -328,6 +348,15 @@ def main() -> None:
         "reference_source": "database_summaries" if args.from_db else str(args.input),
         "example_count": len(examples),
         "metrics_note": "Lexical ROUGE-style F1 implemented locally.",
+        "generation_config": {
+            "max_input_length": args.max_input_length,
+            "max_summary_length": args.max_summary_length,
+            "min_summary_length": args.min_summary_length,
+            "num_beams": args.num_beams,
+            "length_penalty": 1.5,
+            "no_repeat_ngram_size": 3,
+            "deployment_postprocessing": args.apply_deployment_postprocessing,
+        },
         "summary": summary,
         "rows": all_rows,
     }

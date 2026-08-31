@@ -38,11 +38,13 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-kenta}
       FAKENEWS_MODEL_DIR: /app/output/fakenews_xlmroberta_full_v1/best_model
       STANCE_MODEL_DIR: /app/output/stance_mbert_weighted_paper/best_model
-      SUMMARIZER_MODEL_NAME: ${SUMMARIZER_MODEL_NAME:-facebook/bart-large-cnn}
+      SUMMARIZER_MODEL_NAME: ${SUMMARIZER_MODEL_NAME:-ELiRF/mt5-base-dacsa-es}
       SUMMARY_INLINE_ENABLED: ${SUMMARY_INLINE_ENABLED:-false}
       SUMMARY_MAX_CONCURRENT_GENERATIONS: ${SUMMARY_MAX_CONCURRENT_GENERATIONS:-1}
       SUMMARY_NUM_BEAMS: ${SUMMARY_NUM_BEAMS:-4}
       ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-true}
+      SCRAPING_SCHEDULE_HOUR: ${SCRAPING_SCHEDULE_HOUR:-18}
+      SCRAPING_SCHEDULE_MINUTE: ${SCRAPING_SCHEDULE_MINUTE:-58}
       SCRAPER_MAX_ARTICLES_PER_SOURCE: ${SCRAPER_MAX_ARTICLES_PER_SOURCE:-10}
       ML_WARMUP_ON_STARTUP: ${ML_WARMUP_ON_STARTUP:-true}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
@@ -140,7 +142,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-kenta}
       FAKENEWS_MODEL_DIR: /app/output/fakenews_xlmroberta_full_v1/best_model
       STANCE_MODEL_DIR: /app/output/stance_mbert_weighted_paper/best_model
-      SUMMARIZER_MODEL_NAME: ${SUMMARIZER_MODEL_NAME:-facebook/bart-large-cnn}
+      SUMMARIZER_MODEL_NAME: ${SUMMARIZER_MODEL_NAME:-ELiRF/mt5-base-dacsa-es}
       SUMMARY_MAX_CONCURRENT_GENERATIONS: ${SUMMARY_MAX_CONCURRENT_GENERATIONS:-1}
       SUMMARY_NUM_BEAMS: ${SUMMARY_NUM_BEAMS:-4}
     command:

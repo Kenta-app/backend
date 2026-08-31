@@ -194,15 +194,24 @@ def evaluate(model, dataloader, device: torch.device) -> dict:
     report = classification_report(
         labels,
         predictions,
+        labels=list(range(len(STANCE_LABELS))),
         target_names=STANCE_LABELS,
         output_dict=True,
         zero_division=0,
     )
 
     return {
-        "macro_f1": float(f1_score(labels, predictions, average="macro", zero_division=0)),
+        "macro_f1": float(
+            f1_score(
+                labels,
+                predictions,
+                labels=list(range(len(STANCE_LABELS))),
+                average="macro",
+                zero_division=0,
+            )
+        ),
         "accuracy": float(accuracy_score(labels, predictions)),
-        "confusion_matrix": confusion_matrix(labels, predictions).tolist(),
+        "confusion_matrix": confusion_matrix(labels, predictions, labels=list(range(len(STANCE_LABELS)))).tolist(),
         "classification_report": report,
     }
 
