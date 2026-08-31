@@ -6,7 +6,7 @@ from app.interfaces.news_repository import INewsRepository
 from app.processed.models import ClusterMember, MlPrediction, NewsCluster, ProcessedNews, Summary
 from app.processed.text_utils import clip_readable, finish_truncated, repair_english_intrusions
 from app.raw.models import RawNews
-from app.serving.content_normalization import build_display_content
+from app.serving.content_normalization import build_display_content, is_redundant_social_summary
 from app.serving.models import PublishedNews
 
 
@@ -67,13 +67,19 @@ class PublishingService:
         news.external_links = display.external_links
         news.original_url = raw_news.original_url
         news.image_url = raw_news.image_url
-        news.updateSummary(
+        summary_text = (
             finish_truncated(
                 repair_english_intrusions(summary.summary_text, processed.clean_text)
             )
             if summary
             else clip_readable(processed.clean_text, 900)
         )
+        if display.content_type == "social_post" and is_redundant_social_summary(
+            summary_text,
+            display.display_text,
+        ):
+            summary_text = None
+        news.updateSummary(summary_text)
 
         if prediction:
             news.updatePrediction(

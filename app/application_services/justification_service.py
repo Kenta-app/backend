@@ -1,6 +1,6 @@
 """
-Servicio de verificación de evidencias usando Gemini 2.5 Flash con Google Search Grounding.
-Fuerza al modelo a generar una respuesta JSON estructurada con fuentes reales del contexto peruano.
+Servicio de fuentes relacionadas usando Gemini con Google Search Grounding.
+Fuerza al modelo a generar una respuesta JSON estructurada con fuentes periodísticas reales.
 """
 
 from __future__ import annotations
@@ -80,6 +80,8 @@ class GeminiJustificationService(IJustificationService):
         self.cache_ttl = cache_ttl
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.model_name = os.getenv("JUSTIFICATION_MODEL", self.GEMINI_MODEL)
+        self.max_sources = self._configured_max_sources()
 
         self._cache: TTLCache = TTLCache(maxsize=1000, ttl=cache_ttl)
         self._cache_stats = {"hits": 0, "misses": 0}
@@ -87,7 +89,9 @@ class GeminiJustificationService(IJustificationService):
         api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.client = genai.Client(api_key=api_key) if api_key else None
         if self.client:
-            logger.info("GeminiJustificationService inicializado como generador de evidencia periodística.")
+            logger.info(
+                "GeminiJustificationService inicializado como generador de fuentes relacionadas."
+            )
         else:
             logger.info("GeminiJustificationService inicializado en modo solo lectura (sin GEMINI_API_KEY).")
 
@@ -171,8 +175,28 @@ class GeminiJustificationService(IJustificationService):
             },
             "from_cache": from_cache,
             "generated_at": (generated_at or datetime.utcnow()).isoformat(),
-            "model_used": self.GEMINI_MODEL,
+            "model_used": self.model_name,
         }
+
+    def get_persisted_justification(self, prediction_id: int) -> Optional[dict]:
+        return self._load_persisted_response(prediction_id)
+
+    def get_persisted_justification_by_news_id(self, news_id: int) -> Optional[dict]:
+        news = self.db.query(PublishedNews).filter(PublishedNews.news_id == news_id).first()
+        if not news:
+            return None
+
+        prediction = (
+            self.db.query(MlPrediction)
+            .filter(
+                MlPrediction.representative_news_processed_id
+                == news.representative_news_processed_id
+            )
+            .first()
+        )
+        if not prediction:
+            return None
+        return self._load_persisted_response(prediction.prediction_id)
 
     def _load_persisted_response(self, prediction_id: int) -> Optional[dict]:
         prediction = self.db.query(MlPrediction).filter(
@@ -224,7 +248,7 @@ class GeminiJustificationService(IJustificationService):
         regenerate: bool = False,
     ) -> dict:
         """
-        Busca evidencias web que respalden o desmientan la noticia y devuelve fuentes estructuradas en JSON.
+        Busca fuentes periodísticas relacionadas y las devuelve estructuradas en JSON.
         """
         if not regenerate:
             if prediction_id in self._cache:
@@ -266,7 +290,7 @@ class GeminiJustificationService(IJustificationService):
         )
 
         sources = evidence_report["sources"]
-        self.persist_sources(prediction_id, sources, self.GEMINI_MODEL)
+        self.persist_sources(prediction_id, sources, self.model_name)
 
         response = self._build_response_from_prediction(prediction, sources, from_cache=False)
         self._cache[prediction_id] = response.copy()
@@ -322,9 +346,9 @@ class GeminiJustificationService(IJustificationService):
         except RuntimeError:
             raise
         except Exception as e:
-            logger.exception("Error generando evidencia periodística")
+            logger.exception("Error generando fuentes periodísticas relacionadas")
             raise RuntimeError(
-                f"No se pudo generar evidencia periodística con Gemini: {type(e).__name__}."
+                f"No se pudieron generar fuentes periodísticas con Gemini: {type(e).__name__}."
             ) from e
 
     def _generate_gemini_response(self, prompt: str) -> object:
@@ -335,7 +359,7 @@ class GeminiJustificationService(IJustificationService):
 
         try:
             return self.client.models.generate_content(
-                model=self.GEMINI_MODEL,
+                model=self.model_name,
                 contents=prompt,
                 config=config,
             )
@@ -394,8 +418,9 @@ class GeminiJustificationService(IJustificationService):
         elif texto_limpio and texto_limpio not in contenido:
             contenido = f"{contenido}\n\nTexto procesado adicional:\n{texto_limpio}".strip()
 
-        prompt = f"""Actúa como generador de evidencia periodística para un informe de fact-checking.
+        prompt = f"""Actúa como asistente de investigación periodística para una aplicación de alfabetización informativa.
 Utiliza Google Search Grounding para localizar artículos periodísticos verificables relacionados con la noticia o publicación indicada.
+El objetivo NO es emitir un veredicto final, sino ofrecer al usuario fuentes útiles para investigar por su cuenta.
 
 NOTICIA A INVESTIGAR:
 - Título o encabezado: {titulo}
@@ -405,14 +430,14 @@ NOTICIA A INVESTIGAR:
 REGLAS DE BÚSQUEDA Y SELECCIÓN:
 1. Busca evidencia en Internet usando Google Search Grounding.
 2. Localiza artículos periodísticos relacionados con el hecho, declaración o afirmación central.
-3. Prioriza medios periodísticos reconocidos: La República, El Comercio, Perú21, RPP, Ojo Público, Convoca, El Búho, Epicentro, N60, Gestión, Exitosa y Andina.
+3. Prioriza medios periodísticos reconocidos del país o región mencionados en el texto. Para Perú, prioriza La República, El Comercio, Perú21, RPP, Ojo Público, Convoca, El Búho, Epicentro, N60, Gestión, Exitosa y Andina.
 4. También puedes usar verificadores de hechos: Verificador de La República, Ojo Biónico, AFP Factual, Chequeado, ColombiaCheck o Maldita.es cuando sean pertinentes.
 5. No uses como evidencia principal Wikipedia, blogs personales, foros, Reddit, Quora, sitios de contenido generado por usuarios, agregadores automáticos, redes sociales ni páginas sin autor identificable.
 6. Si existen fuentes periodísticas y fuentes no periodísticas, usa únicamente las periodísticas.
 7. Devuelve URLs directas y limpias del medio; no uses enlaces de Google, Vertex AI Search ni redireccionadores.
-8. Si varias fuentes confiables coinciden, dilo en la conclusión.
-9. Si existen contradicciones entre medios confiables, dilo en la conclusión.
-10. Si no existe evidencia periodística suficiente, dilo explícitamente en la conclusión y deja sources vacío.
+8. Selecciona entre 1 y {self.max_sources} fuentes como máximo. Prefiere diversidad de medios antes que repetir la misma cobertura.
+9. Si no existe evidencia periodística suficiente o los resultados no están claramente relacionados, deja sources vacío.
+10. Cada excerpt debe explicar de forma neutral por qué esa fuente ayuda a investigar el tema, sin afirmar que la publicación original es verdadera o falsa.
 11. Todo el JSON debe estar redactado en español.
 12. No traduzcas títulos periodísticos. El campo title debe copiar el título original en español tal como aparece en el medio o resultado de búsqueda.
 13. No inventes ni reformules títulos. Si no puedes confirmar el título exacto, usa el encabezado más cercano devuelto por Google Search Grounding en español.
@@ -479,7 +504,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         if not sources:
             return self._empty_report()
 
-        return {"sources": sources}
+        return {"sources": sources[: self.max_sources]}
 
     def _sanitize_source(
         self,
@@ -680,6 +705,19 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         return os.getenv("JUSTIFICATION_DEBUG", "").lower() in {"1", "true", "yes", "on"}
 
     @staticmethod
+    def _configured_max_sources() -> int:
+        raw_value = os.getenv("JUSTIFICATION_MAX_SOURCES", "4")
+        try:
+            value = int(raw_value)
+        except ValueError:
+            logger.warning(
+                "JUSTIFICATION_MAX_SOURCES inválido (%s); usando 4.",
+                raw_value,
+            )
+            return 4
+        return max(1, min(value, 8))
+
+    @staticmethod
     def _looks_english(text: str) -> bool:
         english_markers = {
             " will ",
@@ -740,6 +778,7 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
             "misses": self._cache_stats["misses"],
             "total_requests": total_requests,
             "hit_rate": hit_rate,
-            "model": self.GEMINI_MODEL,
+            "model": self.model_name,
+            "max_sources": self.max_sources,
             "max_retries": self.max_retries,
         }

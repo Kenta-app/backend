@@ -100,7 +100,7 @@ def get_justification_service(db: Session = Depends(get_db)) -> GeminiJustificat
 
 
 def is_justification_auto_enabled() -> bool:
-    return os.getenv("JUSTIFICATION_AUTO_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
+    return os.getenv("JUSTIFICATION_AUTO_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
 
 
 def build_justification_service_optional(db: Session) -> GeminiJustificationService | None:

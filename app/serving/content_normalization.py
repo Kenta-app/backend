@@ -9,6 +9,7 @@ from app.raw.models import RawNews
 
 URL_RE = re.compile(r"https?://[^\s)>\]]+|www\.[^\s)>\]]+", re.IGNORECASE)
 WHITESPACE_RE = re.compile(r"\s+")
+FOLD_RE = re.compile(r"[^a-z0-9áéíóúüñ\s]", re.IGNORECASE)
 
 STRONG_LANGUAGE_RE = re.compile(
     r"\b("
@@ -92,6 +93,39 @@ def detect_content_warning(text: str | None) -> str | None:
     if STRONG_LANGUAGE_RE.search(str(text or "")):
         return "strong_language"
     return None
+
+
+def is_redundant_social_summary(summary: str | None, display_text: str | None) -> bool:
+    summary_text = normalize_summary_text(summary)
+    post_text = normalize_summary_text(display_text)
+    if not summary_text:
+        return True
+    if not post_text:
+        return False
+
+    folded_summary = _fold(summary_text)
+    folded_post = _fold(post_text)
+    if not folded_summary or not folded_post:
+        return False
+
+    if folded_summary == folded_post:
+        return True
+    if folded_summary.startswith(folded_post) or folded_post.startswith(folded_summary):
+        return True
+
+    post_words = folded_post.split()
+    summary_words = folded_summary.split()
+    if len(post_words) >= 8 and len(summary_words) >= len(post_words) * 0.85:
+        overlap = len(set(post_words) & set(summary_words)) / max(len(set(post_words)), 1)
+        return overlap >= 0.80
+    return False
+
+
+def _fold(text: str) -> str:
+    return WHITESPACE_RE.sub(
+        " ",
+        FOLD_RE.sub(" ", text.casefold()),
+    ).strip()
 
 
 def _is_social_post(raw_news: RawNews) -> bool:

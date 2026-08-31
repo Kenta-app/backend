@@ -38,6 +38,18 @@ class IJustificationService(ABC):
         """
         pass
 
+    def get_sources_by_news_id(self, news_id: int) -> list[dict]:
+        """Obtiene fuentes persistidas para una noticia publicada."""
+        raise NotImplementedError
+
+    def get_persisted_justification(self, prediction_id: int) -> Optional[dict]:
+        """Obtiene una justificación persistida sin generar una nueva."""
+        raise NotImplementedError
+
+    def get_persisted_justification_by_news_id(self, news_id: int) -> Optional[dict]:
+        """Obtiene una justificación persistida por noticia sin generar una nueva."""
+        raise NotImplementedError
+
     @abstractmethod
     def clear_cache(self, prediction_id: Optional[int] = None) -> dict:
         """
