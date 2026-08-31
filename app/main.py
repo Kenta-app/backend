@@ -16,7 +16,7 @@ from app.api_controllers import (
 )
 from app.db.database import Base, SessionLocal, engine
 from app.ml.pipeline import news_analysis_pipeline
-from app.processed.models import ClusterMember, JustificationSource, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
+from app.processed.models import ClusterMember, JustificationRun, JustificationSource, MlPrediction, NewsCluster, ProcessedNews, ProcessingLog, Summary
 from app.raw.models import IngestionLog, RawNews, Source
 from app.raw.source_catalog import seed_default_sources
 from app.routers.justification_router import router as justification_router
@@ -37,6 +37,7 @@ from app.tasks.scheduler import ScrapingScheduler
 _ = (
     ClusterMember,
     IngestionLog,
+    JustificationRun,
     JustificationSource,
     MlPrediction,
     NewsClick,

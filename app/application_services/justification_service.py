@@ -326,7 +326,7 @@ class GeminiJustificationService(IJustificationService):
                     data,
                     grounded_urls=grounded_urls,
                     grounding_sources=grounded_sources,
-                    excluded_urls=self._excluded_original_urls(raw_news),
+                    excluded_urls=self._excluded_original_urls(raw_news, prediction),
                 )
             except json.JSONDecodeError:
                 # Si por alguna razón no es JSON válido, intentamos limpiar bloques markdown si los hay.
@@ -335,7 +335,7 @@ class GeminiJustificationService(IJustificationService):
                     self._parse_json_response(cleaned_text),
                     grounded_urls=grounded_urls,
                     grounding_sources=grounded_sources,
-                    excluded_urls=self._excluded_original_urls(raw_news),
+                    excluded_urls=self._excluded_original_urls(raw_news, prediction),
                 )
 
         except (ConnectionError, TimeoutError) as e:
@@ -711,11 +711,27 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
     def _debug_enabled() -> bool:
         return os.getenv("JUSTIFICATION_DEBUG", "").lower() in {"1", "true", "yes", "on"}
 
-    @staticmethod
-    def _excluded_original_urls(raw_news: Optional[RawNews]) -> set[str]:
-        if raw_news is None or not raw_news.original_url:
-            return set()
-        return {raw_news.original_url.strip()}
+    def _excluded_original_urls(
+        self,
+        raw_news: Optional[RawNews],
+        prediction: MlPrediction,
+    ) -> set[str]:
+        urls: set[str] = set()
+        if raw_news is not None and raw_news.original_url:
+            urls.add(raw_news.original_url.strip())
+
+        published = (
+            self.db.query(PublishedNews)
+            .filter(
+                PublishedNews.representative_news_processed_id
+                == prediction.representative_news_processed_id
+            )
+            .first()
+        )
+        if published is not None and published.original_url:
+            urls.add(published.original_url.strip())
+
+        return urls
 
     @classmethod
     def _exclude_original_sources(
