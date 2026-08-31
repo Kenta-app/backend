@@ -68,7 +68,14 @@ def main() -> int:
                 Source.name,
                 func.count(PublishedNews.news_id).label("total"),
                 func.sum(
-                    case((run_counts.c.attempts.isnot(None), 1), else_=0)
+                    case(
+                        (
+                            (run_counts.c.attempts.isnot(None))
+                            | (func.coalesce(source_counts.c.source_count, 0) > 0),
+                            1,
+                        ),
+                        else_=0,
+                    )
                 ).label("attempted"),
                 func.sum(
                     case((func.coalesce(source_counts.c.source_count, 0) > 0, 1), else_=0)
