@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SummarizerService:
     def __init__(self):
-        self.model_name = os.getenv("SUMMARIZER_MODEL_NAME", "facebook/bart-large-cnn")
+        self.model_name = os.getenv("SUMMARIZER_MODEL_NAME", "ELiRF/mt5-base-dacsa-es")
         self.summary_min_chars = int(os.getenv("SUMMARY_MIN_CHARS", "700"))
         self.max_input_length = int(os.getenv("SUMMARY_MAX_INPUT_LENGTH", "1024"))
         self.max_summary_length = int(os.getenv("SUMMARY_MAX_LENGTH", "150"))

@@ -1,0 +1,107 @@
+{
+  "run_date": "2026-05-27",
+  "model_dir": "C:\\Users\\sdiaz\\Documents\\tesis\\output\\fakenews_xlmroberta_full_v1\\best_model",
+  "validation_path": "data\\claims_es_pe_full\\validation.tsv",
+  "test_path": "data\\claims_es_pe_full\\test.tsv",
+  "label_strategy": "strict",
+  "max_length": 128,
+  "decision_threshold": 0.9927636981010437,
+  "validation": {
+    "num_examples": 296,
+    "label_counts": {
+      "False": 190,
+      "True": 106
+    },
+    "metrics": {
+      "decision_threshold": 0.9927636981010437,
+      "macro_f1": 0.9356579334330686,
+      "accuracy": 0.9425675675675675,
+      "confusion_matrix": [
+        [
+          188,
+          2
+        ],
+        [
+          15,
+          91
+        ]
+      ],
+      "classification_report": {
+        "False": {
+          "precision": 0.9261083743842364,
+          "recall": 0.9894736842105263,
+          "f1-score": 0.9567430025445293,
+          "support": 190.0
+        },
+        "True": {
+          "precision": 0.978494623655914,
+          "recall": 0.8584905660377359,
+          "f1-score": 0.914572864321608,
+          "support": 106.0
+        },
+        "accuracy": 0.9425675675675675,
+        "macro avg": {
+          "precision": 0.9523014990200752,
+          "recall": 0.9239821251241311,
+          "f1-score": 0.9356579334330686,
+          "support": 296.0
+        },
+        "weighted avg": {
+          "precision": 0.9448683150017966,
+          "recall": 0.9425675675675675,
+          "f1-score": 0.9416415341268616,
+          "support": 296.0
+        }
+      }
+    }
+  },
+  "test": {
+    "num_examples": 298,
+    "label_counts": {
+      "False": 191,
+      "True": 107
+    },
+    "metrics": {
+      "decision_threshold": 0.9927636981010437,
+      "macro_f1": 0.947829131652661,
+      "accuracy": 0.9530201342281879,
+      "confusion_matrix": [
+        [
+          189,
+          2
+        ],
+        [
+          12,
+          95
+        ]
+      ],
+      "classification_report": {
+        "False": {
+          "precision": 0.9402985074626866,
+          "recall": 0.9895287958115183,
+          "f1-score": 0.9642857142857143,
+          "support": 191.0
+        },
+        "True": {
+          "precision": 0.979381443298969,
+          "recall": 0.8878504672897196,
+          "f1-score": 0.9313725490196079,
+          "support": 107.0
+        },
+        "accuracy": 0.9530201342281879,
+        "macro avg": {
+          "precision": 0.9598399753808278,
+          "recall": 0.938689631550619,
+          "f1-score": 0.947829131652661,
+          "support": 298.0
+        },
+        "weighted avg": {
+          "precision": 0.9543316421421573,
+          "recall": 0.9530201342281879,
+          "f1-score": 0.9524678999116425,
+          "support": 298.0
+        }
+      }
+    }
+  }
+}
