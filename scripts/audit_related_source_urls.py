@@ -25,6 +25,16 @@ HEADERS = {
 }
 
 
+def is_google_grounding_redirect(url: str) -> bool:
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    return (
+        parsed.netloc.lower() == "vertexaisearch.cloud.google.com"
+        and parsed.path.startswith("/grounding-api-redirect/")
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audita URLs guardadas como fuentes relacionadas.")
     parser.add_argument("--limit", type=int, default=200)
@@ -79,6 +89,9 @@ def extract_page_title(html: str) -> str:
 
 
 def check_url(url: str, expected_title: str, timeout: float) -> tuple[bool, int | None, str | None, float | None]:
+    if is_google_grounding_redirect(url):
+        return True, None, "Google Search Grounding redirect", None
+
     try:
         response = requests.get(
             url,

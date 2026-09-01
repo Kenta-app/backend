@@ -11,7 +11,7 @@ import json
 import re
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -589,11 +589,13 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
                     continue
                 web = self._read_attr(chunk, "web")
                 uri = str(self._read_attr(web, "uri") or "").strip()
+                grounding_title = str(self._read_attr(web, "title") or "").strip()
                 if not uri:
                     continue
 
                 source = self._resolved_grounding_source(
                     uri,
+                    grounding_title,
                     excerpts_by_chunk.get(index, []),
                 )
                 if not source:
@@ -610,17 +612,49 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
     def _resolved_grounding_source(
         self,
         grounded_uri: str,
+        grounding_title: str,
         excerpts: list[str],
     ) -> Optional[dict]:
-        response = self._fetch_source_response(grounded_uri)
-        if response is None or not 200 <= response.status_code < 300:
-            logger.info("Fuente de grounding descartada por URL no accesible: %s", grounded_uri)
+        canonical_url = self._resolve_grounding_url(grounded_uri)
+        if not canonical_url:
+            logger.info("Fuente de grounding descartada sin destino resoluble: %s", grounded_uri)
             return None
 
-        canonical_url = response.url.strip()
+        response = self._fetch_source_response(canonical_url)
+        if response is None:
+            logger.info(
+                "Fuente de grounding descartada por error de red destino=%s origen=%s",
+                canonical_url,
+                grounded_uri,
+            )
+            return None
+        if not 200 <= response.status_code < 300:
+            fallback = self._grounding_redirect_fallback(
+                grounded_uri,
+                canonical_url,
+                grounding_title,
+                excerpts,
+                response.status_code,
+            )
+            if fallback:
+                return fallback
+            logger.info(
+                "Fuente de grounding descartada status=%s destino=%s origen=%s",
+                response.status_code,
+                response.url,
+                grounded_uri,
+            )
+            return None
+
+        canonical_url = response.url.strip() or canonical_url
         page_title = self._extract_page_title(response.text)
         if not canonical_url or not page_title:
-            logger.info("Fuente de grounding descartada sin URL o título verificable: %s", grounded_uri)
+            logger.info(
+                "Fuente de grounding descartada sin URL o título verificable destino=%s origen=%s title=%s",
+                canonical_url,
+                grounded_uri,
+                grounding_title,
+            )
             return None
 
         source = self._source_name_from_url(canonical_url)
@@ -631,6 +665,87 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             "excerpt": self._grounded_excerpt(excerpts),
         }
         return candidate_source if self._is_allowed_source(candidate_source) else None
+
+    def _grounding_redirect_fallback(
+        self,
+        grounded_uri: str,
+        canonical_url: str,
+        grounding_title: str,
+        excerpts: list[str],
+        status_code: int,
+    ) -> Optional[dict]:
+        """Preserva la cita de Google si el destino bloquea al servidor, no al usuario."""
+        if status_code not in {401, 403} or not self._is_google_grounding_redirect(grounded_uri):
+            return None
+
+        source_name = self._source_name_from_url(canonical_url)
+        source_check = {"url": canonical_url, "source": source_name}
+        if not self._is_allowed_source(source_check):
+            return None
+
+        title = grounding_title.strip()
+        if not title or re.fullmatch(r"(?:www\.)?[a-z0-9.-]+\.[a-z]{2,}", title.lower()):
+            title = f"Cobertura relacionada de {source_name}"
+
+        logger.info(
+            "Fuente de grounding conservada como cita de Google por bloqueo del destino status=%s destino=%s",
+            status_code,
+            canonical_url,
+        )
+        return {
+            "url": grounded_uri,
+            "canonical_url": canonical_url,
+            "source": source_name,
+            "title": title,
+            "excerpt": self._grounded_excerpt(excerpts),
+        }
+
+    @classmethod
+    def _resolve_grounding_url(cls, grounded_uri: str) -> Optional[str]:
+        """Obtiene el destino directo de una cita firmada por Google sin seguirla.
+
+        Los enlaces `grounding-api-redirect` están diseñados para el navegador. Si
+        se los sigue desde el servidor, algunos medios bloquean la petición final y
+        se pierde el Location que Google ya había entregado como cita estructurada.
+        """
+        if not cls._is_google_grounding_redirect(grounded_uri):
+            return grounded_uri
+
+        try:
+            response = requests.get(
+                grounded_uri,
+                allow_redirects=False,
+                timeout=cls.URL_CHECK_TIMEOUT_SECONDS,
+                headers=cls.URL_CHECK_HEADERS,
+                stream=True,
+            )
+        except requests.RequestException as exc:
+            logger.info("No se pudo resolver redirección de Google %s: %s", grounded_uri, exc)
+            return None
+
+        try:
+            location = response.headers.get("Location", "").strip()
+            if 300 <= response.status_code < 400 and location:
+                return urljoin(grounded_uri, location)
+
+            logger.info(
+                "Redirección de Google sin destino status=%s uri=%s",
+                response.status_code,
+                grounded_uri,
+            )
+            return None
+        finally:
+            close = getattr(response, "close", None)
+            if callable(close):
+                close()
+
+    @classmethod
+    def _is_google_grounding_redirect(cls, url: str) -> bool:
+        parsed = urlparse(url)
+        return (
+            cls._domain_from_url(url) == "vertexaisearch.cloud.google.com"
+            and parsed.path.startswith("/grounding-api-redirect/")
+        )
 
     def _grounding_excerpts_by_chunk(self, metadata: object) -> dict[int, list[str]]:
         excerpts: dict[int, list[str]] = {}
@@ -658,7 +773,9 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         unique_sources: list[dict] = []
         seen_urls: set[str] = set()
         for source in sources:
-            normalized_url = self._normalize_url_for_match(source["url"])
+            normalized_url = self._normalize_url_for_match(
+                source.get("canonical_url") or source["url"]
+            )
             if normalized_url in seen_urls:
                 continue
             seen_urls.add(normalized_url)
@@ -896,7 +1013,10 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         return [
             source
             for source in sources
-            if not any(cls._same_url(source["url"], excluded_url) for excluded_url in excluded_urls)
+            if not any(
+                cls._same_url(source.get("canonical_url") or source["url"], excluded_url)
+                for excluded_url in excluded_urls
+            )
         ]
 
     @classmethod
