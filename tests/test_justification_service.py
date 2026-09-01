@@ -1,3 +1,5 @@
+import requests
+
 from app.application_services.justification_service import GeminiJustificationService
 
 
@@ -24,12 +26,22 @@ def test_grounding_source_uses_resolved_canonical_url(monkeypatch):
         "_fetch_source_response",
         classmethod(lambda cls, url: FakeResponse()),
     )
+    monkeypatch.setattr(
+        GeminiJustificationService,
+        "_resolve_grounding_url",
+        classmethod(lambda cls, url: FakeResponse.url),
+    )
     response = Value(
         candidates=[
             Value(
                 grounding_metadata=Value(
                     grounding_chunks=[
-                        Value(web=Value(uri="https://vertexaisearch.cloud.google.com/grounding-api-redirect/example"))
+                        Value(
+                            web=Value(
+                                uri="https://vertexaisearch.cloud.google.com/grounding-api-redirect/example",
+                                title="El Comercio",
+                            )
+                        )
                     ],
                     grounding_supports=[
                         Value(
@@ -88,3 +100,43 @@ def test_url_validation_rejects_a_403_response(monkeypatch):
         "https://andina.pe/agencia/noticia-inventada-123.html",
         "Título inventado",
     )
+
+
+def test_google_redirect_is_resolved_without_fetching_the_destination(monkeypatch):
+    redirect = type(
+        "RedirectResponse",
+        (),
+        {
+            "status_code": 302,
+            "headers": {
+                "Location": "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/"
+            },
+        },
+    )()
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: redirect)
+
+    resolved = GeminiJustificationService._resolve_grounding_url(
+        "https://vertexaisearch.cloud.google.com/grounding-api-redirect/example"
+    )
+
+    assert resolved == "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/"
+
+
+def test_google_redirect_is_kept_when_a_verified_destination_blocks_the_server():
+    service = object.__new__(GeminiJustificationService)
+
+    source = service._grounding_redirect_fallback(
+        "https://vertexaisearch.cloud.google.com/grounding-api-redirect/example",
+        "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/",
+        "",
+        ["El Comercio publicó una columna relacionada con el tema."],
+        403,
+    )
+
+    assert source == {
+        "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/example",
+        "canonical_url": "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/",
+        "source": "El Comercio",
+        "title": "Cobertura relacionada de El Comercio",
+        "excerpt": "El Comercio publicó una columna relacionada con el tema.",
+    }
