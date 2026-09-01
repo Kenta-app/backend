@@ -675,7 +675,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         status_code: int,
     ) -> Optional[dict]:
         """Preserva la cita de Google si el destino bloquea al servidor, no al usuario."""
-        if status_code not in {401, 403} or not self._is_google_grounding_redirect(grounded_uri):
+        if status_code not in {401, 403, 429} or not self._is_google_grounding_redirect(grounded_uri):
             return None
 
         source_name = self._source_name_from_url(canonical_url)
