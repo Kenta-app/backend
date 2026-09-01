@@ -89,8 +89,6 @@ def check_url(url: str, expected_title: str, timeout: float) -> tuple[bool, int 
         )
         response._content = response.raw.read(120_000, decode_content=True)
         status = response.status_code
-        if status in {401, 403}:
-            return True, status, response.url, None
         if not 200 <= status < 400:
             return False, status, response.url, None
 
@@ -144,7 +142,7 @@ def main() -> int:
                 db.delete(source)
                 deleted += 1
 
-        if args.delete_broken and deleted:
+        if (args.delete_broken or args.delete_invalid) and deleted:
             db.commit()
 
         print("")

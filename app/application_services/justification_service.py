@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiJustificationService(IJustificationService):
-    GEMINI_MODEL = "gemini-2.5-flash"
+    GEMINI_MODEL = "gemini-3.5-flash-lite"
     MAX_DEBUG_TEXT_LENGTH = 4000
     URL_CHECK_TIMEOUT_SECONDS = 8
     URL_CHECK_HEADERS = {
@@ -324,29 +324,17 @@ class GeminiJustificationService(IJustificationService):
                 raise ValueError("Respuesta vacía de Gemini")
 
             grounded_sources = self._sources_from_grounding(response)
-            grounded_urls = {source["url"] for source in grounded_sources}
             if self._debug_enabled():
                 logger.info("Gemini raw text: %s", texto_generado[: self.MAX_DEBUG_TEXT_LENGTH])
                 logger.info("Gemini grounded sources: %s", grounded_sources)
 
-            # Parseamos el JSON generado por el propio modelo
-            try:
-                data = self._parse_json_response(texto_generado)
-                return self._normalize_report(
-                    data,
-                    grounded_urls=grounded_urls,
-                    grounding_sources=grounded_sources,
-                    excluded_urls=self._excluded_original_urls(raw_news, prediction),
-                )
-            except json.JSONDecodeError:
-                # Si por alguna razón no es JSON válido, intentamos limpiar bloques markdown si los hay.
-                cleaned_text = re.sub(r"```json\s*|```", "", texto_generado).strip()
-                return self._normalize_report(
-                    self._parse_json_response(cleaned_text),
-                    grounded_urls=grounded_urls,
-                    grounding_sources=grounded_sources,
-                    excluded_urls=self._excluded_original_urls(raw_news, prediction),
-                )
+            # Las URLs las aporta exclusivamente la metadata estructurada de Google.
+            # Nunca se persiste una URL redactada dentro del texto de Gemini.
+            return self._normalize_report(
+                {},
+                grounding_sources=grounded_sources,
+                excluded_urls=self._excluded_original_urls(raw_news, prediction),
+            )
 
         except (ConnectionError, TimeoutError) as e:
             if attempt < self.max_retries:
@@ -451,24 +439,13 @@ REGLAS DE BÚSQUEDA Y SELECCIÓN:
 9. Selecciona entre 1 y {self.max_sources} fuentes como máximo. Prefiere diversidad de medios antes que repetir la misma cobertura.
 10. Si no existe evidencia periodística suficiente o los resultados no están claramente relacionados, deja sources vacío.
 11. Cada excerpt debe explicar de forma neutral por qué esa fuente ayuda a investigar el tema, sin afirmar que la publicación original es verdadera o falsa.
-12. Todo el JSON debe estar redactado en español.
-13. No traduzcas títulos periodísticos. El campo title debe copiar el título original en español tal como aparece en el medio o resultado de búsqueda.
-14. No inventes ni reformules títulos. Si no puedes confirmar el título exacto, usa el encabezado más cercano devuelto por Google Search Grounding en español.
+12. Redacta tu respuesta en español.
+13. No escribas URLs, dominios ni títulos de artículos. La aplicación usará únicamente las citas estructuradas devueltas por Google Search Grounding.
+14. Responde con entre una y cuatro frases breves y neutrales: una idea comprobable por cada fuente relevante. Cada frase debe estar sustentada por las citas de Google Search Grounding.
+15. Si no encuentras cobertura periodística relacionada, responde exactamente: "No se encontró cobertura periodística relacionada."
 
 FORMATO DE SALIDA:
-Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta. No incluyas texto fuera del JSON.
-No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las fuentes.
-
-{{
-  "sources": [
-    {{
-      "url": "URL_REAL_DIRECTA_DEL_DIARIO_O_MEDIO",
-      "source": "NOMBRE_DEL_MEDIO (ej. La República)",
-      "title": "TÍTULO_REAL_DEL_ARTÍCULO",
-      "excerpt": "FRASE_CORTA QUE RESUMA LA EVIDENCIA RELEVANTE DEL ARTÍCULO"
-    }}
-  ]
-}}
+Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces ni conclusiones sobre si la publicación es verdadera o falsa.
 """
         return prompt
 
@@ -479,52 +456,14 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         grounding_sources: Optional[list[dict]] = None,
         excluded_urls: Optional[set[str]] = None,
     ) -> dict:
-        if isinstance(data, list):
-            data = {"sources": data}
-        if not isinstance(data, dict):
-            return self._empty_report()
-
-        raw_sources = data.get("sources") or []
-        sources = [
-            self._sanitize_source(source, grounding_sources)
-            for source in raw_sources
-            if isinstance(source, dict) and self._is_allowed_source(source)
-        ]
-        sources = [source for source in sources if source]
+        del data, grounded_urls
+        sources = list(grounding_sources or [])
         sources = self._exclude_original_sources(sources, excluded_urls)
-        sources = self._filter_reachable_sources(sources)
-        if grounded_urls:
-            before_grounding_filter = len(sources)
-            sources = [
-                source for source in sources
-                if self._url_was_grounded(source["url"], grounded_urls)
-            ]
-            if before_grounding_filter and not sources:
-                logger.info(
-                    "No se aplicó el filtro exacto de grounding porque descartaba todas las fuentes periodísticas."
-                )
-                sources = [
-                    self._sanitize_source(source, grounding_sources)
-                    for source in raw_sources
-                    if isinstance(source, dict) and self._is_allowed_source(source)
-                ]
-                sources = [source for source in sources if source]
-                sources = self._exclude_original_sources(sources, excluded_urls)
-                sources = self._filter_reachable_sources(sources)
-
-        if not sources and grounding_sources:
-            sources = [
-                source
-                for source in grounding_sources
-                if self._is_allowed_source(source)
-            ]
-            sources = self._exclude_original_sources(sources, excluded_urls)
-            sources = self._filter_reachable_sources(sources)
 
         if not sources:
             return self._empty_report()
 
-        return {"sources": sources[: self.max_sources]}
+        return {"sources": self._prioritize_diverse_sources(sources)[: self.max_sources]}
 
     def _sanitize_source(
         self,
@@ -587,8 +526,6 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
             return False
 
         status = response.status_code
-        if status in {401, 403}:
-            return True
         if not 200 <= status < 400:
             return False
 
@@ -632,6 +569,12 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         return ""
 
     def _sources_from_grounding(self, response: object) -> list[dict]:
+        """Build sources only from Google Search's structured citation metadata.
+
+        Gemini's response text can name a plausible but non-existent URL. Grounding
+        chunks are the API's source-of-truth citations, but their URI may first be a
+        Google redirect. We resolve and validate it before persisting anything.
+        """
         sources: list[dict] = []
         seen_urls: set[str] = set()
         candidates = self._read_attr(response, "candidates") or []
@@ -639,29 +582,99 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
         for candidate in candidates:
             metadata = self._read_attr(candidate, "grounding_metadata")
             chunks = self._read_attr(metadata, "grounding_chunks") or []
-            for chunk in chunks:
+            excerpts_by_chunk = self._grounding_excerpts_by_chunk(metadata)
+            cited_indices = set(excerpts_by_chunk)
+            for index, chunk in enumerate(chunks):
+                if cited_indices and index not in cited_indices:
+                    continue
                 web = self._read_attr(chunk, "web")
                 uri = str(self._read_attr(web, "uri") or "").strip()
-                title = str(self._read_attr(web, "title") or "").strip()
-                if not uri or uri in seen_urls:
+                if not uri:
                     continue
 
-                source = self._source_name_from_url(uri)
-                candidate_source = {
-                    "url": uri,
-                    "source": source,
-                    "title": title or source,
-                    "excerpt": (
-                        f"Fuente periodística recuperada por Google Search Grounding: {title}"
-                        if title
-                        else "Fuente periodística recuperada por Google Search Grounding."
-                    ),
-                }
-                if self._is_allowed_source(candidate_source):
-                    sources.append(candidate_source)
-                    seen_urls.add(uri)
+                source = self._resolved_grounding_source(
+                    uri,
+                    excerpts_by_chunk.get(index, []),
+                )
+                if not source:
+                    continue
 
-        return sources
+                normalized_url = self._normalize_url_for_match(source["url"])
+                if normalized_url in seen_urls:
+                    continue
+                seen_urls.add(normalized_url)
+                sources.append(source)
+
+        return self._prioritize_diverse_sources(sources)
+
+    def _resolved_grounding_source(
+        self,
+        grounded_uri: str,
+        excerpts: list[str],
+    ) -> Optional[dict]:
+        response = self._fetch_source_response(grounded_uri)
+        if response is None or not 200 <= response.status_code < 300:
+            logger.info("Fuente de grounding descartada por URL no accesible: %s", grounded_uri)
+            return None
+
+        canonical_url = response.url.strip()
+        page_title = self._extract_page_title(response.text)
+        if not canonical_url or not page_title:
+            logger.info("Fuente de grounding descartada sin URL o título verificable: %s", grounded_uri)
+            return None
+
+        source = self._source_name_from_url(canonical_url)
+        candidate_source = {
+            "url": canonical_url,
+            "source": source,
+            "title": page_title,
+            "excerpt": self._grounded_excerpt(excerpts),
+        }
+        return candidate_source if self._is_allowed_source(candidate_source) else None
+
+    def _grounding_excerpts_by_chunk(self, metadata: object) -> dict[int, list[str]]:
+        excerpts: dict[int, list[str]] = {}
+        supports = self._read_attr(metadata, "grounding_supports") or []
+        for support in supports:
+            segment = self._read_attr(support, "segment")
+            text = str(self._read_attr(segment, "text") or "").strip()
+            indices = self._read_attr(support, "grounding_chunk_indices") or []
+            if not text:
+                continue
+            for index in indices:
+                if isinstance(index, int):
+                    excerpts.setdefault(index, []).append(text)
+        return excerpts
+
+    @staticmethod
+    def _grounded_excerpt(excerpts: list[str]) -> str:
+        for excerpt in excerpts:
+            compact = re.sub(r"\s+", " ", excerpt).strip()
+            if len(compact) >= 20:
+                return compact[:500]
+        return "Cobertura periodística relacionada con el hecho descrito en la publicación."
+
+    def _prioritize_diverse_sources(self, sources: list[dict]) -> list[dict]:
+        unique_sources: list[dict] = []
+        seen_urls: set[str] = set()
+        for source in sources:
+            normalized_url = self._normalize_url_for_match(source["url"])
+            if normalized_url in seen_urls:
+                continue
+            seen_urls.add(normalized_url)
+            unique_sources.append(source)
+
+        diverse: list[dict] = []
+        remaining: list[dict] = []
+        seen_domains: set[str] = set()
+        for source in unique_sources:
+            domain = self._domain_from_url(source["url"])
+            if domain in seen_domains:
+                remaining.append(source)
+                continue
+            diverse.append(source)
+            seen_domains.add(domain)
+        return diverse + remaining
 
     def _grounded_urls_from_response(self, response: object) -> set[str]:
         grounded_urls: set[str] = set()
