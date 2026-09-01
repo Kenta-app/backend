@@ -113,15 +113,9 @@ def load_targets(
         .group_by(JustificationSource.prediction_id)
         .subquery()
     )
-    terminal_runs = (
+    no_source_runs = (
         db.query(JustificationRun.prediction_id.label("prediction_id"))
-        .filter(JustificationRun.status.in_(["success", "no_sources"]))
-        .group_by(JustificationRun.prediction_id)
-        .subquery()
-    )
-    success_runs = (
-        db.query(JustificationRun.prediction_id.label("prediction_id"))
-        .filter(JustificationRun.status == "success")
+        .filter(JustificationRun.status == "no_sources")
         .group_by(JustificationRun.prediction_id)
         .subquery()
     )
@@ -139,8 +133,7 @@ def load_targets(
             == PublishedNews.representative_news_processed_id,
         )
         .outerjoin(source_counts, source_counts.c.prediction_id == MlPrediction.prediction_id)
-        .outerjoin(terminal_runs, terminal_runs.c.prediction_id == MlPrediction.prediction_id)
-        .outerjoin(success_runs, success_runs.c.prediction_id == MlPrediction.prediction_id)
+        .outerjoin(no_source_runs, no_source_runs.c.prediction_id == MlPrediction.prediction_id)
         .filter(PublishedNews.published_at.isnot(None))
         .order_by(PublishedNews.published_at.desc(), PublishedNews.news_id.desc())
     )
@@ -150,10 +143,8 @@ def load_targets(
 
     if not force:
         query = query.filter(func.coalesce(source_counts.c.source_count, 0) == 0)
-        if retry_empty:
-            query = query.filter(success_runs.c.prediction_id.is_(None))
-        else:
-            query = query.filter(terminal_runs.c.prediction_id.is_(None))
+        if not retry_empty:
+            query = query.filter(no_source_runs.c.prediction_id.is_(None))
 
     return query.limit(max(1, limit)).all()
 
