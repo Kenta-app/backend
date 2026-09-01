@@ -55,6 +55,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Reintenta noticias ya buscadas que quedaron sin fuentes.",
     )
+    parser.add_argument(
+        "--content-type",
+        choices=("article", "social_post"),
+        default=None,
+        help="Limita el lote a artículos de medios o publicaciones de redes sociales.",
+    )
     return parser.parse_args()
 
 
@@ -104,6 +110,7 @@ def load_targets(
     force: bool,
     min_fake_score: float | None,
     retry_empty: bool,
+    content_type: str | None,
 ):
     source_counts = (
         db.query(
@@ -140,6 +147,8 @@ def load_targets(
 
     if min_fake_score is not None:
         query = query.filter(PublishedNews.fake_score >= min_fake_score)
+    if content_type is not None:
+        query = query.filter(PublishedNews.content_type == content_type)
 
     if not force:
         query = query.filter(func.coalesce(source_counts.c.source_count, 0) == 0)
@@ -184,10 +193,12 @@ def main() -> int:
             args.force,
             args.min_fake_score,
             args.retry_empty,
+            args.content_type,
         )
         logger.info(
-            "Targets selected=%s force=%s retry_empty=%s dry_run=%s",
+            "Targets selected=%s content_type=%s force=%s retry_empty=%s dry_run=%s",
             len(targets),
+            args.content_type or "all",
             args.force,
             args.retry_empty,
             args.dry_run,
