@@ -9,6 +9,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 import requests
+from bs4 import BeautifulSoup
 
 from app.db.database import SessionLocal
 from app.processed.models import JustificationSource, MlPrediction
@@ -33,30 +34,74 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Elimina de la base las fuentes claramente rotas.",
     )
+    parser.add_argument(
+        "--delete-invalid",
+        action="store_true",
+        help="Elimina fuentes rotas o cuyo título real no coincide con el guardado.",
+    )
     return parser.parse_args()
 
 
-def check_url(url: str, timeout: float) -> tuple[bool, int | None, str | None]:
+def title_overlap(left: str, right: str) -> float:
+    import re
+
+    left_tokens = {
+        token
+        for token in re.findall(r"\w+", (left or "").casefold())
+        if len(token) >= 4
+    }
+    right_tokens = {
+        token
+        for token in re.findall(r"\w+", (right or "").casefold())
+        if len(token) >= 4
+    }
+    if not left_tokens or not right_tokens:
+        return 0.0
+    return len(left_tokens & right_tokens) / max(len(left_tokens), 1)
+
+
+def extract_page_title(html: str) -> str:
+    soup = BeautifulSoup(html or "", "html.parser")
+    for selector in (
+        'meta[property="og:title"]',
+        'meta[name="twitter:title"]',
+        "h1",
+        "title",
+    ):
+        element = soup.select_one(selector)
+        if not element:
+            continue
+        value = element.get("content") if element.name == "meta" else element.get_text(" ")
+        value = " ".join((value or "").split())
+        if value:
+            return value
+    return ""
+
+
+def check_url(url: str, expected_title: str, timeout: float) -> tuple[bool, int | None, str | None, float | None]:
     try:
-        response = requests.head(
+        response = requests.get(
             url,
             allow_redirects=True,
             timeout=timeout,
             headers=HEADERS,
+            stream=True,
         )
-        if response.status_code in {405, 429}:
-            response = requests.get(
-                url,
-                allow_redirects=True,
-                timeout=timeout,
-                headers=HEADERS,
-                stream=True,
-            )
+        response._content = response.raw.read(120_000, decode_content=True)
         status = response.status_code
-        ok = 200 <= status < 400 or status in {401, 403}
-        return ok, status, response.url
+        if status in {401, 403}:
+            return True, status, response.url, None
+        if not 200 <= status < 400:
+            return False, status, response.url, None
+
+        page_title = extract_page_title(response.text)
+        if not page_title:
+            return True, status, "no_page_title", None
+
+        overlap = title_overlap(expected_title, page_title)
+        return overlap >= 0.35, status, page_title[:220], overlap
     except requests.RequestException as exc:
-        return False, None, str(exc)
+        return False, None, str(exc), None
 
 
 def main() -> int:
@@ -81,7 +126,7 @@ def main() -> int:
         deleted = 0
         for source, news in rows:
             checked += 1
-            ok, status, final_url = check_url(source.url, args.timeout)
+            ok, status, detail, overlap = check_url(source.url, source.title, args.timeout)
             if ok:
                 continue
 
@@ -89,13 +134,13 @@ def main() -> int:
             print("---")
             print(f"justification_source_id={source.justification_source_id}")
             print(f"news_id={news.news_id} prediction_id={source.prediction_id}")
-            print(f"status={status} detail={final_url}")
+            print(f"status={status} overlap={overlap} detail={detail}")
             print(f"news={news.title[:140]}")
             print(f"source={source.source}")
             print(f"title={source.title[:180]}")
             print(f"url={source.url}")
 
-            if args.delete_broken:
+            if args.delete_invalid or (args.delete_broken and (status is None or status >= 400)):
                 db.delete(source)
                 deleted += 1
 
