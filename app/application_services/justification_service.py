@@ -14,6 +14,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import requests
+from bs4 import BeautifulSoup
 from google import genai
 from cachetools import TTLCache
 from sqlalchemy.orm import Session
@@ -573,33 +574,62 @@ No generes conclusiones, resúmenes narrativos ni texto adicional fuera de las f
             if normalized in seen_urls:
                 continue
             seen_urls.add(normalized)
-            if self._is_reachable_url(url):
+            if self._is_valid_source_url(url, source["title"]):
                 reachable.append(source)
             else:
-                logger.info("Fuente descartada por URL no accesible: %s", url)
+                logger.info("Fuente descartada por URL no verificable: %s", url)
         return reachable
 
     @classmethod
-    def _is_reachable_url(cls, url: str) -> bool:
+    def _is_valid_source_url(cls, url: str, expected_title: str) -> bool:
+        response = cls._fetch_source_response(url)
+        if response is None:
+            return False
+
+        status = response.status_code
+        if status in {401, 403}:
+            return True
+        if not 200 <= status < 400:
+            return False
+
+        actual_title = cls._extract_page_title(response.text)
+        if not actual_title:
+            return True
+
+        return cls._title_overlap(expected_title, actual_title) >= 0.35
+
+    @classmethod
+    def _fetch_source_response(cls, url: str) -> Optional[requests.Response]:
         try:
-            response = requests.head(
+            response = requests.get(
                 url,
                 allow_redirects=True,
                 timeout=cls.URL_CHECK_TIMEOUT_SECONDS,
                 headers=cls.URL_CHECK_HEADERS,
+                stream=True,
             )
-            if response.status_code in {405, 429}:
-                response = requests.get(
-                    url,
-                    allow_redirects=True,
-                    timeout=cls.URL_CHECK_TIMEOUT_SECONDS,
-                    headers=cls.URL_CHECK_HEADERS,
-                    stream=True,
-                )
-            status = response.status_code
-            return 200 <= status < 400 or status in {401, 403}
+            response._content = response.raw.read(120_000, decode_content=True)
+            return response
         except requests.RequestException:
-            return False
+            return None
+
+    @staticmethod
+    def _extract_page_title(html: str) -> str:
+        soup = BeautifulSoup(html or "", "html.parser")
+        for selector in (
+            'meta[property="og:title"]',
+            'meta[name="twitter:title"]',
+            "h1",
+            "title",
+        ):
+            element = soup.select_one(selector)
+            if not element:
+                continue
+            value = element.get("content") if element.name == "meta" else element.get_text(" ")
+            value = re.sub(r"\s+", " ", value or "").strip()
+            if value:
+                return value
+        return ""
 
     def _sources_from_grounding(self, response: object) -> list[dict]:
         sources: list[dict] = []
