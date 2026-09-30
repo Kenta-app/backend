@@ -17,7 +17,8 @@ class PublishingService:
 
     def publishRepresentative(self, representativeNewsProcessedId: int) -> PublishedNews:
         news = self.buildServingNews(representativeNewsProcessedId)
-        news.publish()
+        if not news.isPublished():
+            news.publish()
         return self.newsRepository.save(news)
 
     def buildServingNews(self, representativeNewsProcessedId: int) -> PublishedNews:
