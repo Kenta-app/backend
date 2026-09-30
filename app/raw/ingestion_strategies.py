@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 from app.interfaces.ingestion_strategy import IIngestionStrategy
 from app.raw.models import RawNews, Source
 from app.scrapers.scrapers import (
+    AndinaScraper,
     ElComercioScraper,
+    ElPeruanoScraper,
     LaRepublicaScraper,
     Peru21Scraper,
     RPPNoticiasScraper,
@@ -32,10 +34,14 @@ class WebScraperIngestion(IIngestionStrategy):
             "rpp.pe": RPPNoticiasScraper(),
             "larepublica.pe": LaRepublicaScraper(),
             "peru21.pe": Peru21Scraper(),
+            "andina.pe": AndinaScraper(),
+            "elperuano.pe": ElPeruanoScraper(),
             "el comercio": ElComercioScraper(),
             "rpp noticias": RPPNoticiasScraper(),
             "la republica": LaRepublicaScraper(),
             "peru21": Peru21Scraper(),
+            "agencia andina": AndinaScraper(),
+            "el peruano": ElPeruanoScraper(),
         }
 
     def ingest(self, source_id: int) -> list[RawNews]:

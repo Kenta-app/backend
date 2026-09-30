@@ -56,6 +56,11 @@ def parse_args() -> argparse.Namespace:
         help="Reintenta noticias ya buscadas que quedaron sin fuentes.",
     )
     parser.add_argument(
+        "--recover-lost-success",
+        action="store_true",
+        help="Prioriza noticias sin fuentes que tuvieron al menos una búsqueda exitosa anterior.",
+    )
+    parser.add_argument(
         "--content-type",
         choices=("article", "social_post"),
         default=None,
@@ -111,6 +116,7 @@ def load_targets(
     min_fake_score: float | None,
     retry_empty: bool,
     content_type: str | None,
+    recover_lost_success: bool = False,
 ):
     source_counts = (
         db.query(
@@ -123,6 +129,12 @@ def load_targets(
     no_source_runs = (
         db.query(JustificationRun.prediction_id.label("prediction_id"))
         .filter(JustificationRun.status == "no_sources")
+        .group_by(JustificationRun.prediction_id)
+        .subquery()
+    )
+    success_runs = (
+        db.query(JustificationRun.prediction_id.label("prediction_id"))
+        .filter(JustificationRun.status == "success")
         .group_by(JustificationRun.prediction_id)
         .subquery()
     )
@@ -141,6 +153,7 @@ def load_targets(
         )
         .outerjoin(source_counts, source_counts.c.prediction_id == MlPrediction.prediction_id)
         .outerjoin(no_source_runs, no_source_runs.c.prediction_id == MlPrediction.prediction_id)
+        .outerjoin(success_runs, success_runs.c.prediction_id == MlPrediction.prediction_id)
         .filter(PublishedNews.published_at.isnot(None))
         .order_by(PublishedNews.published_at.desc(), PublishedNews.news_id.desc())
     )
@@ -150,7 +163,12 @@ def load_targets(
     if content_type is not None:
         query = query.filter(PublishedNews.content_type == content_type)
 
-    if not force:
+    if recover_lost_success:
+        query = query.filter(
+            func.coalesce(source_counts.c.source_count, 0) == 0,
+            success_runs.c.prediction_id.isnot(None),
+        )
+    elif not force:
         query = query.filter(func.coalesce(source_counts.c.source_count, 0) == 0)
         if not retry_empty:
             query = query.filter(no_source_runs.c.prediction_id.is_(None))
@@ -178,6 +196,14 @@ def record_run(
     db.commit()
 
 
+def classify_attempt(result: dict) -> tuple[str, int]:
+    """Describe the new search, not previously saved sources returned as fallback."""
+    if result.get("search_status") in {"no_sources", "no_sources_preserved"}:
+        return "no_sources", 0
+    source_count = len(result.get("sources", []))
+    return ("success" if source_count > 0 else "no_sources"), source_count
+
+
 def main() -> int:
     args = parse_args()
     db = SessionLocal()
@@ -194,13 +220,15 @@ def main() -> int:
             args.min_fake_score,
             args.retry_empty,
             args.content_type,
+            args.recover_lost_success,
         )
         logger.info(
-            "Targets selected=%s content_type=%s force=%s retry_empty=%s dry_run=%s",
+            "Targets selected=%s content_type=%s force=%s retry_empty=%s recover_lost_success=%s dry_run=%s",
             len(targets),
             args.content_type or "all",
             args.force,
             args.retry_empty,
+            args.recover_lost_success,
             args.dry_run,
         )
 
@@ -233,8 +261,7 @@ def main() -> int:
                     include_context=True,
                     regenerate=args.force,
                 )
-                source_count = len(result.get("sources", []))
-                status = "success" if source_count > 0 else "no_sources"
+                status, source_count = classify_attempt(result)
                 record_run(
                     db,
                     prediction.prediction_id,

@@ -83,7 +83,7 @@ class PublishingService:
 
         if prediction:
             news.updatePrediction(
-                prediction.sentiment_label or "unknown",
+                prediction.sentiment_label,
                 float(prediction.sentiment_score),
                 float(prediction.fake_score),
             )

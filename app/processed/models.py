@@ -181,6 +181,10 @@ class MlPrediction(Base):
         self.sentiment_label = label
         self.sentiment_score = Decimal(str(round(float(score), 4)))
 
+    def clearSentiment(self) -> None:
+        self.sentiment_label = None
+        self.sentiment_score = Decimal("0.0000")
+
     def updateFakeScore(self, fakeScore: float) -> None:
         self.fake_score = Decimal(str(round(float(fakeScore), 4)))
 

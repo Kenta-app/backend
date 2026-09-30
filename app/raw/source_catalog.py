@@ -25,6 +25,16 @@ DEFAULT_SOURCES: list[dict[str, str]] = [
         "base_url": "https://peru21.pe/politica/",
         "type": "web",
     },
+    {
+        "name": "Agencia Andina",
+        "base_url": "https://andina.pe/agencia/seccion-politica-17.aspx",
+        "type": "web",
+    },
+    {
+        "name": "El Peruano",
+        "base_url": "https://elperuano.pe/",
+        "type": "web",
+    },
 ]
 
 

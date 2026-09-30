@@ -49,6 +49,11 @@ SUS.
   noticia-condición y el orden se alternarán entre participantes.
 - **Duración prevista:** una única sesión breve. El tiempo final se fijará tras
   el piloto.
+- **Alcance de stance:** durante esta validación, las etiquetas automáticas de
+  stance no se mostrarán ni contribuirán al puntaje de riesgo. El componente
+  permanece desactivado para la interfaz pública (`STANCE_PUBLIC_ENABLED=false`).
+  El estudio evalúa la experiencia de Kenta con las funciones efectivamente
+  visibles; sus resultados no medirán la utilidad de stance por separado.
 
 ## 4. Secuencia por participante
 
@@ -107,3 +112,6 @@ vez iniciada la recolección formal.
 4. Hacer piloto y fijar muestra formal.
 5. Completar contacto del investigador y plazo de conservación de datos en el
    consentimiento informado.
+6. Verificar con las cuatro noticias elegidas que la interfaz y la API no
+   muestren stance y que sus puntajes de riesgo se hayan generado con la
+   configuración sin stance; registrar la versión usada antes del piloto.

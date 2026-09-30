@@ -43,7 +43,7 @@ class SentimentPrediction(IPredictionService):
             }
         )
 
-        stance = raw_result.get("stance") or {"label": "unrelated", "confidence": 0.0, "probabilities": {}}
+        stance = raw_result.get("stance")
         fake_news = raw_result.get("fake_news") or {}
         fake_score = self._calculate_fake_score(fake_news["probabilities"])
 
@@ -58,13 +58,19 @@ class SentimentPrediction(IPredictionService):
                 model_version=self.getModelVersion(),
             )
 
-        prediction.updateSentiment(stance["label"], stance["confidence"])
+        if stance:
+            prediction.updateSentiment(stance["label"], stance["confidence"])
+        else:
+            # Absence of a stance prediction is missing data, not evidence for
+            # any of the four semantic classes.
+            prediction.clearSentiment()
         prediction.updateFakeScore(fake_score)
         prediction.model_version = self.getModelVersion()
         prediction.fake_label = fake_news["label"]
         prediction.fake_bucket = fake_news.get("bucket")
         prediction.raw_probabilities = {
-            "stance": stance["probabilities"],
+            "stance": stance.get("probabilities", {}) if stance else None,
+            "stance_status": "predicted" if stance else "unavailable",
             "fake_news": fake_news["probabilities"],
             "fake_news_risk": fake_news.get("risk_score"),
         }

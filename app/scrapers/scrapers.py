@@ -2,9 +2,113 @@ from app.scrapers.base_scraper import BaseScraper
 from typing import List, Dict, Optional
 from datetime import datetime
 import logging
+import requests
+from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
+
+
+class StructuredPeruNewsScraper(BaseScraper):
+    """Shared extractor for Peruvian outlets with stable article pages."""
+
+    article_link_selector = "a[href]"
+    article_path_marker = ""
+    body_selectors = ("article p", "main p")
+
+    def _discover_urls(self) -> list[str]:
+        soup = self.fetch_page(self.base_url)
+        if not soup:
+            return []
+        urls = []
+        for link in soup.select(self.article_link_selector):
+            href = link.get("href")
+            if not href:
+                continue
+            url = urljoin(self.base_url, href).split("#", 1)[0]
+            if self.article_path_marker and self.article_path_marker not in url:
+                continue
+            if url not in urls:
+                urls.append(url)
+        return urls
+
+    def _scrape_article(self, article_url: str, scraped_date) -> Optional[Dict]:
+        soup = self.fetch_page(article_url)
+        if not soup:
+            return None
+        title_elem = soup.select_one("h1")
+        summary_elem = soup.select_one("h2, h5")
+        best = ""
+        for selector in self.body_selectors:
+            nodes = soup.select(selector)
+            text = " ".join(self.clean_text(node.get_text(" ", strip=True)) for node in nodes)
+            if len(text) > len(best):
+                best = text
+        if not title_elem or len(best) < 250:
+            return None
+        time_elem = soup.select_one("time[datetime]")
+        return {
+            "title": self.clean_text(title_elem.get_text(" ", strip=True)),
+            "url": article_url,
+            "image_url": self.extract_image_url(soup, article_url),
+            "summary": self.clean_text(summary_elem.get_text(" ", strip=True)) if summary_elem else None,
+            "content": best,
+            "source": self.source_name,
+            "published_date": time_elem.get("datetime") if time_elem else None,
+            "scraped_date": scraped_date,
+            "author": None,
+        }
+
+    def scrape(self) -> List[Dict]:
+        scraped_date = datetime.now(ZoneInfo("America/Lima")).date()
+        articles = []
+        try:
+            for url in self._discover_urls():
+                if len(articles) >= self.max_articles_per_run:
+                    break
+                article = self._scrape_article(url, scraped_date)
+                if article:
+                    articles.append(article)
+        except Exception as exc:
+            logger.error("Error scraping %s: %s", self.source_name, exc)
+        return articles
+
+
+class AndinaScraper(StructuredPeruNewsScraper):
+    article_path_marker = "/noticia-"
+    body_selectors = (
+        "div.col.xl12.no-padding600.columna.linknotas",
+        "article p",
+        "main p",
+    )
+
+    def __init__(self):
+        super().__init__("Agencia Andina", "https://andina.pe/agencia/seccion-politica-17.aspx")
+
+
+class ElPeruanoScraper(StructuredPeruNewsScraper):
+    article_path_marker = "/noticia/"
+    body_selectors = (".flow-text", "article p", "main p")
+
+    def __init__(self):
+        super().__init__("El Peruano", "https://elperuano.pe/")
+
+    def _discover_urls(self) -> list[str]:
+        urls = []
+        for endpoint in ("_GetPortadaPrincipal", "_GetNoticiasDestacadas", "_GetNoticiasLoUltimo"):
+            response = requests.get(
+                f"https://elperuano.pe/Portal/{endpoint}", headers=self.headers, timeout=10
+            )
+            response.raise_for_status()
+            payload = response.json()
+            items = payload if isinstance(payload, list) else [payload]
+            for item in items:
+                value = item.get("URLFriendLy") if isinstance(item, dict) else None
+                if value:
+                    url = urljoin(self.base_url, value)
+                    if url not in urls:
+                        urls.append(url)
+        return urls
 
 class ElComercioScraper(BaseScraper):
     def __init__(self):

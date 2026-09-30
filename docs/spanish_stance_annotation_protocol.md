@@ -1,5 +1,11 @@
 # Protocolo de anotación de stance en español peruano
 
+> **Documento histórico.** Este protocolo describe la evaluación inicial de
+> 100 pares. Para construir y cerrar el corpus local use
+> `docs/stance_es_pe_v1_annotation_guide.md` y
+> `docs/stance_es_pe_v1_datasheet.md`. El lote histórico se reserva para
+> desarrollo y no debe presentarse como el test final.
+
 ## Propósito
 
 Crear un conjunto de prueba externo para evaluar el modelo de stance de Kenta

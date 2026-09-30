@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list = ["*"]
 
+    # Stance remains an experimental research component until the local
+    # four-class corpus and held-out evaluation satisfy the release gates.
+    STANCE_PUBLIC_ENABLED: bool = False
+
     class Config:
         env_file = ".env"
         case_sensitive = True

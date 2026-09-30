@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
@@ -12,14 +13,15 @@ WHITESPACE_RE = re.compile(r"\s+")
 FOLD_RE = re.compile(r"[^a-z0-9áéíóúüñ\s]", re.IGNORECASE)
 
 STRONG_LANGUAGE_RE = re.compile(
-    r"\b("
-    r"carajo|concha|conchudo|conchuda|cojudo|cojuda|cojudos|cojudas|"
-    r"huevon|huevón|huevona|huevones|huevón|huevones|webon|webón|"
-    r"mierda|puta|puto|putos|putas|pendejo|pendeja|pendejos|pendejas|"
-    r"imbecil|imbécil|idiota|baboso|babosa|corrupto de mierda"
-    r")\b",
-    re.IGNORECASE,
+    r"\b(?:"
+    r"carajos?|concha|conchud[oa]s?|conch[ae](?:su|tu)madre|"
+    r"cojud[oa]s?|huevon(?:a|es|as)?|webon(?:a|es|as)?|"
+    r"mierdas?|put[oa]s?|pendej[oa]s?|imbeciles?|idiotas?|"
+    r"babos[oa]s?|cabron(?:es|as)?|chucha|csm|ctm|hdp|pta|"
+    r"hij[oa]s?\s+de\s+puta"
+    r")\b"
 )
+MODERATION_LEETSPEAK = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "@": "a", "$": "s"})
 
 
 @dataclass(frozen=True)
@@ -45,7 +47,7 @@ def _build_article_display_content(raw_news: RawNews, clean_text: str | None = N
         display_title=title or "Noticia",
         display_text=text,
         external_links=extract_links(raw_news.content_raw),
-        content_warning=detect_content_warning(text),
+        content_warning=None,
     )
 
 
@@ -60,7 +62,7 @@ def _build_social_display_content(raw_news: RawNews, clean_text: str | None = No
         display_title=display_title,
         display_text=display_text,
         external_links=links,
-        content_warning=detect_content_warning(raw_text),
+        content_warning=detect_content_warning(display_text),
     )
 
 
@@ -90,7 +92,13 @@ def extract_links(text: str | None) -> list[str]:
 
 
 def detect_content_warning(text: str | None) -> str | None:
-    if STRONG_LANGUAGE_RE.search(str(text or "")):
+    value = re.sub(r"(?<!\w)@\w+", " ", str(text or ""))
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(char for char in value if not unicodedata.combining(char))
+    value = value.casefold().translate(MODERATION_LEETSPEAK)
+    value = re.sub(r"(?<=[a-z])[._*·-](?=[a-z])", "", value)
+    value = re.sub(r"([a-z])\1{2,}", r"\1", value)
+    if STRONG_LANGUAGE_RE.search(value):
         return "strong_language"
     return None
 

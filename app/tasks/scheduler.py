@@ -26,6 +26,25 @@ from app.serving.repository import NewsRepository
 logger = logging.getLogger(__name__)
 
 
+def configured_scraping_times() -> tuple[list[int], int]:
+    """Read a bounded daily schedule, preserving the legacy single-hour setting."""
+    raw_hours = os.getenv("SCRAPING_SCHEDULE_HOURS", "").strip()
+    if raw_hours:
+        parts = [part.strip() for part in raw_hours.split(",")]
+        if any(not part.isdigit() for part in parts):
+            raise ValueError("SCRAPING_SCHEDULE_HOURS must be comma-separated hours (0-23).")
+        hours = sorted({int(part) for part in parts})
+    else:
+        hours = [int(os.getenv("SCRAPING_SCHEDULE_HOUR") or "18")]
+
+    minute = int(os.getenv("SCRAPING_SCHEDULE_MINUTE") or "58")
+    if not hours or len(hours) > 6 or any(hour < 0 or hour > 23 for hour in hours):
+        raise ValueError("Configure between one and six scraping hours in the range 0-23.")
+    if minute < 0 or minute > 59:
+        raise ValueError("SCRAPING_SCHEDULE_MINUTE must be in the range 0-59.")
+    return hours, minute
+
+
 class ScrapingScheduler:
     def __init__(self):
         self.scheduler = BackgroundScheduler(timezone=ZoneInfo("America/Lima"))
@@ -51,19 +70,28 @@ class ScrapingScheduler:
             db.close()
 
     def start(self):
-        """Start the scheduler with the configured daily schedule."""
-        hour = int(os.getenv("SCRAPING_SCHEDULE_HOUR", "18"))
-        minute = int(os.getenv("SCRAPING_SCHEDULE_MINUTE", "58"))
+        """Start one non-overlapping job at each configured Lima-time hour."""
+        hours, minute = configured_scraping_times()
 
         self.scheduler.add_job(
             self.scheduled_scraping_job,
-            CronTrigger(hour=hour, minute=minute),
-            id="daily_scraping",
-            name="Daily news scraping and pipeline",
+            CronTrigger(
+                hour=",".join(map(str, hours)),
+                minute=minute,
+                timezone=ZoneInfo("America/Lima"),
+            ),
+            id="scheduled_scraping",
+            name="Scheduled news scraping and pipeline",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=900,
         )
         self.scheduler.start()
-        logger.info("Scheduler started. Pipeline will run daily at %02d:%02d", hour, minute)
+        logger.info(
+            "Scheduler started. Pipeline will run at %s America/Lima",
+            ", ".join(f"{hour:02d}:{minute:02d}" for hour in hours),
+        )
 
     def shutdown(self):
         """Stop the scheduler."""
