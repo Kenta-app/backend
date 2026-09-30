@@ -155,6 +155,30 @@ class FakeNewsComponentsTests(unittest.TestCase):
         self.assertEqual(result["fake_news"]["triage_label"], "likely_fake")
         self.assertEqual(result["warnings"], [])
 
+    def test_unvalidated_stance_cannot_change_public_claim_risk(self):
+        pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = False
+        pipeline.stance_classifier.loaded = True
+        with patch.object(pipeline, "load", return_value=True), patch.object(
+            pipeline, "_predict_stance"
+        ) as predict_stance, patch.object(
+            pipeline,
+            "_predict_fake_news_from_claims_without_stance",
+            return_value={"label": "True", "probabilities": {"False": 0.1, "True": 0.9}},
+        ) as without_stance, patch.object(
+            pipeline, "_predict_fake_news_from_claims"
+        ) as with_stance:
+            result = pipeline.analyze_news(
+                title="Titular", content="Contenido", include_summary=False
+            )
+
+        self.assertIsNone(result["stance"])
+        self.assertIsNone(result["models"]["stance_classifier"])
+        self.assertFalse(pipeline.get_status()["stance_classifier_ready"])
+        predict_stance.assert_not_called()
+        with_stance.assert_not_called()
+        without_stance.assert_called_once()
+
     def test_pipeline_auto_selects_best_fake_news_checkpoint(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             output_root = Path(tmp_dir) / "output"
@@ -597,6 +621,7 @@ class FakeNewsComponentsTests(unittest.TestCase):
 
     def test_claim_aggregation_reduces_risk_when_article_refutes_false_claim(self):
         pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = True
         pipeline.stance_classifier.loaded = True
         pipeline.claim_extractor = Mock()
         pipeline.claim_extractor.strategy_name = "heuristic_test"
@@ -667,6 +692,7 @@ class FakeNewsComponentsTests(unittest.TestCase):
 
     def test_claim_aggregation_keeps_high_risk_when_article_supports_false_claim(self):
         pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = True
         pipeline.stance_classifier.loaded = True
         pipeline.claim_extractor = Mock()
         pipeline.claim_extractor.strategy_name = "heuristic_test"

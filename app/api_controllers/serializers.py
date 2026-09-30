@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from app.processed.models import MlPrediction, Summary
 from app.processed.text_utils import finish_truncated, repair_english_intrusions
 from app.raw.models import RawNews, Source
@@ -13,6 +15,10 @@ from app.serving.models import (
     User,
     UserAppSession,
 )
+
+
+def _stance_public_enabled() -> bool:
+    return os.getenv("STANCE_PUBLIC_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def serialize_source(source: Source) -> dict:
@@ -47,6 +53,7 @@ def serialize_published_news(
     prediction_id: int | None = None,
     sources: list[dict] | None = None,
 ) -> dict:
+    stance_public = _stance_public_enabled()
     payload = {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
@@ -62,8 +69,9 @@ def serialize_published_news(
         "externalLinks": news.external_links or [],
         "originalUrl": news.original_url,
         "imageUrl": news.image_url,
-        "sentimentLabel": news.sentiment_label,
-        "sentimentScore": float(news.sentiment_score),
+        "sentimentLabel": news.sentiment_label if stance_public else None,
+        "sentimentScore": float(news.sentiment_score) if stance_public and news.sentiment_label else None,
+        "stanceAvailable": bool(stance_public and news.sentiment_label),
         "fakeScore": float(news.fake_score),
         "highRisk": float(news.fake_score) >= 0.80,
         "publishedAt": news.published_at.isoformat() if news.published_at else None,
@@ -91,11 +99,13 @@ def serialize_raw_news(raw_news: RawNews) -> dict:
 
 
 def serialize_prediction(prediction: MlPrediction) -> dict:
+    stance_public = _stance_public_enabled()
     return {
         "predictionId": prediction.prediction_id,
         "representativeNewsProcessedId": prediction.representative_news_processed_id,
-        "sentimentLabel": prediction.sentiment_label,
-        "sentimentScore": float(prediction.sentiment_score),
+        "sentimentLabel": prediction.sentiment_label if stance_public else None,
+        "sentimentScore": float(prediction.sentiment_score) if stance_public and prediction.sentiment_label else None,
+        "stanceAvailable": bool(stance_public and prediction.sentiment_label),
         "modelVersion": prediction.model_version,
         "createdAt": prediction.created_at.isoformat() if prediction.created_at else None,
         "fakeScore": float(prediction.fake_score),

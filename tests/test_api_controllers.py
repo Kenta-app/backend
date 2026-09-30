@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from fastapi import HTTPException
@@ -141,6 +142,9 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(response.json()["data"]["count"], 1)
         self.assertEqual(response.json()["data"]["items"][0]["title"], "Noticia publicada")
         self.assertEqual(response.json()["data"]["items"][0]["sourceName"], "Fuente Demo")
+        self.assertIsNone(response.json()["data"]["items"][0]["sentimentLabel"])
+        self.assertIsNone(response.json()["data"]["items"][0]["sentimentScore"])
+        self.assertFalse(response.json()["data"]["items"][0]["stanceAvailable"])
 
         filtered_response = self.client.get("/news?sourceName=Fuente%20Demo")
 
@@ -192,6 +196,58 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(item["contentWarning"], "strong_language")
         self.assertEqual(item["externalLinks"], ["https://example.com/contexto"])
         self.assertEqual(item["sourceAccount"], "cuenta")
+
+    def test_feed_cursor_filters_and_stable_ties(self):
+        source = Source(name="Fuente Cursor", base_url="https://cursor.example", type="web")
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+        timestamp = datetime.utcnow()
+        for index, title in enumerate(("Economía local", "Economía nacional", "Deporte"), 1):
+            self.db.add(PublishedNews(
+                representative_news_processed_id=100 + index,
+                source_id=source.source_id,
+                title=title,
+                original_url=f"https://cursor.example/{index}",
+                published_at=timestamp,
+                fake_score=0.1,
+            ))
+        self.db.commit()
+
+        first = self.client.get("/news?pageSize=1&title=Econom%C3%ADa")
+        self.assertEqual(first.status_code, 200)
+        first_data = first.json()["data"]
+        self.assertEqual(first_data["count"], 2)
+        self.assertIsNotNone(first_data["nextCursor"])
+        self.assertEqual(self.client.get("/news?title=economia").json()["data"]["count"], 2)
+        second = self.client.get("/news", params={"pageSize": 1, "title": "Economía", "cursor": first_data["nextCursor"]})
+        second_data = second.json()["data"]
+        self.assertEqual(second_data["count"], 2)
+        self.assertNotEqual(first_data["items"][0]["newsId"], second_data["items"][0]["newsId"])
+        self.assertIsNone(second_data["nextCursor"])
+        self.assertEqual(self.client.get("/news?cursor=invalid!").status_code, 422)
+        offset_page = self.client.get("/news?page=2&pageSize=1&title=Econom%C3%ADa")
+        self.assertEqual(offset_page.status_code, 200)
+        self.assertEqual(offset_page.json()["data"]["items"][0]["newsId"], second_data["items"][0]["newsId"])
+
+    def test_feed_time_range_is_applied_before_pagination(self):
+        source = Source(name="Fuente Tiempo", base_url="https://time.example", type="web")
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+        for index, days_ago in enumerate((1, 40), 1):
+            self.db.add(PublishedNews(
+                representative_news_processed_id=200 + index,
+                source_id=source.source_id,
+                title=f"Noticia {index}",
+                original_url=f"https://time.example/{index}",
+                published_at=datetime.utcnow() - timedelta(days=days_ago),
+                fake_score=0.1,
+            ))
+        self.db.commit()
+        response = self.client.get("/news?timeRange=week&pageSize=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["count"], 1)
 
     def test_news_detail_returns_published_news_with_empty_evidence(self):
         source = Source(

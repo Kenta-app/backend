@@ -90,6 +90,9 @@ class NewsAnalysisPipeline:
             "yes",
             "si",
         )
+        self.stance_public_enabled = os.getenv("STANCE_PUBLIC_ENABLED", "false").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._lock = Lock()
         self._loaded = False
@@ -143,7 +146,8 @@ class NewsAnalysisPipeline:
                 return True
 
             fake_news_ready = self.fake_news_classifier.load()
-            self.stance_classifier.load()
+            if self.stance_public_enabled:
+                self.stance_classifier.load()
 
             self._loaded = bool(fake_news_ready)
             if fake_news_ready:
@@ -172,6 +176,7 @@ class NewsAnalysisPipeline:
             "pipeline_mode": "dedicated_components",
             "classifier_load_error": self.load_error,
             "claims_enabled": self.use_claims,
+            "stance_public_enabled": self.stance_public_enabled,
             "claim_extractor": self.claim_extractor.strategy_name,
             "fake_news_classifier_ready": self.fake_news_classifier.loaded,
             "fake_news_classifier_checkpoint_exists": self.fake_news_classifier.checkpoint_exists,
@@ -182,12 +187,13 @@ class NewsAnalysisPipeline:
                 if self.fake_news_classifier.loaded
                 else None
             ),
-            "stance_classifier_ready": self.stance_classifier.loaded,
+            "stance_classifier_ready": bool(self.stance_public_enabled and self.stance_classifier.loaded),
             "stance_classifier_checkpoint_exists": self.stance_classifier.checkpoint_exists,
             "stance_classifier_checkpoint_path": self.stance_model_dir,
             "stance_classifier_load_error": self.stance_classifier.load_error,
             "stance_classifier_source": (
-                self.stance_classifier.model_name if self.stance_classifier.loaded else None
+                self.stance_classifier.model_name
+                if self.stance_public_enabled and self.stance_classifier.loaded else None
             ),
             "summarizer_loaded": summarizer_service.loaded,
             "summarizer_model_name": summarizer_service.model_name,
@@ -217,7 +223,7 @@ class NewsAnalysisPipeline:
         warnings: list[str] = []
 
         fake_news_ready = self.load()
-        stance_ready = self.stance_classifier.loaded
+        stance_ready = bool(self.stance_public_enabled and self.stance_classifier.loaded)
         stance_result = None
         fake_news_result = None
 
@@ -235,7 +241,7 @@ class NewsAnalysisPipeline:
                     article_text,
                 )
             else:
-                if self.stance_classifier.load_error:
+                if self.stance_public_enabled and self.stance_classifier.load_error:
                     warnings.append(
                         self.stance_classifier.load_error
                         + " Se agregaron los claims solo con el clasificador de fake news."
