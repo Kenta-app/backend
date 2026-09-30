@@ -83,7 +83,7 @@ class PublishedNews(Base):
 
     def updatePrediction(
         self,
-        sentimentLabel: str,
+        sentimentLabel: str | None,
         sentimentScore: float,
         fakeScore: float,
     ) -> None:

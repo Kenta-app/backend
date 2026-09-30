@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import base64
+import binascii
+import json
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -14,6 +20,39 @@ from app.raw.models import Source
 from app.serving.models import PublishedNews, User
 
 router = APIRouter(prefix="/news", tags=["News"])
+
+
+def _encode_feed_cursor(news: PublishedNews) -> str:
+    payload = json.dumps([news.published_at.isoformat(), news.news_id], separators=(",", ":"))
+    return base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def _decode_feed_cursor(value: str | None) -> tuple[datetime, int] | None:
+    if not value:
+        return None
+    try:
+        payload = json.loads(base64.urlsafe_b64decode(value + "=" * (-len(value) % 4)))
+        if not isinstance(payload, list) or len(payload) != 2:
+            raise ValueError("invalid cursor")
+        timestamp = datetime.fromisoformat(payload[0])
+        news_id = int(payload[1])
+        if timestamp.tzinfo is not None or news_id <= 0:
+            raise ValueError("invalid cursor")
+        return timestamp, news_id
+    except (ValueError, TypeError, UnicodeDecodeError, binascii.Error) as exc:
+        raise HTTPException(status_code=422, detail="Cursor de noticias inválido.") from exc
+
+
+def _feed_since(time_range: str) -> datetime | None:
+    now = datetime.now(timezone.utc)
+    if time_range == "today":
+        lima_today = now.astimezone(ZoneInfo("America/Lima")).date()
+        return datetime.combine(lima_today, datetime.min.time(), ZoneInfo("America/Lima")).astimezone(timezone.utc).replace(tzinfo=None)
+    if time_range == "week":
+        return (now - timedelta(days=7)).replace(tzinfo=None)
+    if time_range == "month":
+        return (now - timedelta(days=30)).replace(tzinfo=None)
+    return None
 
 
 class NewsController(BaseController):
@@ -53,23 +92,20 @@ class NewsController(BaseController):
     def getNewsFeed(self, page: int, pageSize: int, filters: dict) -> dict:
         source_id = filters.get("sourceId")
         source_name = filters.get("sourceName")
-        if source_id:
-            items = self.publishingService.newsRepository.findBySourceId(int(source_id))
-        elif source_name:
-            items = self.publishingService.newsRepository.findBySourceName(source_name)
-        else:
-            items = self.publishingService.newsRepository.findAll(page, pageSize)
-
-        published_items = [item for item in items if item.isPublished()]
-        if source_id or source_name:
-            total = len(published_items)
-            offset = max(page - 1, 0) * pageSize
-            published_items = published_items[offset : offset + pageSize]
-        else:
-            total = self.publishingService.newsRepository.countPublished()
-
+        items, total = self.publishingService.newsRepository.findFeed(
+            page=page,
+            pageSize=pageSize,
+            sourceId=source_id,
+            sourceName=source_name,
+            title=(filters.get("title") or "").strip() or None,
+            since=_feed_since(filters.get("timeRange") or "all"),
+            before=_decode_feed_cursor(filters.get("cursor")),
+        )
+        published_items = items[:pageSize]
         serialized = [serialize_published_news(item) for item in published_items]
-        return self.successResponse(self.paginate(serialized, page, pageSize, total))
+        payload = self.paginate(serialized, page, pageSize, total)
+        payload["nextCursor"] = _encode_feed_cursor(published_items[-1]) if len(items) > pageSize else None
+        return self.successResponse(payload)
 
     def getNewsDetail(self, newsId: int) -> dict:
         news = self.publishingService.newsRepository.findById(newsId)
@@ -123,12 +159,15 @@ def get_news_feed(
     pageSize: int = Query(default=10, ge=1, le=100),
     sourceId: int | None = Query(default=None),
     sourceName: str | None = Query(default=None),
+    title: str | None = Query(default=None, max_length=200),
+    timeRange: str = Query(default="all", pattern="^(all|today|week|month)$"),
+    cursor: str | None = Query(default=None, max_length=200),
     controller: NewsController = Depends(get_news_controller),
 ):
     return controller.getNewsFeed(
         page,
         pageSize,
-        {"sourceId": sourceId, "sourceName": sourceName},
+        {"sourceId": sourceId, "sourceName": sourceName, "title": title, "timeRange": timeRange, "cursor": cursor},
     )
 
 

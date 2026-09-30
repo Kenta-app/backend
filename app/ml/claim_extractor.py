@@ -26,6 +26,10 @@ NOISY_CANDIDATE_MARKERS = (
     "ultimas noticias",
     "relacionado:",
     "relacionada:",
+    "pic.twitter.com/",
+    "t.co/",
+    "twitter.com/",
+    "publicado:",
 )
 
 REFUTATION_MARKERS = (

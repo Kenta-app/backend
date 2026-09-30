@@ -8,6 +8,7 @@ from typing import Any
 import torch
 
 from app.ml.claim_extractor import ClaimExtractor
+from app.ml.evidence_retriever import EvidenceRetriever
 from app.ml.fakenews_classifier import FakeNewsClassifier
 from app.ml.stance_classifier import StanceClassifier
 from app.ml.summarizer import summarizer_service
@@ -90,11 +91,16 @@ class NewsAnalysisPipeline:
             "yes",
             "si",
         )
+        # An unvalidated stance checkpoint must not alter public risk scores.
+        self.stance_public_enabled = os.getenv("STANCE_PUBLIC_ENABLED", "false").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._lock = Lock()
         self._loaded = False
         self.load_error = None
         self.claim_extractor = ClaimExtractor()
+        self.evidence_retriever = EvidenceRetriever()
         self.fake_news_classifier = FakeNewsClassifier(
             model_dir=self.fake_news_model_dir,
             device=self.device,
@@ -143,7 +149,8 @@ class NewsAnalysisPipeline:
                 return True
 
             fake_news_ready = self.fake_news_classifier.load()
-            self.stance_classifier.load()
+            if self.stance_public_enabled:
+                self.stance_classifier.load()
 
             self._loaded = bool(fake_news_ready)
             if fake_news_ready:
@@ -172,6 +179,7 @@ class NewsAnalysisPipeline:
             "pipeline_mode": "dedicated_components",
             "classifier_load_error": self.load_error,
             "claims_enabled": self.use_claims,
+            "stance_public_enabled": self.stance_public_enabled,
             "claim_extractor": self.claim_extractor.strategy_name,
             "fake_news_classifier_ready": self.fake_news_classifier.loaded,
             "fake_news_classifier_checkpoint_exists": self.fake_news_classifier.checkpoint_exists,
@@ -182,12 +190,14 @@ class NewsAnalysisPipeline:
                 if self.fake_news_classifier.loaded
                 else None
             ),
-            "stance_classifier_ready": self.stance_classifier.loaded,
+            "stance_classifier_ready": bool(self.stance_public_enabled and self.stance_classifier.loaded),
             "stance_classifier_checkpoint_exists": self.stance_classifier.checkpoint_exists,
             "stance_classifier_checkpoint_path": self.stance_model_dir,
             "stance_classifier_load_error": self.stance_classifier.load_error,
             "stance_classifier_source": (
-                self.stance_classifier.model_name if self.stance_classifier.loaded else None
+                self.stance_classifier.model_name
+                if self.stance_public_enabled and self.stance_classifier.loaded
+                else None
             ),
             "summarizer_loaded": summarizer_service.loaded,
             "summarizer_model_name": summarizer_service.model_name,
@@ -217,7 +227,7 @@ class NewsAnalysisPipeline:
         warnings: list[str] = []
 
         fake_news_ready = self.load()
-        stance_ready = self.stance_classifier.loaded
+        stance_ready = bool(self.stance_public_enabled and self.stance_classifier.loaded)
         stance_result = None
         fake_news_result = None
 
@@ -235,7 +245,7 @@ class NewsAnalysisPipeline:
                     article_text,
                 )
             else:
-                if self.stance_classifier.load_error:
+                if self.stance_public_enabled and self.stance_classifier.load_error:
                     warnings.append(
                         self.stance_classifier.load_error
                         + " Se agregaron los claims solo con el clasificador de fake news."
@@ -304,6 +314,29 @@ class NewsAnalysisPipeline:
         if configured_dir:
             return configured_dir
 
+        v2_pattern = os.path.join(
+            output_root,
+            "stance_es_pe_v2",
+            "final_model_*",
+            "serving_config.json",
+        )
+        v2_candidates = glob.glob(v2_pattern)
+        if v2_candidates:
+            newest_config = max(v2_candidates, key=os.path.getmtime)
+            return os.path.dirname(newest_config)
+
+        final_pattern = os.path.join(
+            output_root,
+            "stance_es_pe_v1",
+            "final_model_*",
+            "best_model",
+            "serving_config.json",
+        )
+        frozen_candidates = glob.glob(final_pattern)
+        if frozen_candidates:
+            newest_config = max(frozen_candidates, key=os.path.getmtime)
+            return os.path.dirname(newest_config)
+
         default_dir = os.path.join(output_root, "stance_bert", "best_model")
         pattern = os.path.join(output_root, "stance*", "best_model", "serving_config.json")
         candidates: list[tuple[float, float, str]] = []
@@ -351,12 +384,18 @@ class NewsAnalysisPipeline:
             self._attach_risk_triage(prediction)
             return prediction
 
-        article_context = self._build_article_context(headline, body)
         claim_items: list[dict[str, Any]] = []
         for claim in claims:
             claim_model_input = claim.model_input or claim.stance_target
             claim_prediction = self._predict_fake_news(claim_model_input)
-            claim_stance = self._predict_stance(claim_model_input, article_context)
+            evidence = self.evidence_retriever.select(
+                claim=claim.stance_target,
+                title=headline,
+                body=body,
+                tokenizer=self.stance_classifier.tokenizer,
+                max_length=self.stance_classifier.serving_config.max_length,
+            )
+            claim_stance = self._predict_stance(claim.stance_target, evidence.context)
             claim_analysis = self._build_claim_analysis(
                 claim_text=claim.text,
                 stance_target=claim.stance_target,
@@ -366,6 +405,7 @@ class NewsAnalysisPipeline:
                 quality_reasons=claim.quality_reasons,
                 veracity_prediction=claim_prediction,
                 article_stance=claim_stance,
+                stance_evidence=evidence.metadata(),
             )
             claim_items.append(
                 claim_analysis
@@ -533,6 +573,7 @@ class NewsAnalysisPipeline:
         quality_reasons: tuple[str, ...],
         veracity_prediction: dict[str, Any],
         article_stance: dict[str, Any],
+        stance_evidence: dict[str, Any],
     ) -> dict[str, Any]:
         fake_prob = float((veracity_prediction.get("probabilities") or {}).get("False", 0.0))
         true_prob = float((veracity_prediction.get("probabilities") or {}).get("True", 0.0))
@@ -557,6 +598,7 @@ class NewsAnalysisPipeline:
             "quality_reasons": list(quality_reasons),
             "prediction": self._compact_fake_news_prediction(veracity_prediction),
             "article_stance": self._compact_stance_prediction(article_stance),
+            "stance_evidence": stance_evidence,
             "signals": {
                 "support_score": round(float(normalized_support), 4),
                 "refute_score": round(float(normalized_refute), 4),

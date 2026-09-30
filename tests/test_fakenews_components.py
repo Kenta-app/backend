@@ -8,8 +8,10 @@ import json
 import torch
 
 from app.ml.claim_extractor import ClaimExtractionConfig, ClaimExtractor, ExtractedClaim
+from app.ml.evidence_retriever import EvidenceSelection
 from app.ml.pipeline import ModelNotReadyError, NewsAnalysisPipeline
 from app.processed.predictors import SentimentPrediction
+from app.processed.models import MlPrediction
 from app.ml.training.datasets import _build_model_inputs
 from app.ml.training.fakenews_data import LIARFakeNewsDataset
 from app.ml.training.train_fakenews import resolve_model_source, resolve_serving_model_name
@@ -155,6 +157,30 @@ class FakeNewsComponentsTests(unittest.TestCase):
         self.assertEqual(result["fake_news"]["triage_label"], "likely_fake")
         self.assertEqual(result["warnings"], [])
 
+    def test_unvalidated_stance_cannot_change_public_claim_risk(self):
+        pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = False
+        pipeline.stance_classifier.loaded = True
+        with patch.object(pipeline, "load", return_value=True), patch.object(
+            pipeline, "_predict_stance"
+        ) as predict_stance, patch.object(
+            pipeline,
+            "_predict_fake_news_from_claims_without_stance",
+            return_value={"label": "True", "probabilities": {"False": 0.1, "True": 0.9}},
+        ) as without_stance, patch.object(
+            pipeline, "_predict_fake_news_from_claims"
+        ) as with_stance:
+            result = pipeline.analyze_news(
+                title="Titular", content="Contenido", include_summary=False
+            )
+
+        self.assertIsNone(result["stance"])
+        self.assertIsNone(result["models"]["stance_classifier"])
+        self.assertFalse(pipeline.get_status()["stance_classifier_ready"])
+        predict_stance.assert_not_called()
+        with_stance.assert_not_called()
+        without_stance.assert_called_once()
+
     def test_pipeline_auto_selects_best_fake_news_checkpoint(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             output_root = Path(tmp_dir) / "output"
@@ -229,6 +255,20 @@ class FakeNewsComponentsTests(unittest.TestCase):
         score = predictor._calculate_fake_score({"False": 0.63, "True": 0.37})
 
         self.assertEqual(score, 0.63)
+
+    def test_missing_stance_is_stored_as_missing_not_unrelated(self):
+        prediction = MlPrediction(
+            representative_news_processed_id=1,
+            sentiment_label="unrelated",
+            sentiment_score=0.91,
+            fake_score=0.2,
+            model_version="test",
+        )
+
+        prediction.clearSentiment()
+
+        self.assertIsNone(prediction.sentiment_label)
+        self.assertEqual(float(prediction.sentiment_score), 0.0)
 
     def test_claim_extractor_discards_promotional_candidates(self):
         extractor = ClaimExtractor()
@@ -400,6 +440,21 @@ class FakeNewsComponentsTests(unittest.TestCase):
         )
 
         self.assertEqual(claims, [])
+
+    def test_claim_extractor_discards_embedded_social_post_artifacts(self):
+        extractor = ClaimExtractor()
+
+        claims = extractor.extract_with_metadata(
+            None,
+            (
+                "La ONPE confirmó la instalación de mesas en Lima. "
+                "https://t.co/ZXq6fVXAoC pic.twitter.com/eNb13BjXAp "
+                "— Agencia Andina (@Agencia_Andina) September 16, 2026 Publicado: 15/9/2026."
+            ),
+        )
+
+        self.assertEqual(len(claims), 1)
+        self.assertEqual(claims[0].stance_target, "La ONPE confirmó la instalación de mesas en Lima")
 
     def test_claim_extractor_projects_flexible_reporting_after_source_phrase(self):
         extractor = ClaimExtractor()
@@ -597,7 +652,16 @@ class FakeNewsComponentsTests(unittest.TestCase):
 
     def test_claim_aggregation_reduces_risk_when_article_refutes_false_claim(self):
         pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = True
         pipeline.stance_classifier.loaded = True
+        pipeline.evidence_retriever = Mock()
+        pipeline.evidence_retriever.select.return_value = EvidenceSelection(
+            context="El organismo descarto la acusacion y explico el proceso.",
+            sentence_count=1,
+            selected_indexes=(0,),
+            primary_index=0,
+            verdict_index=0,
+        )
         pipeline.claim_extractor = Mock()
         pipeline.claim_extractor.strategy_name = "heuristic_test"
         pipeline.claim_extractor.config = Mock(max_claims=3)
@@ -667,7 +731,16 @@ class FakeNewsComponentsTests(unittest.TestCase):
 
     def test_claim_aggregation_keeps_high_risk_when_article_supports_false_claim(self):
         pipeline = NewsAnalysisPipeline()
+        pipeline.stance_public_enabled = True
         pipeline.stance_classifier.loaded = True
+        pipeline.evidence_retriever = Mock()
+        pipeline.evidence_retriever.select.return_value = EvidenceSelection(
+            context="El articulo sostiene que existio fraude en la primera vuelta.",
+            sentence_count=1,
+            selected_indexes=(0,),
+            primary_index=0,
+            verdict_index=None,
+        )
         pipeline.claim_extractor = Mock()
         pipeline.claim_extractor.strategy_name = "heuristic_test"
         pipeline.claim_extractor.config = Mock(max_claims=3)

@@ -120,6 +120,10 @@ class GeminiJustificationService(IJustificationService):
         sources: list[dict],
         model_used: str,
     ) -> list[dict]:
+        # An empty search result must never erase previously verified sources.
+        if not sources:
+            return self.get_sources_by_prediction_id(prediction_id)
+
         self.db.query(JustificationSource).filter(
             JustificationSource.prediction_id == prediction_id
         ).delete(synchronize_session=False)
@@ -300,9 +304,22 @@ class GeminiJustificationService(IJustificationService):
         )
 
         sources = evidence_report["sources"]
+        if not sources:
+            preserved = self._load_persisted_response(prediction_id)
+            if preserved:
+                preserved["search_status"] = "no_sources_preserved"
+                self._cache[prediction_id] = preserved.copy()
+                return preserved
+
+            response = self._build_response_from_prediction(prediction, [], from_cache=False)
+            response["search_status"] = "no_sources"
+            self._cache[prediction_id] = response.copy()
+            return response
+
         self.persist_sources(prediction_id, sources, self.model_name)
 
         response = self._build_response_from_prediction(prediction, sources, from_cache=False)
+        response["search_status"] = "success"
         self._cache[prediction_id] = response.copy()
         response["from_cache"] = False
 
@@ -323,18 +340,30 @@ class GeminiJustificationService(IJustificationService):
             if not texto_generado:
                 raise ValueError("Respuesta vacía de Gemini")
 
-            grounded_sources = self._sources_from_grounding(response)
+            diagnostics: dict[str, int] = {}
+            grounded_sources = self._sources_from_grounding(response, diagnostics=diagnostics)
+            excluded_urls = self._excluded_original_urls(raw_news, prediction)
+            diagnostics["original_excluded"] = len(grounded_sources) - len(
+                self._exclude_original_sources(grounded_sources, excluded_urls)
+            )
             if self._debug_enabled():
                 logger.info("Gemini raw text: %s", texto_generado[: self.MAX_DEBUG_TEXT_LENGTH])
                 logger.info("Gemini grounded sources: %s", grounded_sources)
 
             # Las URLs las aporta exclusivamente la metadata estructurada de Google.
             # Nunca se persiste una URL redactada dentro del texto de Gemini.
-            return self._normalize_report(
+            report = self._normalize_report(
                 {},
                 grounding_sources=grounded_sources,
-                excluded_urls=self._excluded_original_urls(raw_news, prediction),
+                excluded_urls=excluded_urls,
             )
+            diagnostics["selected_sources"] = len(report["sources"])
+            logger.info(
+                "Related-source search prediction_id=%s diagnostics=%s",
+                prediction.prediction_id,
+                diagnostics,
+            )
+            return report
 
         except (ConnectionError, TimeoutError) as e:
             if attempt < self.max_retries:
@@ -568,7 +597,11 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
                 return value
         return ""
 
-    def _sources_from_grounding(self, response: object) -> list[dict]:
+    def _sources_from_grounding(
+        self,
+        response: object,
+        diagnostics: Optional[dict[str, int]] = None,
+    ) -> list[dict]:
         """Build sources only from Google Search's structured citation metadata.
 
         Gemini's response text can name a plausible but non-existent URL. Grounding
@@ -585,27 +618,34 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             excerpts_by_chunk = self._grounding_excerpts_by_chunk(metadata)
             cited_indices = set(excerpts_by_chunk)
             for index, chunk in enumerate(chunks):
+                self._count_diagnostic(diagnostics, "grounding_chunks")
                 if cited_indices and index not in cited_indices:
+                    self._count_diagnostic(diagnostics, "uncited_chunks")
                     continue
                 web = self._read_attr(chunk, "web")
                 uri = str(self._read_attr(web, "uri") or "").strip()
                 grounding_title = str(self._read_attr(web, "title") or "").strip()
                 if not uri:
+                    self._count_diagnostic(diagnostics, "missing_uri")
                     continue
 
+                self._count_diagnostic(diagnostics, "candidate_urls")
                 source = self._resolved_grounding_source(
                     uri,
                     grounding_title,
                     excerpts_by_chunk.get(index, []),
+                    diagnostics=diagnostics,
                 )
                 if not source:
                     continue
 
                 normalized_url = self._normalize_url_for_match(source["url"])
                 if normalized_url in seen_urls:
+                    self._count_diagnostic(diagnostics, "duplicate_urls")
                     continue
                 seen_urls.add(normalized_url)
                 sources.append(source)
+                self._count_diagnostic(diagnostics, "validated_urls")
 
         return self._prioritize_diverse_sources(sources)
 
@@ -614,14 +654,17 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         grounded_uri: str,
         grounding_title: str,
         excerpts: list[str],
+        diagnostics: Optional[dict[str, int]] = None,
     ) -> Optional[dict]:
         canonical_url = self._resolve_grounding_url(grounded_uri)
         if not canonical_url:
+            self._count_diagnostic(diagnostics, "unresolved_redirect")
             logger.info("Fuente de grounding descartada sin destino resoluble: %s", grounded_uri)
             return None
 
         response = self._fetch_source_response(canonical_url)
         if response is None:
+            self._count_diagnostic(diagnostics, "target_fetch_failed")
             logger.info(
                 "Fuente de grounding descartada por error de red destino=%s origen=%s",
                 canonical_url,
@@ -638,6 +681,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             )
             if fallback:
                 return fallback
+            self._count_diagnostic(diagnostics, "target_http_rejected")
             logger.info(
                 "Fuente de grounding descartada status=%s destino=%s origen=%s",
                 response.status_code,
@@ -649,6 +693,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         canonical_url = response.url.strip() or canonical_url
         page_title = self._extract_page_title(response.text)
         if not canonical_url or not page_title:
+            self._count_diagnostic(diagnostics, "missing_page_title")
             logger.info(
                 "Fuente de grounding descartada sin URL o título verificable destino=%s origen=%s title=%s",
                 canonical_url,
@@ -664,7 +709,15 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             "title": page_title,
             "excerpt": self._grounded_excerpt(excerpts),
         }
-        return candidate_source if self._is_allowed_source(candidate_source) else None
+        if not self._is_allowed_source(candidate_source):
+            self._count_diagnostic(diagnostics, "domain_not_allowed")
+            return None
+        return candidate_source
+
+    @staticmethod
+    def _count_diagnostic(diagnostics: Optional[dict[str, int]], reason: str) -> None:
+        if diagnostics is not None:
+            diagnostics[reason] = diagnostics.get(reason, 0) + 1
 
     def _grounding_redirect_fallback(
         self,
@@ -954,15 +1007,12 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
 
     def _is_allowed_source(self, source: dict) -> bool:
         url = str(source.get("url") or "").strip().lower()
-        source_name = str(source.get("source") or "").strip().lower()
         domain = self._domain_from_url(url)
 
         if not domain or any(domain == blocked or domain.endswith(f".{blocked}") for blocked in self.BLOCKED_DOMAINS):
             return False
 
-        for name, domains in self.JOURNALISTIC_SOURCES.items():
-            if name in source_name:
-                return True
+        for domains in self.JOURNALISTIC_SOURCES.values():
             if any(domain == allowed or domain.endswith(f".{allowed}") for allowed in domains):
                 return True
 
@@ -1056,29 +1106,20 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         return {"sources": []}
 
     def clear_cache(self, prediction_id: Optional[int] = None) -> dict:
-        db_cleared = 0
         if prediction_id is not None:
             existed = prediction_id in self._cache
             self._cache.pop(prediction_id, None)
-            db_cleared = (
-                self.db.query(JustificationSource)
-                .filter(JustificationSource.prediction_id == prediction_id)
-                .delete(synchronize_session=False)
-            )
-            self.db.commit()
             return {
                 "cleared": 1 if existed else 0,
-                "db_cleared": db_cleared,
+                "db_cleared": 0,
                 "cache_size": len(self._cache),
             }
 
         cleared = len(self._cache)
         self._cache.clear()
-        db_cleared = self.db.query(JustificationSource).delete(synchronize_session=False)
-        self.db.commit()
         return {
             "cleared": cleared,
-            "db_cleared": db_cleared,
+            "db_cleared": 0,
             "cache_size": len(self._cache),
         }
 
