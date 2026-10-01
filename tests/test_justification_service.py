@@ -269,7 +269,7 @@ def test_google_redirect_is_resolved_without_fetching_the_destination(monkeypatc
     assert resolved == "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/"
 
 
-def test_google_redirect_is_kept_when_a_verified_destination_rate_limits_the_server():
+def test_publisher_url_is_kept_when_a_grounded_destination_rate_limits_the_server():
     service = object.__new__(GeminiJustificationService)
 
     source = service._grounding_redirect_fallback(
@@ -281,7 +281,7 @@ def test_google_redirect_is_kept_when_a_verified_destination_rate_limits_the_ser
     )
 
     assert source == {
-        "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/example",
+        "url": "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/",
         "canonical_url": "https://elcomercio.pe/opinion/columnistas/un-voto-menos-por-martin-hidalgo-noticia/",
         "source": "El Comercio",
         "title": "Cobertura relacionada de El Comercio",

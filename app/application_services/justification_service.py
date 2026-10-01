@@ -606,7 +606,9 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
 
         Gemini's response text can name a plausible but non-existent URL. Grounding
         chunks are the API's source-of-truth citations, but their URI may first be a
-        Google redirect. We resolve and validate it before persisting anything.
+        Google redirect. We resolve it to a publisher URL and validate the page when
+        accessible; blocked publishers are retained only when the grounded destination
+        belongs to an allowlisted news domain.
         """
         sources: list[dict] = []
         seen_urls: set[str] = set()
@@ -727,7 +729,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         excerpts: list[str],
         status_code: int,
     ) -> Optional[dict]:
-        """Preserva la cita de Google si el destino bloquea al servidor, no al usuario."""
+        """Use the publisher URL when a grounded destination blocks this server."""
         if status_code not in {401, 403, 429} or not self._is_google_grounding_redirect(grounded_uri):
             return None
 
@@ -741,12 +743,12 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             title = f"Cobertura relacionada de {source_name}"
 
         logger.info(
-            "Fuente de grounding conservada como cita de Google por bloqueo del destino status=%s destino=%s",
+            "Fuente de grounding conservada con enlace directo por bloqueo del destino status=%s destino=%s",
             status_code,
             canonical_url,
         )
         return {
-            "url": grounded_uri,
+            "url": canonical_url,
             "canonical_url": canonical_url,
             "source": source_name,
             "title": title,
