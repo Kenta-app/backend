@@ -136,7 +136,6 @@ class ClusteringService:
 
         for processed in processed_items:
             if processed.news_processed_id in existing_members:
-                touched_cluster_ids.add(existing_members[processed.news_processed_id].cluster_id)
                 continue
 
             best_cluster, best_score = self._find_best_cluster(processed, list(clusters.values()))

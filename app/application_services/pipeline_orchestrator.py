@@ -38,6 +38,15 @@ class PipelineOrchestrator:
 
     def run_source_pipeline(self, sourceId: int) -> dict:
         raw_news_items = self.ingestionService.ingestFromSource(sourceId)
+        if not raw_news_items:
+            return {
+                "source_id": sourceId,
+                "raw_news_count": 0,
+                "processed_count": 0,
+                "cluster_count": 0,
+                "published_count": 0,
+                "published_news_ids": [],
+            }
         processed_items = [
             self.preprocessingService.preprocess(raw_news.news_raw_id)
             for raw_news in raw_news_items

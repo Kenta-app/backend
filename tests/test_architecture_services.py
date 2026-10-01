@@ -144,6 +144,7 @@ class ArchitectureServicesTests(unittest.TestCase):
         self.assertEqual(len(processed_items), 3)
         self.assertEqual(len(clusters), 2)
         self.assertEqual(len(members), 3)
+        self.assertEqual(clustering.clusterProcessedNews(source.source_id), [])
 
         representative_id = max(
             [cluster.representative_news_processed_id for cluster in clusters if cluster.representative_news_processed_id],
@@ -176,6 +177,10 @@ class ArchitectureServicesTests(unittest.TestCase):
         self.assertEqual(published.summary, "Resumen de prueba.")
         self.assertEqual(published.sentiment_label, "discuss")
         self.assertAlmostEqual(float(published.fake_score), 0.18)
+        original_published_at = published.published_at
+        republished = publishing.publishRepresentative(representative_id)
+        self.assertEqual(republished.news_id, published.news_id)
+        self.assertEqual(republished.published_at, original_published_at)
 
     def test_publish_social_post_uses_display_title_and_clean_text(self):
         source = Source(
@@ -358,7 +363,7 @@ class ArchitectureServicesTests(unittest.TestCase):
         cluster.cluster_id = 7
 
         ingestion = Mock()
-        ingestion.ingestFromSource.return_value = []
+        ingestion.ingestFromSource.return_value = [Mock(news_raw_id=5)]
         preprocessing = Mock()
         clustering = Mock()
         clustering.clusterProcessedNews.return_value = [cluster]
@@ -387,6 +392,33 @@ class ArchitectureServicesTests(unittest.TestCase):
         publishing.publishRepresentative.assert_called_once_with(42)
         self.assertEqual(result["published_count"], 1)
         self.assertEqual(result["published_news_ids"], [101])
+
+    def test_pipeline_orchestrator_skips_processing_when_source_has_no_new_items(self):
+        ingestion = Mock()
+        ingestion.ingestFromSource.return_value = []
+        preprocessing = Mock()
+        clustering = Mock()
+        summarization = Mock()
+        prediction = Mock()
+        publishing = Mock()
+
+        orchestrator = PipelineOrchestrator(
+            ingestion,
+            preprocessing,
+            clustering,
+            summarization,
+            prediction,
+            publishing,
+        )
+
+        result = orchestrator.run_source_pipeline(1)
+
+        self.assertEqual(result["raw_news_count"], 0)
+        self.assertEqual(result["published_count"], 0)
+        preprocessing.preprocess.assert_not_called()
+        clustering.clusterProcessedNews.assert_not_called()
+        prediction.predictAll.assert_not_called()
+        publishing.publishRepresentative.assert_not_called()
 
     def test_clustering_groups_related_news_across_sources(self):
         source_rpp = Source(name="RPP", base_url="https://rpp.test", type="web")
