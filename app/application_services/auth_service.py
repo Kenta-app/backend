@@ -96,6 +96,13 @@ class AuthService:
             raise EmailNotVerifiedError("Debes confirmar tu correo antes de iniciar sesión.")
         return user
 
+    def changePassword(self, email: str, currentPassword: str, newPassword: str) -> None:
+        user = self.login(email, currentPassword)
+        if self.verifyPassword(newPassword, user.password_hash):
+            raise ValueError("La nueva contraseña debe ser distinta de la actual.")
+        user.password_hash = self.hashPassword(newPassword)
+        self.db.commit()
+
     def verifyEmail(self, email: str, code: str) -> User:
         normalized_email = email.strip().lower()
         user = self.db.query(User).filter(func.lower(User.email) == normalized_email).first()

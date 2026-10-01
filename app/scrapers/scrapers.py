@@ -3,7 +3,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 import logging
 import requests
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
@@ -21,12 +21,16 @@ class StructuredPeruNewsScraper(BaseScraper):
         if not soup:
             return []
         urls = []
+        allowed_host = urlparse(self.base_url).hostname
         for link in soup.select(self.article_link_selector):
             href = link.get("href")
             if not href:
                 continue
             url = urljoin(self.base_url, href).split("#", 1)[0]
-            if self.article_path_marker and self.article_path_marker not in url:
+            parsed = urlparse(url)
+            if parsed.scheme != "https" or parsed.hostname not in {allowed_host, f"www.{allowed_host}"}:
+                continue
+            if self.article_path_marker and self.article_path_marker not in parsed.path:
                 continue
             if url not in urls:
                 urls.append(url)

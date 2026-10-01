@@ -11,6 +11,13 @@ class InteractionService:
     def __init__(self, db: Session):
         self.db = db
 
+    def getReaction(self, userId: int, newsId: int) -> NewsReaction | None:
+        return (
+            self.db.query(NewsReaction)
+            .filter(NewsReaction.user_id == userId, NewsReaction.news_id == newsId)
+            .first()
+        )
+
     def recordReaction(self, userId: int, newsId: int, reaction: int) -> NewsReaction:
         item = (
             self.db.query(NewsReaction)

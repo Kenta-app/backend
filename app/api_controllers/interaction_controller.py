@@ -73,6 +73,11 @@ class InteractionController(BaseController):
         item = self.interactionService.recordReaction(user.user_id, newsId, reaction)
         return self.successResponse(serialize_reaction(item))
 
+    def getReaction(self, newsId: int) -> dict:
+        user = self.requireAuth()
+        item = self.interactionService.getReaction(user.user_id, newsId)
+        return self.successResponse(serialize_reaction(item) if item else None)
+
     def deleteReaction(self, newsId: int) -> dict:
         user = self.requireAuth()
         self.interactionService.removeReaction(user.user_id, newsId)
@@ -136,6 +141,14 @@ def delete_reaction(
     controller: InteractionController = Depends(get_interaction_controller),
 ):
     return controller.deleteReaction(news_id)
+
+
+@router.get("/reaction/{news_id}")
+def get_reaction(
+    news_id: int,
+    controller: InteractionController = Depends(get_interaction_controller),
+):
+    return controller.getReaction(news_id)
 
 
 @router.post("/view")
