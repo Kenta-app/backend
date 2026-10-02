@@ -15,7 +15,8 @@ def main() -> None:
         if engine.dialect.name != "postgresql":
             print("Migración omitida: solo se necesita para PostgreSQL.")
             return
-        if not inspect(engine).has_table("users", schema="serving"):
+        inspector = inspect(engine)
+        if not inspector.has_table("users", schema="serving"):
             print("Migración omitida: la tabla serving.users se creará al iniciar la API.")
             return
 
@@ -40,10 +41,36 @@ def main() -> None:
             "CREATE INDEX IF NOT EXISTS ix_users_email_verified_at ON serving.users (email_verified_at)",
             "UPDATE serving.users SET email_verified_at = created_at WHERE email_verified_at IS NULL",
         ]
+        telemetry_migrations = {
+            "news_views": [
+                "ALTER TABLE serving.news_views ADD COLUMN IF NOT EXISTS client_event_id VARCHAR(64)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_view_event ON serving.news_views (user_id, client_event_id)",
+            ],
+            "news_click": [
+                "ALTER TABLE serving.news_click ADD COLUMN IF NOT EXISTS client_event_id VARCHAR(64)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_click_event ON serving.news_click (user_id, client_event_id)",
+            ],
+            "news_detail_clicks": [
+                "ALTER TABLE serving.news_detail_clicks ADD COLUMN IF NOT EXISTS client_event_id VARCHAR(64)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_detail_event ON serving.news_detail_clicks (user_id, client_event_id)",
+            ],
+            "user_app_sessions": [
+                "ALTER TABLE serving.user_app_sessions ADD COLUMN IF NOT EXISTS client_session_id VARCHAR(64)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_client_session ON serving.user_app_sessions (user_id, client_session_id)",
+            ],
+            "news_reactions": [
+                "ALTER TABLE serving.news_reactions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
+                "UPDATE serving.news_reactions SET updated_at = created_at WHERE updated_at IS NULL",
+                "ALTER TABLE serving.news_reactions ALTER COLUMN updated_at SET NOT NULL",
+            ],
+        }
+        for table_name, table_statements in telemetry_migrations.items():
+            if inspector.has_table(table_name, schema="serving"):
+                statements.extend(table_statements)
         with engine.begin() as connection:
             for statement in statements:
                 connection.execute(text(statement))
-        print("Migración de verificación de correo completada.")
+        print("Migraciones de autenticación y telemetría completadas.")
     finally:
         engine.dispose()
 

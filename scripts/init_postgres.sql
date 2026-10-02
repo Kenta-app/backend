@@ -136,6 +136,7 @@ CREATE TABLE serving.news_views (
     view_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES serving.users(user_id),
     news_id INT NOT NULL REFERENCES serving.news(news_id),
+    client_event_id VARCHAR(64),
     viewed_at TIMESTAMP NOT NULL,
     time_spent_sec INT
 );
@@ -144,6 +145,7 @@ CREATE TABLE serving.news_click (
     click_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES serving.users(user_id),
     news_id INT NOT NULL REFERENCES serving.news(news_id),
+    client_event_id VARCHAR(64),
     clicked_at TIMESTAMP NOT NULL
 );
 
@@ -152,7 +154,8 @@ CREATE TABLE serving.news_reactions (
     user_id INT NOT NULL REFERENCES serving.users(user_id),
     news_id INT NOT NULL REFERENCES serving.news(news_id),
     reaction INT,
-    created_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
 );
 
 -- =========================
@@ -161,3 +164,5 @@ CREATE TABLE serving.news_reactions (
 CREATE INDEX idx_raw_source_url ON raw.news_raw(source_id, original_url);
 CREATE INDEX idx_cluster_news ON processed.cluster_members(cluster_id, news_processed_id);
 CREATE INDEX idx_user_news_reaction ON serving.news_reactions(user_id, news_id);
+CREATE UNIQUE INDEX idx_user_view_event ON serving.news_views(user_id, client_event_id);
+CREATE UNIQUE INDEX idx_user_click_event ON serving.news_click(user_id, client_event_id);

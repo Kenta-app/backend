@@ -49,6 +49,8 @@ class InteractionEventRequest(BaseModel):
     newsId: int | None = Field(default=None, gt=0)
     timeSpentSec: int | None = Field(default=None, ge=0)
     startedAt: datetime | None = None
+    eventId: str | None = Field(default=None, min_length=8, max_length=64)
+    sessionId: str | None = Field(default=None, min_length=8, max_length=64)
 
     @model_validator(mode="after")
     def validate_fields(self):

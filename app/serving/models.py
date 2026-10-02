@@ -111,12 +111,15 @@ class NewsReaction(Base):
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
     reaction = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def setReaction(self, value: int) -> None:
         self.reaction = value
+        self.updated_at = datetime.utcnow()
 
     def changeReaction(self, value: int) -> None:
         self.reaction = value
+        self.updated_at = datetime.utcnow()
 
     def removeReaction(self) -> None:
         self.reaction = 0
@@ -127,13 +130,17 @@ class NewsReaction(Base):
 
 class NewsView(Base):
     __tablename__ = "news_views"
-    __table_args__ = {"schema": "serving"}
+    __table_args__ = (
+        Index("idx_user_view_event", "user_id", "client_event_id", unique=True),
+        {"schema": "serving"},
+    )
 
     view_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
     viewed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     time_spent_sec = Column(Integer, nullable=False, default=0)
+    client_event_id = Column(String(64), nullable=True, index=True)
 
     def registerView(self) -> None:
         self.viewed_at = datetime.utcnow()
@@ -147,12 +154,16 @@ class NewsView(Base):
 
 class NewsClick(Base):
     __tablename__ = "news_click"
-    __table_args__ = {"schema": "serving"}
+    __table_args__ = (
+        Index("idx_user_click_event", "user_id", "client_event_id", unique=True),
+        {"schema": "serving"},
+    )
 
     click_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    client_event_id = Column(String(64), nullable=True, index=True)
 
     def registerClick(self) -> None:
         self.clicked_at = datetime.utcnow()
@@ -160,12 +171,16 @@ class NewsClick(Base):
 
 class NewsDetailClick(Base):
     __tablename__ = "news_detail_clicks"
-    __table_args__ = {"schema": "serving"}
+    __table_args__ = (
+        Index("idx_user_detail_event", "user_id", "client_event_id", unique=True),
+        {"schema": "serving"},
+    )
 
     detail_click_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    client_event_id = Column(String(64), nullable=True, index=True)
 
     def registerClick(self) -> None:
         self.clicked_at = datetime.utcnow()
@@ -173,13 +188,17 @@ class NewsDetailClick(Base):
 
 class UserAppSession(Base):
     __tablename__ = "user_app_sessions"
-    __table_args__ = {"schema": "serving"}
+    __table_args__ = (
+        Index("idx_user_client_session", "user_id", "client_session_id", unique=True),
+        {"schema": "serving"},
+    )
 
     session_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     time_spent_sec = Column(Integer, nullable=False, default=0)
     started_at = Column(DateTime, nullable=False, index=True)
     ended_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    client_session_id = Column(String(64), nullable=True, index=True)
 
 
 class NewsFavorite(Base):

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import hmac
 import os
 
-from fastapi import Depends, Header
+from fastapi import Cookie, Depends
 from sqlalchemy.orm import Session
 
 from app.application_services.analytics_service import AnalyticsService
 from app.application_services.auth_service import AuthService
-from app.application_services.favorite_service import FavoriteService
 from app.application_services.clustering_service import ClusteringService
 from app.application_services.favorite_service import FavoriteService
 from app.application_services.ingestion_service import IngestionService
@@ -24,15 +24,30 @@ from app.raw.ingestion_strategies import TwitterApiIngestion, WebScraperIngestio
 from app.serving.models import User
 from app.serving.repository import NewsRepository
 from app.services.email_service import ResendEmailSender
+from app.services.session_token_service import SessionTokenService
+
+
+def get_session_token_service() -> SessionTokenService:
+    return SessionTokenService()
 
 
 def get_current_user(
-    x_user_id: int | None = Header(default=None, alias="X-User-Id"),
+    kenta_session: str | None = Cookie(default=None),
     db: Session = Depends(get_db),
+    session_service: SessionTokenService = Depends(get_session_token_service),
 ) -> User | None:
-    if x_user_id is None:
+    payload = session_service.verify(kenta_session or "")
+    if not payload:
         return None
-    return db.query(User).filter(User.user_id == x_user_id).first()
+    user = db.query(User).filter(User.user_id == int(payload["uid"])).first()
+    if not user:
+        return None
+    if not hmac.compare_digest(
+        str(payload.get("pwd", "")),
+        session_service.password_fingerprint(user.password_hash),
+    ):
+        return None
+    return user
 
 
 def get_ingestion_service(db: Session = Depends(get_db)) -> IngestionService:
