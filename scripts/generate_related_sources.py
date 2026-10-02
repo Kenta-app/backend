@@ -66,6 +66,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Limita el lote a artículos de medios o publicaciones de redes sociales.",
     )
+    parser.add_argument(
+        "--prediction-id",
+        type=int,
+        default=None,
+        help="Limita la ejecución a una predicción concreta para diagnóstico o reparación.",
+    )
     return parser.parse_args()
 
 
@@ -117,6 +123,7 @@ def load_targets(
     retry_empty: bool,
     content_type: str | None,
     recover_lost_success: bool = False,
+    prediction_id: int | None = None,
 ):
     source_counts = (
         db.query(
@@ -162,6 +169,8 @@ def load_targets(
         query = query.filter(PublishedNews.fake_score >= min_fake_score)
     if content_type is not None:
         query = query.filter(PublishedNews.content_type == content_type)
+    if prediction_id is not None:
+        query = query.filter(MlPrediction.prediction_id == prediction_id)
 
     if recover_lost_success:
         query = query.filter(
@@ -221,6 +230,7 @@ def main() -> int:
             args.retry_empty,
             args.content_type,
             args.recover_lost_success,
+            args.prediction_id,
         )
         logger.info(
             "Targets selected=%s content_type=%s force=%s retry_empty=%s recover_lost_success=%s dry_run=%s",

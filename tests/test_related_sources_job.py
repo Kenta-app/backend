@@ -72,3 +72,41 @@ def test_recovery_targets_only_previous_successes_now_missing_sources():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_target_can_be_restricted_to_one_prediction():
+    engine = apply_sqlite_schema_translation(create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool,
+    ))
+    Base.metadata.create_all(bind=engine)
+    db = sessionmaker(bind=engine)()
+    try:
+        source = Source(name="Fuente prueba", base_url="https://example.com", type="web")
+        db.add(source)
+        db.flush()
+        prediction_ids = []
+        for index in range(1, 3):
+            prediction = MlPrediction(
+                representative_news_processed_id=index,
+                model_version="test", sentiment_score=0, fake_score=0,
+            )
+            db.add(prediction)
+            db.flush()
+            prediction_ids.append(prediction.prediction_id)
+            db.add(PublishedNews(
+                representative_news_processed_id=index,
+                source_id=source.source_id,
+                title=f"Noticia {index}", original_url=f"https://example.com/{index}",
+                published_at=datetime.utcnow(), fake_score=0.1,
+            ))
+        db.commit()
+
+        targets = load_targets(
+            db, 10, False, None, False, None, False, prediction_ids[0]
+        )
+
+        assert len(targets) == 1
+        assert targets[0][2].prediction_id == prediction_ids[0]
+    finally:
+        db.close()
+        engine.dispose()

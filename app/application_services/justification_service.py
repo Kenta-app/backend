@@ -62,6 +62,9 @@ class GeminiJustificationService(IJustificationService):
         "perú21": ("peru21.pe",),
         "peru21": ("peru21.pe",),
         "rpp": ("rpp.pe",),
+        "radio nacional": ("radionacional.gob.pe",),
+        "tv perú": ("tvperu.gob.pe",),
+        "tv peru": ("tvperu.gob.pe",),
         "verificador": ("larepublica.pe",),
     }
     BLOCKED_DOMAINS = {
@@ -713,6 +716,11 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         }
         if not self._is_allowed_source(candidate_source):
             self._count_diagnostic(diagnostics, "domain_not_allowed")
+            logger.info(
+                "Fuente de grounding descartada por dominio no permitido destino=%s dominio=%s",
+                canonical_url,
+                self._domain_from_url(canonical_url),
+            )
             return None
         return candidate_source
 
@@ -978,6 +986,9 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             "perú21": "Perú21",
             "peru21": "Perú21",
             "rpp": "RPP",
+            "radio nacional": "Radio Nacional",
+            "tv perú": "TV Perú",
+            "tv peru": "TV Perú",
             "verificador": "Verificador de La República",
         }
         return canonical_names.get(source_name, source_name.title())

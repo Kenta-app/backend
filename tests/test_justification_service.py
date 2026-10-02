@@ -130,6 +130,15 @@ def test_successful_regeneration_replaces_saved_sources(saved_source_service, mo
 def test_source_allowlist_checks_domain_not_claimed_name(saved_source_service):
     service, _, _ = saved_source_service
     assert service._is_allowed_source({"url": "https://rpp.pe/noticia/1", "source": "RPP"})
+    assert service._is_allowed_source(
+        {"url": "https://www.tvperu.gob.pe/noticias/politica/1", "source": "TV Perú"}
+    )
+    assert service._is_allowed_source(
+        {
+            "url": "https://www.radionacional.gob.pe/noticias/politica/1",
+            "source": "Radio Nacional",
+        }
+    )
     assert not service._is_allowed_source({"url": "https://rpp-falso.example/noticia/1", "source": "RPP"})
 
 
@@ -286,4 +295,24 @@ def test_publisher_url_is_kept_when_a_grounded_destination_rate_limits_the_serve
         "source": "El Comercio",
         "title": "Cobertura relacionada de El Comercio",
         "excerpt": "El Comercio publicó una columna relacionada con el tema.",
+    }
+
+
+def test_public_broadcaster_url_is_kept_when_destination_blocks_the_server():
+    service = object.__new__(GeminiJustificationService)
+
+    source = service._grounding_redirect_fallback(
+        "https://vertexaisearch.cloud.google.com/grounding-api-redirect/example",
+        "https://www.tvperu.gob.pe/noticias/politica/cobertura-relacionada",
+        "TVPerú Noticias",
+        ["TV Perú informó sobre el mismo acontecimiento político."],
+        403,
+    )
+
+    assert source == {
+        "url": "https://www.tvperu.gob.pe/noticias/politica/cobertura-relacionada",
+        "canonical_url": "https://www.tvperu.gob.pe/noticias/politica/cobertura-relacionada",
+        "source": "TV Perú",
+        "title": "TVPerú Noticias",
+        "excerpt": "TV Perú informó sobre el mismo acontecimiento político.",
     }
