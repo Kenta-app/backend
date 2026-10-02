@@ -56,6 +56,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    email: str
+    currentPassword: str
+    newPassword: str = Field(min_length=8, max_length=128)
+
+
 class VerifyEmailRequest(BaseModel):
     email: str
     code: str = Field(pattern=r"^\d{6}$")
@@ -114,6 +120,13 @@ class AuthController(BaseController):
             raise HTTPException(status_code=401, detail=str(exc)) from exc
         return self.successResponse(serialize_user(user))
 
+    def postChangePassword(self, email: str, currentPassword: str, newPassword: str) -> dict:
+        try:
+            self.authService.changePassword(email, currentPassword, newPassword)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return self.successResponse({"changed": True})
+
     def postVerifyEmail(self, email: str, code: str) -> dict:
         try:
             user = self.authService.verifyEmail(email, code)
@@ -160,6 +173,16 @@ def post_login(
     controller: AuthController = Depends(get_auth_controller),
 ):
     return controller.postLogin(payload.email, payload.password)
+
+
+@router.post("/change-password")
+def post_change_password(
+    payload: ChangePasswordRequest,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.postChangePassword(
+        payload.email, payload.currentPassword, payload.newPassword
+    )
 
 
 @router.post("/verify-email")

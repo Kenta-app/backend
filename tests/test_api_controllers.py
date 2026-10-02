@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api_controllers import admin_router, auth_router, news_router
+from app.api_controllers import admin_router, auth_router, interaction_router, news_router
 from app.api_controllers.justification_controller import JustificationController
 from app.db.database import Base, apply_sqlite_schema_translation, get_db
 from app.dependencies import get_email_sender
@@ -60,6 +60,7 @@ class ApiControllersTests(unittest.TestCase):
         app = FastAPI()
         app.include_router(auth_router)
         app.include_router(news_router)
+        app.include_router(interaction_router)
         app.include_router(admin_router)
 
         def override_get_db():
@@ -111,6 +112,25 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(login_response.status_code, 200)
         self.assertEqual(login_response.json()["data"]["email"], "bob@example.com")
 
+        wrong_password_response = self.client.post(
+            "/auth/change-password",
+            json={"email": "bob@example.com", "currentPassword": "wrong", "newPassword": "new-secret-123"},
+        )
+        self.assertEqual(wrong_password_response.status_code, 400)
+        change_response = self.client.post(
+            "/auth/change-password",
+            json={"email": "bob@example.com", "currentPassword": "123456", "newPassword": "new-secret-123"},
+        )
+        self.assertEqual(change_response.status_code, 200)
+        self.assertEqual(
+            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "123456"}).status_code,
+            401,
+        )
+        self.assertEqual(
+            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "new-secret-123"}).status_code,
+            200,
+        )
+
     def test_news_feed_returns_published_news(self):
         source = Source(
             name="Fuente Demo",
@@ -154,6 +174,38 @@ class ApiControllersTests(unittest.TestCase):
             filtered_response.json()["data"]["items"][0]["sourceName"],
             "Fuente Demo",
         )
+
+    def test_reaction_can_be_read_without_405(self):
+        user = User(username="reaction-user", email="reaction@example.com", password_hash="unused", role="user")
+        source = Source(name="Reaction Source", base_url="https://reaction.example", type="web")
+        self.db.add_all([user, source])
+        self.db.commit()
+        news = PublishedNews(
+            representative_news_processed_id=9001,
+            source_id=source.source_id,
+            title="Reaction article",
+            original_url="https://reaction.example/article",
+            fake_score=0.2,
+        )
+        news.publish()
+        self.db.add(news)
+        self.db.commit()
+        headers = {"X-User-Id": str(user.user_id)}
+        path = f"/interactions/reaction/{news.news_id}"
+        self.assertIsNone(self.client.get(path, headers=headers).json()["data"])
+        self.assertEqual(
+            self.client.post(
+                "/interactions/reaction",
+                headers=headers,
+                json={"newsId": news.news_id, "reaction": 1},
+            ).status_code,
+            200,
+        )
+        response = self.client.get(path, headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["reaction"], 1)
+        self.assertEqual(self.client.delete(path, headers=headers).status_code, 200)
+        self.assertIsNone(self.client.get(path, headers=headers).json()["data"])
 
     def test_news_feed_serializes_social_display_fields(self):
         source = Source(

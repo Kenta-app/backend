@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.scrapers.scrapers import ElComercioScraper, Peru21Scraper
+from app.scrapers.scrapers import AndinaScraper, ElComercioScraper, Peru21Scraper
 
 
 @dataclass
@@ -57,6 +57,7 @@ def main() -> None:
     targets = [
         ("El Comercio", ElComercioScraper()),
         ("Peru21", Peru21Scraper()),
+        ("Agencia Andina", AndinaScraper()),
     ]
 
     print("=== Debug scrapers ===")
