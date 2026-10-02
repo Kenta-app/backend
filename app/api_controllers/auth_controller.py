@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
 from app.api_controllers.base_controller import BaseController
 from app.api_controllers.serializers import serialize_user
 from app.application_services.auth_service import AuthService, EmailNotVerifiedError
-from app.dependencies import get_auth_service, get_current_user
+from app.dependencies import get_auth_service, get_current_user, get_session_token_service
 from app.services.email_service import EmailDeliveryError
+from app.services.session_token_service import SessionTokenService
 from app.serving.models import User
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -54,10 +55,10 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+    remember: bool = False
 
 
 class ChangePasswordRequest(BaseModel):
-    email: str
     currentPassword: str
     newPassword: str = Field(min_length=8, max_length=128)
 
@@ -72,9 +73,32 @@ class ResendVerificationRequest(BaseModel):
 
 
 class AuthController(BaseController):
-    def __init__(self, authService: AuthService, current_user: User | None = None):
+    def __init__(
+        self,
+        authService: AuthService,
+        sessionService: SessionTokenService,
+        current_user: User | None = None,
+    ):
         super().__init__(current_user)
         self.authService = authService
+        self.sessionService = sessionService
+
+    def _setSessionCookie(
+        self, response: Response, user: User, remember: bool = False
+    ) -> None:
+        try:
+            token, max_age = self.sessionService.issue(user, remember)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        response.set_cookie(
+            key=self.sessionService.cookie_name,
+            value=token,
+            max_age=max_age,
+            httponly=True,
+            secure=self.sessionService.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
 
     def postRegister(
         self,
@@ -104,7 +128,9 @@ class AuthController(BaseController):
             {"email": user.email, "verificationRequired": True}
         )
 
-    def postLogin(self, email: str, password: str) -> dict:
+    def postLogin(
+        self, response: Response, email: str, password: str, remember: bool
+    ) -> dict:
         try:
             user = self.authService.login(email, password)
         except EmailNotVerifiedError as exc:
@@ -118,21 +144,40 @@ class AuthController(BaseController):
             ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
+        self._setSessionCookie(response, user, remember)
         return self.successResponse(serialize_user(user))
 
-    def postChangePassword(self, email: str, currentPassword: str, newPassword: str) -> dict:
+    def postChangePassword(
+        self, response: Response, currentPassword: str, newPassword: str
+    ) -> dict:
+        user = self.requireAuth()
         try:
-            self.authService.changePassword(email, currentPassword, newPassword)
+            changed_user = self.authService.changePassword(user, currentPassword, newPassword)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        self._setSessionCookie(response, changed_user, False)
         return self.successResponse({"changed": True})
 
-    def postVerifyEmail(self, email: str, code: str) -> dict:
+    def postVerifyEmail(self, response: Response, email: str, code: str) -> dict:
         try:
             user = self.authService.verifyEmail(email, code)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        self._setSessionCookie(response, user, False)
         return self.successResponse(serialize_user(user))
+
+    def getMe(self) -> dict:
+        return self.successResponse(serialize_user(self.requireAuth()))
+
+    def postLogout(self, response: Response) -> dict:
+        response.delete_cookie(
+            key=self.sessionService.cookie_name,
+            httponly=True,
+            secure=self.sessionService.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+        return self.successResponse({"loggedOut": True})
 
     def postResendVerification(self, email: str) -> dict:
         try:
@@ -146,9 +191,10 @@ class AuthController(BaseController):
 
 def get_auth_controller(
     auth_service: AuthService = Depends(get_auth_service),
+    session_service: SessionTokenService = Depends(get_session_token_service),
     current_user: User | None = Depends(get_current_user),
 ) -> AuthController:
-    return AuthController(auth_service, current_user)
+    return AuthController(auth_service, session_service, current_user)
 
 
 @router.post("/register")
@@ -170,27 +216,43 @@ def post_register(
 @router.post("/login")
 def post_login(
     payload: LoginRequest,
+    response: Response,
     controller: AuthController = Depends(get_auth_controller),
 ):
-    return controller.postLogin(payload.email, payload.password)
+    return controller.postLogin(response, payload.email, payload.password, payload.remember)
 
 
 @router.post("/change-password")
 def post_change_password(
     payload: ChangePasswordRequest,
+    response: Response,
     controller: AuthController = Depends(get_auth_controller),
 ):
     return controller.postChangePassword(
-        payload.email, payload.currentPassword, payload.newPassword
+        response, payload.currentPassword, payload.newPassword
     )
 
 
 @router.post("/verify-email")
 def post_verify_email(
     payload: VerifyEmailRequest,
+    response: Response,
     controller: AuthController = Depends(get_auth_controller),
 ):
-    return controller.postVerifyEmail(payload.email, payload.code)
+    return controller.postVerifyEmail(response, payload.email, payload.code)
+
+
+@router.get("/me")
+def get_me(controller: AuthController = Depends(get_auth_controller)):
+    return controller.getMe()
+
+
+@router.post("/logout")
+def post_logout(
+    response: Response,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.postLogout(response)
 
 
 @router.post("/resend-verification")

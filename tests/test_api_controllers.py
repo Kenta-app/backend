@@ -17,6 +17,7 @@ from app.dependencies import get_email_sender
 from app.processed.models import MlPrediction
 from app.raw.models import Source
 from app.serving.models import PublishedNews, User
+from app.services.session_token_service import SessionTokenService
 
 
 class FakeEmailSender:
@@ -43,7 +44,11 @@ class ApiControllersTests(unittest.TestCase):
     def setUp(self):
         self.environment = patch.dict(
             os.environ,
-            {"EMAIL_VERIFICATION_SECRET": "test-verification-secret"},
+            {
+                "EMAIL_VERIFICATION_SECRET": "test-verification-secret",
+                "AUTH_SESSION_SECRET": "test-session-secret-with-at-least-32-characters",
+                "AUTH_COOKIE_SECURE": "false",
+            },
         )
         self.environment.start()
         self.engine = apply_sqlite_schema_translation(
@@ -73,6 +78,11 @@ class ApiControllersTests(unittest.TestCase):
         self.emailSender = FakeEmailSender()
         app.dependency_overrides[get_email_sender] = lambda: self.emailSender
         self.client = TestClient(app)
+
+    def auth_cookies(self, user: User) -> dict[str, str]:
+        service = SessionTokenService()
+        token, _ = service.issue(user, False)
+        return {service.cookie_name: token}
 
     def tearDown(self):
         self.db.close()
@@ -111,15 +121,16 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(verification_response.status_code, 200)
         self.assertEqual(login_response.status_code, 200)
         self.assertEqual(login_response.json()["data"]["email"], "bob@example.com")
+        self.assertEqual(self.client.get("/auth/me").status_code, 200)
 
         wrong_password_response = self.client.post(
             "/auth/change-password",
-            json={"email": "bob@example.com", "currentPassword": "wrong", "newPassword": "new-secret-123"},
+            json={"currentPassword": "wrong", "newPassword": "new-secret-123"},
         )
         self.assertEqual(wrong_password_response.status_code, 400)
         change_response = self.client.post(
             "/auth/change-password",
-            json={"email": "bob@example.com", "currentPassword": "123456", "newPassword": "new-secret-123"},
+            json={"currentPassword": "123456", "newPassword": "new-secret-123"},
         )
         self.assertEqual(change_response.status_code, 200)
         self.assertEqual(
@@ -130,6 +141,8 @@ class ApiControllersTests(unittest.TestCase):
             self.client.post("/auth/login", json={"email": "bob@example.com", "password": "new-secret-123"}).status_code,
             200,
         )
+        self.assertEqual(self.client.post("/auth/logout").status_code, 200)
+        self.assertEqual(self.client.get("/auth/me").status_code, 401)
 
     def test_news_feed_returns_published_news(self):
         source = Source(
@@ -190,22 +203,26 @@ class ApiControllersTests(unittest.TestCase):
         news.publish()
         self.db.add(news)
         self.db.commit()
-        headers = {"X-User-Id": str(user.user_id)}
+        cookies = self.auth_cookies(user)
         path = f"/interactions/reaction/{news.news_id}"
-        self.assertIsNone(self.client.get(path, headers=headers).json()["data"])
+        self.assertEqual(
+            self.client.get(path, headers={"X-User-Id": str(user.user_id)}).status_code,
+            401,
+        )
+        self.assertIsNone(self.client.get(path, cookies=cookies).json()["data"])
         self.assertEqual(
             self.client.post(
                 "/interactions/reaction",
-                headers=headers,
+                cookies=cookies,
                 json={"newsId": news.news_id, "reaction": 1},
             ).status_code,
             200,
         )
-        response = self.client.get(path, headers=headers)
+        response = self.client.get(path, cookies=cookies)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["reaction"], 1)
-        self.assertEqual(self.client.delete(path, headers=headers).status_code, 200)
-        self.assertIsNone(self.client.get(path, headers=headers).json()["data"])
+        self.assertEqual(self.client.delete(path, cookies=cookies).status_code, 200)
+        self.assertIsNone(self.client.get(path, cookies=cookies).json()["data"])
 
     def test_news_feed_serializes_social_display_fields(self):
         source = Source(
@@ -375,7 +392,7 @@ class ApiControllersTests(unittest.TestCase):
                 "type": "web",
                 "parserKey": "generic",
             },
-            headers={"X-User-Id": str(admin.user_id)},
+            cookies=self.auth_cookies(admin),
         )
 
         self.assertEqual(response.status_code, 200)

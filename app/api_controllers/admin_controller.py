@@ -109,6 +109,7 @@ class AdminController(BaseController):
         fromDate: datetime,
         toDate: datetime,
         newsId: int | None = None,
+        includeParticipants: bool = True,
     ) -> dict:
         self._require_moderator()
         if fromDate > toDate:
@@ -117,7 +118,9 @@ class AdminController(BaseController):
                 detail="fromDate debe ser anterior o igual a toDate.",
             )
 
-        metrics = self.analyticsService.getEngagementMetrics(fromDate, toDate, newsId)
+        metrics = self.analyticsService.getEngagementMetrics(
+            fromDate, toDate, newsId, includeParticipants
+        )
         return self.successResponse(metrics)
 
     def getChartAnalytics(
@@ -135,6 +138,25 @@ class AdminController(BaseController):
 
         metrics = self.analyticsService.getChartMetrics(fromDate, toDate, topLimit)
         return self.successResponse(metrics)
+
+    def getParticipantEvents(
+        self,
+        fromDate: datetime,
+        toDate: datetime,
+        userId: int,
+        limit: int,
+    ) -> dict:
+        self._require_moderator()
+        if fromDate > toDate:
+            raise HTTPException(
+                status_code=400,
+                detail="fromDate debe ser anterior o igual a toDate.",
+            )
+        return self.successResponse(
+            self.analyticsService.getParticipantEvents(
+                fromDate, toDate, userId, limit
+            )
+        )
 
     def _require_moderator(self) -> User:
         user = self.requireAuth()
@@ -189,11 +211,14 @@ def get_engagement_analytics(
     fromDate: datetime | None = Query(default=None),
     toDate: datetime | None = Query(default=None),
     newsId: int | None = Query(default=None),
+    includeParticipants: bool = Query(default=True),
     controller: AdminController = Depends(get_admin_controller),
 ):
     resolved_to = toDate or datetime.utcnow()
     resolved_from = fromDate or (resolved_to - timedelta(days=30))
-    return controller.getEngagementAnalytics(resolved_from, resolved_to, newsId)
+    return controller.getEngagementAnalytics(
+        resolved_from, resolved_to, newsId, includeParticipants
+    )
 
 
 @router.get("/analytics/charts")
@@ -206,3 +231,18 @@ def get_chart_analytics(
     resolved_to = toDate or datetime.utcnow()
     resolved_from = fromDate or (resolved_to - timedelta(days=30))
     return controller.getChartAnalytics(resolved_from, resolved_to, topLimit)
+
+
+@router.get("/analytics/participants/{user_id}/events")
+def get_participant_events(
+    user_id: int,
+    fromDate: datetime | None = Query(default=None),
+    toDate: datetime | None = Query(default=None),
+    limit: int = Query(default=500, ge=1, le=2000),
+    controller: AdminController = Depends(get_admin_controller),
+):
+    resolved_to = toDate or datetime.utcnow()
+    resolved_from = fromDate or (resolved_to - timedelta(days=30))
+    return controller.getParticipantEvents(
+        resolved_from, resolved_to, user_id, limit
+    )

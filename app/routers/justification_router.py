@@ -19,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/justifications", tags=["Justifications"])
 
-# Deliberately expose read-only endpoints. The current X-User-Id header is not
-# authentication, so generation and deletion must remain CLI-only until a
-# server-verified moderator credential is implemented.
+# Los endpoints HTTP se mantienen de solo lectura. La generación masiva y la
+# eliminación continúan en scripts operativos para evitar consumo accidental.
 
 
 def get_justification_controller(

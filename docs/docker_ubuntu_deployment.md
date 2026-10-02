@@ -51,6 +51,10 @@ SUMMARY_INLINE_ENABLED=false
 SUMMARY_MAX_CONCURRENT_GENERATIONS=1
 SUMMARY_NUM_BEAMS=4
 JUSTIFICATION_AUTO_ENABLED=false
+AUTH_SESSION_SECRET=generar-un-secreto-aleatorio-de-al-menos-32-caracteres
+AUTH_SESSION_TTL_HOURS=12
+AUTH_REMEMBER_TTL_DAYS=30
+AUTH_COOKIE_SECURE=true
 ```
 
 Puedes generar una clave para PostgreSQL con:
@@ -58,6 +62,18 @@ Puedes generar una clave para PostgreSQL con:
 ```bash
 openssl rand -base64 32
 ```
+
+Genera de forma independiente el secreto de sesión (no reutilices la clave de
+PostgreSQL ni la de verificación de correo):
+
+```bash
+openssl rand -hex 32
+```
+
+Las sesiones se guardan en una cookie `HttpOnly`. Con
+`AUTH_COOKIE_SECURE=true` solo funcionan a través de HTTPS, como corresponde en
+producción. Para un entorno local sin HTTPS se debe establecer explícitamente
+`AUTH_COOKIE_SECURE=false`.
 
 `POSTGRES_PASSWORD` y `CORS_ORIGINS` son obligatorios en `docker-compose.yml`.
 Si quedan vacios, `docker compose config` o `docker compose up` deben fallar en
