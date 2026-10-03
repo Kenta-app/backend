@@ -11,6 +11,10 @@ from app.raw.models import RawNews
 from app.serving.content_normalization import clean_social_text
 
 
+ARTICLE_MIN_TOKENS = 50
+SOCIAL_MIN_TOKENS = 8
+
+
 class PreprocessingService:
     def __init__(self, db: Session):
         self.db = db
@@ -48,7 +52,8 @@ class PreprocessingService:
         elapsed_ms = int((time.perf_counter() - start_time) * 1000)
         self._delete_previous_stage_logs(processed.news_processed_id, "preprocessing")
 
-        if token_count < 50:
+        min_tokens = self.minimumTokens(raw_news)
+        if token_count < min_tokens:
             processed.markRejected()
             raw_news.markRejected("Texto insuficiente")
             self.db.add(processed)
@@ -59,7 +64,7 @@ class PreprocessingService:
                 news_processed_id=processed.news_processed_id,
                 stage="preprocessing",
                 status="failed",
-                message="Texto rechazado por tener menos de 50 tokens.",
+                message=f"Texto rechazado por tener menos de {min_tokens} tokens.",
                 model_version="preprocess:v1",
                 execution_time_ms=elapsed_ms,
             )
@@ -116,6 +121,11 @@ class PreprocessingService:
 
     def countTokens(self, text: str) -> int:
         return len([token for token in text.split(" ") if token])
+
+    @staticmethod
+    def minimumTokens(raw_news: RawNews) -> int:
+        platform = (raw_news.platform or "").lower()
+        return SOCIAL_MIN_TOKENS if platform in {"twitter", "x", "social"} else ARTICLE_MIN_TOKENS
 
     def logProcessing(self, processedId: int, stage: str, status: str, executionTimeMs: int, message: str | None = None) -> None:
         create_processing_log(

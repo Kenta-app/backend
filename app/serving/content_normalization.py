@@ -18,7 +18,11 @@ STRONG_LANGUAGE_RE = re.compile(
     r"cojud[oa]s?|huevon(?:a|es|as)?|webon(?:a|es|as)?|"
     r"mierdas?|put[oa]s?|pendej[oa]s?|imbeciles?|idiotas?|"
     r"babos[oa]s?|cabron(?:es|as)?|chucha|csm|ctm|hdp|pta|"
-    r"hij[oa]s?\s+de\s+puta"
+    r"hij[oa]s?\s+de\s+puta|"
+    r"we+o+n(?:a|es|as)?|huev(?:on|ona|ones|onas)|aweona[do]s?|"
+    r"maric(?:on|ona|ones|onas)|culia[do]s?|culer[oa]s?|"
+    r"malparid[oa]s?|perr[oa]s?|"
+    r"puta\s+madre|concha\s+de\s+(?:su|tu)\s+madre"
     r")\b"
 )
 MODERATION_LEETSPEAK = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "@": "a", "$": "s"})

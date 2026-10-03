@@ -4,6 +4,7 @@ import os
 
 from app.processed.models import MlPrediction, Summary
 from app.processed.text_utils import finish_truncated, repair_english_intrusions
+from app.ml.risk_policy import FakeNewsRiskPolicy
 from app.raw.models import RawNews, Source
 from app.serving.models import (
     NewsClick,
@@ -54,6 +55,9 @@ def serialize_published_news(
     sources: list[dict] | None = None,
 ) -> dict:
     stance_public = _stance_public_enabled()
+    risk_policy = FakeNewsRiskPolicy.from_environment()
+    fake_score = float(news.fake_score)
+    risk_level = risk_policy.classify(fake_score)
     payload = {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
@@ -72,8 +76,10 @@ def serialize_published_news(
         "sentimentLabel": news.sentiment_label if stance_public else None,
         "sentimentScore": float(news.sentiment_score) if stance_public and news.sentiment_label else None,
         "stanceAvailable": bool(stance_public and news.sentiment_label),
-        "fakeScore": float(news.fake_score),
-        "highRisk": float(news.fake_score) >= 0.80,
+        "fakeScore": fake_score,
+        "riskLevel": risk_level,
+        "riskThresholds": risk_policy.thresholds(),
+        "highRisk": risk_level == "likely_fake",
         "publishedAt": news.published_at.isoformat() if news.published_at else None,
     }
     if sources is not None:
@@ -100,6 +106,9 @@ def serialize_raw_news(raw_news: RawNews) -> dict:
 
 def serialize_prediction(prediction: MlPrediction) -> dict:
     stance_public = _stance_public_enabled()
+    risk_policy = FakeNewsRiskPolicy.from_environment()
+    fake_score = float(prediction.fake_score)
+    risk_level = risk_policy.classify(fake_score)
     return {
         "predictionId": prediction.prediction_id,
         "representativeNewsProcessedId": prediction.representative_news_processed_id,
@@ -108,8 +117,10 @@ def serialize_prediction(prediction: MlPrediction) -> dict:
         "stanceAvailable": bool(stance_public and prediction.sentiment_label),
         "modelVersion": prediction.model_version,
         "createdAt": prediction.created_at.isoformat() if prediction.created_at else None,
-        "fakeScore": float(prediction.fake_score),
-        "highRisk": float(prediction.fake_score) >= 0.80,
+        "fakeScore": fake_score,
+        "riskLevel": risk_level,
+        "riskThresholds": risk_policy.thresholds(),
+        "highRisk": risk_level == "likely_fake",
     }
 
 

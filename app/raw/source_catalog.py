@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.raw.models import Source
 
-DEFAULT_SOURCES: list[dict[str, str]] = [
+DEFAULT_SOURCES: list[dict[str, object]] = [
     {
         "name": "El Comercio",
         "base_url": "https://elcomercio.pe/politica/",
@@ -24,6 +24,10 @@ DEFAULT_SOURCES: list[dict[str, str]] = [
         "name": "Peru21",
         "base_url": "https://peru21.pe/politica/",
         "type": "web",
+        # The publisher currently returns Cloudflare 403 responses from the
+        # production droplet. Keep it registered but inactive until a
+        # permitted feed or stable endpoint is available.
+        "is_active": False,
     },
     {
         "name": "Agencia Andina",
@@ -48,6 +52,9 @@ def seed_default_sources(db: Session) -> list[Source]:
             source.register()
             db.add(source)
             db.flush()
+        elif source_data.get("is_active") is False and source.is_active:
+            source.is_active = False
+            db.add(source)
         created_or_existing.append(source)
 
     db.commit()

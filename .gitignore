@@ -19,6 +19,12 @@ __pycache__/
 # Training and evaluation artifacts
 output/
 *.log
+*.db
+*.sqlite
+*.sqlite3
+*.docx
+~$*
+resultados_pruebas.txt
 
 # Temporary notes and diagrams
 _tmp_*

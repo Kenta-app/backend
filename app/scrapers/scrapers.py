@@ -21,14 +21,15 @@ class StructuredPeruNewsScraper(BaseScraper):
         if not soup:
             return []
         urls = []
-        allowed_host = urlparse(self.base_url).hostname
+        allowed_host = (urlparse(self.base_url).hostname or "").removeprefix("www.")
         for link in soup.select(self.article_link_selector):
             href = link.get("href")
             if not href:
                 continue
             url = urljoin(self.base_url, href).split("#", 1)[0]
             parsed = urlparse(url)
-            if parsed.scheme != "https" or parsed.hostname not in {allowed_host, f"www.{allowed_host}"}:
+            parsed_host = (parsed.hostname or "").removeprefix("www.")
+            if parsed.scheme != "https" or parsed_host != allowed_host:
                 continue
             if self.article_path_marker and self.article_path_marker not in parsed.path:
                 continue
@@ -76,7 +77,6 @@ class StructuredPeruNewsScraper(BaseScraper):
         except Exception as exc:
             logger.error("Error scraping %s: %s", self.source_name, exc)
         return articles
-
 
 class AndinaScraper(StructuredPeruNewsScraper):
     article_path_marker = "/noticia-"
@@ -184,15 +184,6 @@ class ElComercioScraper(BaseScraper):
             for container in containers:
                 if len(articles) >= self.max_articles_per_run:
                     break
-                #if len(articles) >= 5:
-                #    return articles
-
-
-                #fecha_html_date = datetime.strptime(fecha_html.text.strip(), "%d/%m/%Y").date()
-
-                #if fecha_html_date != fecha_actual_date:
-                #    continue
-
                 link = container.select_one('a.story-item__title')
                 if not link or not link.get('href'):
                     continue
@@ -207,8 +198,6 @@ class ElComercioScraper(BaseScraper):
             logger.error(f"Error scraping {self.source_name}: {str(e)}")
 
         return articles
-
-
 class LaRepublicaScraper(BaseScraper):
     def __init__(self):
         super().__init__("La Republica", "https://larepublica.pe/politica/")
@@ -222,7 +211,10 @@ class LaRepublicaScraper(BaseScraper):
 
         title_elem = article_soup.select_one('h1')
         summary_elem = article_soup.select_one('h2')
-        contents = article_soup.select('div.MainContent_main__body__i6gEa p')
+        contents = article_soup.select(
+            'div.MainContent_main__body__i6gEa p, '
+            'article p, main article p, div[class*="MainContent_main__body"] p'
+        )
         published_date = None
         time_elem = article_soup.select_one('time')
         if time_elem:
@@ -232,7 +224,7 @@ class LaRepublicaScraper(BaseScraper):
             author = author.get_text(strip=True)
         content_text = " ".join([self.clean_text(p.get_text()) for p in contents])
 
-        if not title_elem:
+        if not title_elem or len(content_text) < 80:
             return None
 
         return {
@@ -274,6 +266,23 @@ class LaRepublicaScraper(BaseScraper):
                 if article:
                     articles.append(article)
 
+            # CSS-module class names change frequently. Use semantic political
+            # article links as a stable fallback and deduplicate by URL.
+            seen_urls = {item["url"] for item in articles}
+            for link in soup.select('a[href*="/politica/"]'):
+                if len(articles) >= self.max_articles_per_run:
+                    break
+                href = link.get('href')
+                if not href:
+                    continue
+                article_url = urljoin(self.base_url, href).split('#', 1)[0]
+                if article_url.rstrip('/') == self.base_url.rstrip('/') or article_url in seen_urls:
+                    continue
+                article = self._scrape_article(article_url, fecha_actual_date)
+                if article:
+                    articles.append(article)
+                    seen_urls.add(article_url)
+
         except Exception as e:
             logger.error(f"Error scraping {self.source_name}: {str(e)}")
 
@@ -305,7 +314,7 @@ class Peru21Scraper(BaseScraper):
         author_elem = article_soup.select_one('div.firma-s1 div.field__item')
         author = author_elem.get_text(strip=True) if author_elem else None
 
-        if not title_elem:
+        if not title_elem or len(content_text) < 80:
             return None
 
         return {
@@ -382,7 +391,7 @@ class RPPNoticiasScraper(BaseScraper):
             author = author.get_text(strip=True)
         content_text = " ".join([self.clean_text(p.get_text()) for p in contents])
 
-        if not title_elem:
+        if not title_elem or len(content_text) < 80:
             return None
 
         return {
@@ -422,8 +431,6 @@ class RPPNoticiasScraper(BaseScraper):
             for container in containers:
                 if len(articles) >= self.max_articles_per_run:
                     break
-                #if len(articles) >= 5:
-                #    return articles
                 link = container.select_one('a')
 
                 if not link or not link.get('href'):
@@ -437,77 +444,3 @@ class RPPNoticiasScraper(BaseScraper):
             logger.error(f"Error scraping {self.source_name}: {str(e)}")
 
         return articles
-
-    '''
-class ElPeruanoScraper(BaseScraper):
-    def __init__(self):
-        super().__init__("El Peruano", "https://elperuano.pe/politica/")
-
-    def scrape(self) -> Optional[Dict]:
-        articles=[]
-        try:
-            print("Scraping El Peruano...")
-            soup = self.fetch_page(self.base_url)
-            fecha_actual_date = datetime.now(ZoneInfo("America/Lima")).date()
-            containers = soup.select('div.nota')[:3]
-
-            for container in containers:
-                link = container.select_one('a')
-                print(container.select('div.skseccionnota'))
-                if link:
-                    print(link['href'])
-                if not link or not link.get('href'):
-                    continue
-
-                article_url = link.get('href')
-
-                print(article_url)
-
-                if not article_url.startswith('http'):
-                    article_url = f"https://elperuano.pe{article_url}"
-                article_soup = self.fetch_page(article_url)
-                if not article_soup:
-                    continue
-
-                title_elem = article_soup.select_one('h1')
-                summary_elem = article_soup.select_one('h5')
-
-                content_div = soup.select_one('#contenido')
-
-                fecha_html_date = None
-                content_text = None
-
-                if content_div:
-                    fecha_tag = content_div.select_one('strong.red-text')
-                    if fecha_tag:
-                        raw_fecha = fecha_tag.get_text(strip=True)  # ej: 15/02/2026
-                        fecha_html_date = datetime.strptime(raw_fecha, "%d/%m/%Y").date()
-                        fecha_tag.decompose()
-
-                    content_text = " ".join(content_div.stripped_strings)
-
-
-                author = 'Desconocido'
-
-
-                #if author:
-                #    author = author.get_text(strip=True)
-
-                if not title_elem:
-                    continue
-
-                articles.append({
-                    'title': self.clean_text(title_elem.get_text()),
-                    'url': article_url,
-                    'summary': self.clean_text(summary_elem.get_text()) if summary_elem else None,
-                    'content': content_text,
-                    'source': self.source_name,
-                    'published_date': fecha_html_date,
-                    'scraped_date': fecha_actual_date,
-                    'author': author
-                })
-
-        except Exception as e:
-            logger.error(f"Error scraping {self.source_name}: {str(e)}")
-    
-    '''

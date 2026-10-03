@@ -13,7 +13,18 @@ def _raw(platform: str, text: str, account: str = "cuenta") -> RawNews:
 
 
 def test_strong_language_variants_in_social_post():
-    for expression in ("carajo", "c0jud0", "m1erda", "p.u.t.a", "conchesumadre", "¡CSM!"):
+    for expression in (
+        "carajo",
+        "c0jud0",
+        "m1erda",
+        "p.u.t.a",
+        "conchesumadre",
+        "¡CSM!",
+        "huevón",
+        "weon",
+        "aweonao",
+        "maricón",
+    ):
         display = build_display_content(_raw("twitter", f"Mensaje: {expression}"))
         assert display.content_warning == "strong_language", expression
         assert expression in display.display_text

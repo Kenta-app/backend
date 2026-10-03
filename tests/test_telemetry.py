@@ -8,7 +8,14 @@ from app.application_services.analytics_service import AnalyticsService
 from app.application_services.interaction_service import InteractionService
 from app.db.database import Base, apply_sqlite_schema_translation
 from app.raw.models import Source
-from app.serving.models import NewsFavorite, PublishedNews, User, UserAppSession, NewsView
+from app.serving.models import (
+    NewsFavorite,
+    NewsRelatedSourceClick,
+    PublishedNews,
+    User,
+    UserAppSession,
+    NewsView,
+)
 
 
 def build_db():
@@ -52,6 +59,13 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
             {"type": "detail-click", "newsId": news.news_id, "eventId": "detail-event-01"},
             {"type": "click", "newsId": news.news_id, "eventId": "click-event-001"},
             {
+                "type": "related-click",
+                "newsId": news.news_id,
+                "eventId": "related-click-001",
+                "sourceName": "Fuente relacionada",
+                "targetUrl": "https://related.example.com/evidence",
+            },
+            {
                 "type": "session",
                 "timeSpentSec": 50,
                 "startedAt": datetime.utcnow() - timedelta(seconds=50),
@@ -63,7 +77,8 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
             {**first[0], "timeSpentSec": 20},
             first[1],
             first[2],
-            {**first[3], "timeSpentSec": 60, "eventId": "session-snapshot-2"},
+            first[3],
+            {**first[4], "timeSpentSec": 60, "eventId": "session-snapshot-2"},
         ]
         # Dos instantáneas del mismo evento pueden llegar juntas desde la cola.
         service.recordBatch(
@@ -96,6 +111,7 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
         assert summary["totalReadingTimeSec"] == 20
         assert summary["totalDetailClicks"] == 1
         assert summary["totalClicks"] == 1
+        assert summary["totalRelatedClicks"] == 1
         assert summary["totalSessions"] == 1
         assert summary["totalAppTimeSec"] == 60
         assert summary["positiveReactions"] == 1
@@ -109,6 +125,7 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
                 "totalReadingTimeSec": 20,
                 "totalDetailClicks": 1,
                 "totalClicks": 1,
+                "totalRelatedClicks": 1,
                 "totalSessions": 1,
                 "totalAppTimeSec": 60,
                 "positiveReactions": 1,
@@ -126,10 +143,14 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
             "view",
             "detail-click",
             "original-click",
+            "related-click",
             "reaction",
             "session",
             "favorite",
         }
+        related = db.query(NewsRelatedSourceClick).one()
+        assert related.source_name == "Fuente relacionada"
+        assert related.target_url == "https://related.example.com/evidence"
     finally:
         db.close()
         Base.metadata.drop_all(bind=engine)

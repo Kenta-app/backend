@@ -96,7 +96,7 @@ class ApiControllersTests(unittest.TestCase):
             json={
                 "username": "bob",
                 "email": "bob@example.com",
-                "password": "123456",
+                "password": "secret-123",
                 "acceptedTerms": True,
                 "termsVersion": "2026-08-28",
                 "privacyPolicyVersion": "2026-08-28",
@@ -104,7 +104,7 @@ class ApiControllersTests(unittest.TestCase):
         )
         unverified_login_response = self.client.post(
             "/auth/login",
-            json={"email": "bob@example.com", "password": "123456"},
+            json={"email": "bob@example.com", "password": "secret-123"},
         )
         verification_response = self.client.post(
             "/auth/verify-email",
@@ -112,7 +112,7 @@ class ApiControllersTests(unittest.TestCase):
         )
         login_response = self.client.post(
             "/auth/login",
-            json={"email": "bob@example.com", "password": "123456"},
+            json={"email": "bob@example.com", "password": "secret-123"},
         )
 
         self.assertEqual(register_response.status_code, 200)
@@ -130,11 +130,11 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(wrong_password_response.status_code, 400)
         change_response = self.client.post(
             "/auth/change-password",
-            json={"currentPassword": "123456", "newPassword": "new-secret-123"},
+            json={"currentPassword": "secret-123", "newPassword": "new-secret-123"},
         )
         self.assertEqual(change_response.status_code, 200)
         self.assertEqual(
-            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "123456"}).status_code,
+            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "secret-123"}).status_code,
             401,
         )
         self.assertEqual(
@@ -143,6 +143,35 @@ class ApiControllersTests(unittest.TestCase):
         )
         self.assertEqual(self.client.post("/auth/logout").status_code, 200)
         self.assertEqual(self.client.get("/auth/me").status_code, 401)
+
+    def test_profile_update_is_persisted_and_keeps_email_immutable(self):
+        user = User(
+            username="profile-user",
+            email="profile@example.com",
+            password_hash="hash",
+            role="user",
+        )
+        user.register()
+        user.email_verified_at = datetime.utcnow()
+        self.db.add(user)
+        self.db.commit()
+
+        response = self.client.patch(
+            "/auth/profile",
+            cookies=self.auth_cookies(user),
+            json={
+                "username": "Perfil Actualizado",
+                "birthDate": "1998-07-12",
+                "gender": "FEMALE",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.db.refresh(user)
+        self.assertEqual(user.username, "Perfil Actualizado")
+        self.assertEqual(user.email, "profile@example.com")
+        self.assertEqual(user.birth_date.isoformat(), "1998-07-12")
+        self.assertEqual(user.gender, "female")
 
     def test_news_feed_returns_published_news(self):
         source = Source(

@@ -4,7 +4,14 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.serving.models import NewsClick, NewsDetailClick, NewsReaction, NewsView, UserAppSession
+from app.serving.models import (
+    NewsClick,
+    NewsDetailClick,
+    NewsReaction,
+    NewsRelatedSourceClick,
+    NewsView,
+    UserAppSession,
+)
 
 
 class InteractionService:
@@ -19,6 +26,8 @@ class InteractionService:
         )
 
     def recordReaction(self, userId: int, newsId: int, reaction: int) -> NewsReaction:
+        if reaction not in {-1, 1}:
+            raise ValueError("reaction debe ser -1 o 1.")
         item = (
             self.db.query(NewsReaction)
             .filter(NewsReaction.user_id == userId, NewsReaction.news_id == newsId)
@@ -46,6 +55,7 @@ class InteractionService:
             self.db.commit()
 
     def recordView(self, userId: int, newsId: int, timeSpentSec: int) -> NewsView:
+        self._validateDuration(timeSpentSec)
         item = NewsView(user_id=userId, news_id=newsId, time_spent_sec=timeSpentSec)
         item.registerView()
         self.db.add(item)
@@ -75,8 +85,7 @@ class InteractionService:
         timeSpentSec: int,
         startedAt: datetime | None = None,
     ) -> UserAppSession:
-        if timeSpentSec < 0:
-            raise ValueError("timeSpentSec debe ser mayor o igual a 0.")
+        self._validateDuration(timeSpentSec)
 
         ended_at = datetime.utcnow()
         resolved_started = startedAt or (ended_at - timedelta(seconds=timeSpentSec))
@@ -100,6 +109,7 @@ class InteractionService:
             "views": 0,
             "clicks": 0,
             "detailClicks": 0,
+            "relatedClicks": 0,
             "sessions": 0,
             "deduplicated": 0,
         }
@@ -162,6 +172,25 @@ class InteractionService:
                         pending_events, NewsDetailClick, event_id, item
                     )
                 counts["detailClicks"] += 1
+            elif event_type == "related-click":
+                item = self._findByEvent(
+                    NewsRelatedSourceClick, userId, event_id, pending_events
+                )
+                if item:
+                    counts["deduplicated"] += 1
+                else:
+                    item = NewsRelatedSourceClick(
+                        user_id=userId,
+                        news_id=event["newsId"],
+                        target_url=event["targetUrl"],
+                        source_name=event.get("sourceName"),
+                        client_event_id=event_id,
+                    )
+                    item.registerClick()
+                    self._rememberPending(
+                        pending_events, NewsRelatedSourceClick, event_id, item
+                    )
+                counts["relatedClicks"] += 1
             elif event_type == "session":
                 seconds = event["timeSpentSec"]
                 ended_at = datetime.utcnow()
@@ -239,3 +268,8 @@ class InteractionService:
         if value is None or value.tzinfo is None:
             return value
         return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+    @staticmethod
+    def _validateDuration(value: int) -> None:
+        if value < 0 or value > 86_400:
+            raise ValueError("timeSpentSec debe estar entre 0 y 86400 segundos.")

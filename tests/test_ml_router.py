@@ -4,8 +4,10 @@ from unittest.mock import patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.dependencies import get_current_user
 from app.ml.pipeline import ModelNotReadyError
 from app.routers.ml_router import router
+from app.serving.models import User
 
 
 class MLRouterTests(unittest.TestCase):
@@ -13,6 +15,13 @@ class MLRouterTests(unittest.TestCase):
     def setUpClass(cls):
         app = FastAPI()
         app.include_router(router, prefix="/ml")
+        app.dependency_overrides[get_current_user] = lambda: User(
+            user_id=1,
+            username="ml-admin",
+            email="ml-admin@example.com",
+            password_hash="test",
+            role="admin",
+        )
         cls.client = TestClient(app)
 
     def test_analyze_returns_pipeline_response(self):
@@ -91,6 +100,15 @@ class MLRouterTests(unittest.TestCase):
         response = self.client.post("/ml/analyze", json={"include_summary": False})
 
         self.assertEqual(response.status_code, 422)
+
+    def test_analyze_requires_an_authenticated_operator(self):
+        app = FastAPI()
+        app.include_router(router, prefix="/ml")
+        anonymous_client = TestClient(app)
+
+        response = anonymous_client.post("/ml/analyze", json={"text": "contenido"})
+
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == "__main__":

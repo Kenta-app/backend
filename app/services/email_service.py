@@ -24,13 +24,15 @@ class ResendEmailSender:
         if not self.apiKey or not self.fromAddress:
             raise EmailDeliveryError("El servicio de correo no está configurado.")
 
+        ttl_minutes = int(os.getenv("EMAIL_VERIFICATION_TTL_MINUTES", "10"))
         payload = {
             "from": self.fromAddress,
             "to": [email],
             "subject": "Confirma tu correo en Kenta",
             "text": (
                 f"Tu código de confirmación para Kenta es: {code}\n\n"
-                "Vence en 10 minutos. Si no solicitaste este código, puedes ignorar este correo."
+                f"Vence en {ttl_minutes} minutos. "
+                "Si no solicitaste este código, puedes ignorar este correo."
             ),
         }
 

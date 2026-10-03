@@ -10,20 +10,14 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        build-essential \
         curl \
-        gcc \
-        libpq-dev \
-        libxml2 \
-        libxml2-dev \
-        libxslt1.1 \
-        libxslt1-dev \
+        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY requirements-prod.txt .
 RUN pip install --upgrade pip \
     && pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 \
-    && pip install -r requirements.txt
+    && pip install -r requirements-prod.txt
 
 COPY app ./app
 COPY scripts ./scripts

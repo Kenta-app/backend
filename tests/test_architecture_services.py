@@ -420,6 +420,41 @@ class ArchitectureServicesTests(unittest.TestCase):
         prediction.predictAll.assert_not_called()
         publishing.publishRepresentative.assert_not_called()
 
+    def test_pipeline_orchestrator_limits_automatic_related_source_calls(self):
+        clusters = [
+            NewsCluster(representative_news_processed_id=41, source_id=1),
+            NewsCluster(representative_news_processed_id=42, source_id=1),
+        ]
+        prediction = Mock()
+        prediction.predictAll.side_effect = [Mock(prediction_id=501), Mock(prediction_id=502)]
+        publishing = Mock()
+        publishing.publishRepresentative.side_effect = [Mock(news_id=1), Mock(news_id=2)]
+        justification = Mock()
+        orchestrator = PipelineOrchestrator(
+            Mock(),
+            Mock(),
+            Mock(),
+            Mock(),
+            prediction,
+            publishing,
+            justification,
+            maxAutoJustifications=1,
+        )
+
+        with patch.dict(
+            "os.environ",
+            {"JUSTIFICATION_AUTO_ENABLED": "true", "GEMINI_API_KEY": "test-key"},
+        ):
+            published = orchestrator._publish_clusters(clusters)
+
+        self.assertEqual(len(published), 2)
+        justification.generate_justification_safe.assert_called_once_with(
+            prediction_id=501,
+            include_context=True,
+            regenerate=False,
+        )
+        self.assertEqual(orchestrator.remainingAutoJustifications, 0)
+
     def test_clustering_groups_related_news_across_sources(self):
         source_rpp = Source(name="RPP", base_url="https://rpp.test", type="web")
         source_peru21 = Source(name="Peru21", base_url="https://peru21.test", type="web")

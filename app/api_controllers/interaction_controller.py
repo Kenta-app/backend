@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Literal
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.api_controllers.base_controller import BaseController
 from app.api_controllers.serializers import (
@@ -19,50 +20,95 @@ from app.dependencies import get_current_user, get_interaction_service
 from app.serving.models import User
 
 router = APIRouter(prefix="/interactions", tags=["Interactions"])
+MAX_TRACKED_DURATION_SEC = 86_400
 
 
 class ReactionRequest(BaseModel):
-    newsId: int
-    reaction: int
+    newsId: int = Field(gt=0)
+    reaction: Literal[-1, 1]
 
 
 class ViewRequest(BaseModel):
-    newsId: int
-    timeSpentSec: int
+    newsId: int = Field(gt=0)
+    timeSpentSec: int = Field(ge=0, le=MAX_TRACKED_DURATION_SEC)
 
 
 class ClickRequest(BaseModel):
-    newsId: int
+    newsId: int = Field(gt=0)
 
 
 class DetailClickRequest(BaseModel):
-    newsId: int
+    newsId: int = Field(gt=0)
 
 
 class SessionRequest(BaseModel):
-    timeSpentSec: int
+    timeSpentSec: int = Field(ge=0, le=MAX_TRACKED_DURATION_SEC)
     startedAt: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_started_at(self):
+        _validate_tracking_timestamp(self.startedAt)
+        return self
 
 
 class InteractionEventRequest(BaseModel):
-    type: Literal["view", "click", "detail-click", "session"]
+    type: Literal["view", "click", "detail-click", "related-click", "session"]
     newsId: int | None = Field(default=None, gt=0)
-    timeSpentSec: int | None = Field(default=None, ge=0)
+    timeSpentSec: int | None = Field(default=None, ge=0, le=MAX_TRACKED_DURATION_SEC)
     startedAt: datetime | None = None
     eventId: str | None = Field(default=None, min_length=8, max_length=64)
     sessionId: str | None = Field(default=None, min_length=8, max_length=64)
+    targetUrl: str | None = Field(default=None, min_length=8, max_length=2048)
+    sourceName: str | None = Field(default=None, max_length=255)
+
+    @field_validator("targetUrl")
+    @classmethod
+    def validate_target_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        parsed = urlparse(normalized)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("targetUrl debe ser una URL HTTP(S) válida.")
+        return normalized
+
+    @field_validator("sourceName")
+    @classmethod
+    def normalize_source_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = " ".join(value.split())
+        if any(ord(char) < 32 for char in normalized):
+            raise ValueError("sourceName contiene caracteres inválidos.")
+        return normalized or None
 
     @model_validator(mode="after")
     def validate_fields(self):
-        if self.type in {"view", "click", "detail-click"} and self.newsId is None:
+        if self.type in {"view", "click", "detail-click", "related-click"} and self.newsId is None:
             raise ValueError("newsId es obligatorio para este tipo de evento.")
         if self.type in {"view", "session"} and self.timeSpentSec is None:
             raise ValueError("timeSpentSec es obligatorio para este tipo de evento.")
+        if self.type == "related-click" and not self.targetUrl:
+            raise ValueError("targetUrl es obligatorio para este tipo de evento.")
+        _validate_tracking_timestamp(self.startedAt)
         return self
 
 
 class InteractionBatchRequest(BaseModel):
     events: list[InteractionEventRequest] = Field(min_length=1, max_length=100)
+
+
+def _validate_tracking_timestamp(value: datetime | None) -> None:
+    if value is None:
+        return
+    resolved = value
+    if resolved.tzinfo is not None:
+        resolved = resolved.astimezone(timezone.utc).replace(tzinfo=None)
+    now = datetime.utcnow()
+    if resolved > now + timedelta(minutes=5):
+        raise ValueError("startedAt no puede estar en el futuro.")
+    if resolved < now - timedelta(days=2):
+        raise ValueError("startedAt está fuera del intervalo permitido.")
 
 
 class InteractionController(BaseController):

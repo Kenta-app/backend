@@ -55,7 +55,10 @@ class AuthService:
         normalized_email = email.strip().lower()
         existing = (
             self.db.query(User)
-            .filter((User.username == username) | (func.lower(User.email) == normalized_email))
+            .filter(
+                (func.lower(User.username) == username.lower())
+                | (func.lower(User.email) == normalized_email)
+            )
             .first()
         )
         if existing:
@@ -102,6 +105,32 @@ class AuthService:
         if self.verifyPassword(newPassword, user.password_hash):
             raise ValueError("La nueva contraseña debe ser distinta de la actual.")
         user.password_hash = self.hashPassword(newPassword)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def updateProfile(
+        self,
+        user: User,
+        username: str,
+        birthDate: date | None,
+        gender: str | None,
+    ) -> User:
+        normalized_username = " ".join(username.split())
+        existing = (
+            self.db.query(User)
+            .filter(
+                func.lower(User.username) == normalized_username.lower(),
+                User.user_id != user.user_id,
+            )
+            .first()
+        )
+        if existing:
+            raise ValueError("El nombre de usuario ya está en uso.")
+        user.username = normalized_username
+        user.birth_date = birthDate
+        user.gender = gender.strip().lower() if gender else None
+        self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
         return user

@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.api_controllers import (
     admin_router,
@@ -25,6 +26,7 @@ from app.serving.models import (
     NewsClick,
     NewsDetailClick,
     NewsFavorite,
+    NewsRelatedSourceClick,
     NewsReaction,
     NewsView,
     PublishedNews,
@@ -43,6 +45,7 @@ _ = (
     NewsClick,
     NewsDetailClick,
     NewsFavorite,
+    NewsRelatedSourceClick,
     NewsCluster,
     NewsReaction,
     NewsView,
@@ -59,7 +62,14 @@ _ = (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Kenta Backend", version="2.0.0")
+API_DOCS_ENABLED = os.getenv("API_DOCS_ENABLED", "false").lower() in {"1", "true", "yes"}
+app = FastAPI(
+    title="Kenta Backend",
+    version="2.0.0",
+    docs_url="/docs" if API_DOCS_ENABLED else None,
+    redoc_url="/redoc" if API_DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if API_DOCS_ENABLED else None,
+)
 
 _cors_origins = [
     origin.strip()
@@ -91,9 +101,20 @@ scheduler = ScrapingScheduler() if ENABLE_SCHEDULER else None
 
 
 @app.get("/health")
-def healthcheck():
+def healthcheck(response: Response):
+    database_ready = False
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        database_ready = True
+    except Exception:
+        logger.exception("Database health check failed")
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    finally:
+        db.close()
     return {
-        "status": "ok",
+        "status": "ok" if database_ready else "degraded",
+        "databaseReady": database_ready,
         "classifierReady": news_analysis_pipeline.get_status()["classifier_ready"],
         "schedulerEnabled": scheduler is not None,
     }
@@ -107,7 +128,8 @@ async def startup_event():
         Base.metadata.create_all(bind=engine, checkfirst=True)
         logger.info("Tables created or already present")
     except Exception as exc:
-        logger.error("Error creating tables: %s", exc)
+        logger.exception("Error creating tables: %s", exc)
+        raise
 
     if SEED_DEFAULT_SOURCES:
         db = SessionLocal()
