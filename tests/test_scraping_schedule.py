@@ -1,6 +1,6 @@
 import pytest
 
-from app.tasks.scheduler import configured_scraping_times
+from app.tasks.scheduler import configured_justification_budget, configured_scraping_times
 
 
 def test_schedule_accepts_two_separated_hours(monkeypatch):
@@ -25,3 +25,12 @@ def test_schedule_rejects_invalid_or_excessive_hours(monkeypatch, hours):
 
     with pytest.raises(ValueError):
         configured_scraping_times()
+
+
+def test_automatic_related_source_budget_is_bounded(monkeypatch):
+    monkeypatch.setenv("JUSTIFICATION_MAX_PER_SCHEDULED_RUN", "5")
+    assert configured_justification_budget() == 5
+
+    monkeypatch.setenv("JUSTIFICATION_MAX_PER_SCHEDULED_RUN", "51")
+    with pytest.raises(ValueError):
+        configured_justification_budget()

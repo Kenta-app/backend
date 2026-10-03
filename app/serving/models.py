@@ -43,7 +43,7 @@ class User(Base):
         self.role = (role or "user").strip().lower()
 
     def canModerate(self) -> bool:
-        return (self.role or "").lower() in {"admin", "moderator"}
+        return (self.role or "").lower() in {"admin", "moderator", "moderador"}
 
 
 class PublishedNews(Base):
@@ -162,6 +162,25 @@ class NewsClick(Base):
     click_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
     news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    client_event_id = Column(String(64), nullable=True, index=True)
+
+    def registerClick(self) -> None:
+        self.clicked_at = datetime.utcnow()
+
+
+class NewsRelatedSourceClick(Base):
+    __tablename__ = "news_related_source_clicks"
+    __table_args__ = (
+        Index("idx_user_related_source_event", "user_id", "client_event_id", unique=True),
+        {"schema": "serving"},
+    )
+
+    related_click_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    news_id = Column(Integer, ForeignKey("serving.news.news_id"), nullable=False, index=True)
+    target_url = Column(Text, nullable=False)
+    source_name = Column(String(255), nullable=True)
     clicked_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     client_event_id = Column(String(64), nullable=True, index=True)
 

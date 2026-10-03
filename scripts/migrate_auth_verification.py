@@ -40,6 +40,23 @@ def main() -> None:
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS privacy_policy_accepted_at TIMESTAMP",
             "CREATE INDEX IF NOT EXISTS ix_users_email_verified_at ON serving.users (email_verified_at)",
             "UPDATE serving.users SET email_verified_at = created_at WHERE email_verified_at IS NULL",
+            # Clics en evidencia/fuentes relacionadas para la validación de usuarios.
+            """
+            CREATE TABLE IF NOT EXISTS serving.news_related_source_clicks (
+                related_click_id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES serving.users(user_id),
+                news_id INTEGER NOT NULL REFERENCES serving.news(news_id),
+                target_url TEXT NOT NULL,
+                source_name VARCHAR(255),
+                clicked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                client_event_id VARCHAR(64)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_news_related_source_clicks_user_id ON serving.news_related_source_clicks (user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_news_related_source_clicks_news_id ON serving.news_related_source_clicks (news_id)",
+            "CREATE INDEX IF NOT EXISTS ix_news_related_source_clicks_clicked_at ON serving.news_related_source_clicks (clicked_at)",
+            "CREATE INDEX IF NOT EXISTS ix_news_related_source_clicks_client_event_id ON serving.news_related_source_clicks (client_event_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_user_related_source_event ON serving.news_related_source_clicks (user_id, client_event_id)",
         ]
         telemetry_migrations = {
             "news_views": [

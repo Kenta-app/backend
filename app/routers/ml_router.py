@@ -1,17 +1,19 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from app.ml.pipeline import ModelNotReadyError, news_analysis_pipeline
+from app.dependencies import get_current_user
+from app.serving.models import User
 
 router = APIRouter()
 
 
 class NewsAnalysisRequest(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
-    content: Optional[str] = None
-    text: Optional[str] = None
+    content: Optional[str] = Field(default=None, max_length=50_000)
+    text: Optional[str] = Field(default=None, max_length=50_000)
     include_summary: bool = True
     force_summary: bool = False
 
@@ -23,7 +25,15 @@ class NewsAnalysisRequest(BaseModel):
 
 
 class TextRequest(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=50_000)
+
+
+def require_ml_operator(current_user: User | None = Depends(get_current_user)) -> User:
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Autenticación requerida.")
+    if not current_user.canModerate():
+        raise HTTPException(status_code=403, detail="Permisos insuficientes.")
+    return current_user
 
 
 @router.get("/health")
@@ -32,7 +42,10 @@ def ml_health():
 
 
 @router.post("/analyze")
-def analyze_news(request: NewsAnalysisRequest):
+def analyze_news(
+    request: NewsAnalysisRequest,
+    _operator: User = Depends(require_ml_operator),
+):
     try:
         return news_analysis_pipeline.analyze_news(
             title=request.title,
@@ -49,7 +62,10 @@ def analyze_news(request: NewsAnalysisRequest):
 
 
 @router.post("/predict")
-def classify_text(request: TextRequest):
+def classify_text(
+    request: TextRequest,
+    _operator: User = Depends(require_ml_operator),
+):
     try:
         return news_analysis_pipeline.analyze_news(
             text=request.text,

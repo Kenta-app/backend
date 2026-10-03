@@ -11,6 +11,7 @@ from app.serving.models import (
     NewsDetailClick,
     NewsFavorite,
     NewsReaction,
+    NewsRelatedSourceClick,
     NewsView,
     PublishedNews,
     User,
@@ -19,7 +20,7 @@ from app.serving.models import (
 
 
 class AnalyticsService:
-    STAFF_ROLES = ("admin", "moderator")
+    STAFF_ROLES = ("admin", "moderator", "moderador")
 
     def __init__(self, db: Session):
         self.db = db
@@ -40,6 +41,7 @@ class AnalyticsService:
         view_stats = self._viewStats(fromDate, toDate, newsId)
         click_stats = self._clickStats(fromDate, toDate, newsId)
         detail_click_stats = self._detailClickStats(fromDate, toDate, newsId)
+        related_click_stats = self._relatedClickStats(fromDate, toDate, newsId)
         reaction_stats = self._reactionStats(fromDate, toDate, newsId)
         participants = (
             self._participantMetrics(fromDate, toDate)
@@ -47,7 +49,7 @@ class AnalyticsService:
             else []
         )
 
-        news_ids = set(view_stats) | set(click_stats) | set(detail_click_stats) | set(reaction_stats)
+        news_ids = set(view_stats) | set(click_stats) | set(detail_click_stats) | set(related_click_stats) | set(reaction_stats)
         if newsId is not None:
             news_ids.add(newsId)
 
@@ -59,6 +61,7 @@ class AnalyticsService:
                 view_stats.get(nid, {}),
                 click_stats.get(nid, {}),
                 detail_click_stats.get(nid, {}),
+                related_click_stats.get(nid, {}),
                 reaction_stats.get(nid, {}),
             )
             for nid in sorted(news_ids)
@@ -109,6 +112,7 @@ class AnalyticsService:
                 {"key": "views", "label": "Vistas", "value": summary["totalViews"]},
                 {"key": "detailClicks", "label": "Aperturas detalle", "value": summary["totalDetailClicks"]},
                 {"key": "originalClicks", "label": "Clics URL original", "value": summary["totalClicks"]},
+                {"key": "relatedClicks", "label": "Clics fuentes relacionadas", "value": summary["totalRelatedClicks"]},
                 {"key": "appTimeMin", "label": "Tiempo en app (min)", "value": round(summary["totalAppTimeSec"] / 60, 1)},
                 {"key": "sessions", "label": "Sesiones", "value": summary["totalSessions"]},
             ],
@@ -116,6 +120,7 @@ class AnalyticsService:
                 {"label": "Vistas", "value": summary["totalViews"]},
                 {"label": "Abrir detalle", "value": summary["totalDetailClicks"]},
                 {"label": "URL original", "value": summary["totalClicks"]},
+                {"label": "Fuente relacionada", "value": summary["totalRelatedClicks"]},
             ],
             "reactions": [
                 {"label": "Positivas", "value": summary["positiveReactions"]},
@@ -164,37 +169,43 @@ class AnalyticsService:
             NewsView.user_id == userId,
             NewsView.viewed_at >= fromDate,
             NewsView.viewed_at <= toDate,
-        ).all():
+        ).order_by(NewsView.viewed_at.desc()).limit(limit).all():
             append_event("view", item.viewed_at, item.news_id, item.time_spent_sec)
         for item in self.db.query(NewsDetailClick).filter(
             NewsDetailClick.user_id == userId,
             NewsDetailClick.clicked_at >= fromDate,
             NewsDetailClick.clicked_at <= toDate,
-        ).all():
+        ).order_by(NewsDetailClick.clicked_at.desc()).limit(limit).all():
             append_event("detail-click", item.clicked_at, item.news_id)
         for item in self.db.query(NewsClick).filter(
             NewsClick.user_id == userId,
             NewsClick.clicked_at >= fromDate,
             NewsClick.clicked_at <= toDate,
-        ).all():
+        ).order_by(NewsClick.clicked_at.desc()).limit(limit).all():
             append_event("original-click", item.clicked_at, item.news_id)
+        for item in self.db.query(NewsRelatedSourceClick).filter(
+            NewsRelatedSourceClick.user_id == userId,
+            NewsRelatedSourceClick.clicked_at >= fromDate,
+            NewsRelatedSourceClick.clicked_at <= toDate,
+        ).order_by(NewsRelatedSourceClick.clicked_at.desc()).limit(limit).all():
+            append_event("related-click", item.clicked_at, item.news_id, value=item.source_name)
         for item in self.db.query(NewsReaction).filter(
             NewsReaction.user_id == userId,
             NewsReaction.updated_at >= fromDate,
             NewsReaction.updated_at <= toDate,
-        ).all():
+        ).order_by(NewsReaction.updated_at.desc()).limit(limit).all():
             append_event("reaction", item.updated_at, item.news_id, value=item.reaction)
         for item in self.db.query(UserAppSession).filter(
             UserAppSession.user_id == userId,
             UserAppSession.ended_at >= fromDate,
             UserAppSession.ended_at <= toDate,
-        ).all():
+        ).order_by(UserAppSession.ended_at.desc()).limit(limit).all():
             append_event("session", item.ended_at, duration=item.time_spent_sec)
         for item in self.db.query(NewsFavorite).filter(
             NewsFavorite.user_id == userId,
             NewsFavorite.saved_at >= fromDate,
             NewsFavorite.saved_at <= toDate,
-        ).all():
+        ).order_by(NewsFavorite.saved_at.desc()).limit(limit).all():
             append_event("favorite", item.saved_at, item.news_id)
 
         events.sort(key=lambda item: item["occurredAt"], reverse=True)
@@ -207,12 +218,14 @@ class AnalyticsService:
         views_by_day = self._countByDay(NewsView, NewsView.viewed_at, fromDate, toDate)
         detail_by_day = self._countByDay(NewsDetailClick, NewsDetailClick.clicked_at, fromDate, toDate)
         original_by_day = self._countByDay(NewsClick, NewsClick.clicked_at, fromDate, toDate)
+        related_by_day = self._countByDay(NewsRelatedSourceClick, NewsRelatedSourceClick.clicked_at, fromDate, toDate)
         sessions_by_day = self._countByDay(UserAppSession, UserAppSession.ended_at, fromDate, toDate)
 
         all_dates = sorted(
             set(views_by_day)
             | set(detail_by_day)
             | set(original_by_day)
+            | set(related_by_day)
             | set(sessions_by_day)
         )
 
@@ -222,6 +235,7 @@ class AnalyticsService:
                 "views": views_by_day.get(day, 0),
                 "detailClicks": detail_by_day.get(day, 0),
                 "originalClicks": original_by_day.get(day, 0),
+                "relatedClicks": related_by_day.get(day, 0),
                 "sessions": sessions_by_day.get(day, 0),
             }
             for day in all_dates
@@ -320,6 +334,30 @@ class AnalyticsService:
             for row in query.all()
         }
 
+    def _relatedClickStats(
+        self,
+        fromDate: datetime,
+        toDate: datetime,
+        newsId: int | None,
+    ) -> dict[int, dict[str, int]]:
+        query = (
+            self.db.query(
+                NewsRelatedSourceClick.news_id,
+                func.count(NewsRelatedSourceClick.related_click_id).label("total_related_clicks"),
+            )
+            .filter(
+                NewsRelatedSourceClick.clicked_at >= fromDate,
+                NewsRelatedSourceClick.clicked_at <= toDate,
+            )
+        )
+        query = self._excludeStaff(query, NewsRelatedSourceClick.user_id)
+        if newsId is not None:
+            query = query.filter(NewsRelatedSourceClick.news_id == newsId)
+        return {
+            row.news_id: {"totalRelatedClicks": int(row.total_related_clicks or 0)}
+            for row in query.group_by(NewsRelatedSourceClick.news_id).all()
+        }
+
     def _appSessionStats(self, fromDate: datetime, toDate: datetime) -> dict[str, float | int]:
         query = self.db.query(
             func.count(UserAppSession.session_id).label("total_sessions"),
@@ -388,6 +426,7 @@ class AnalyticsService:
         views: dict[str, float | int],
         clicks: dict[str, int],
         detail_clicks: dict[str, int],
+        related_clicks: dict[str, int],
         reactions: dict[str, int],
     ) -> dict[str, Any]:
         positive = int(reactions.get("positiveReactions", 0))
@@ -398,6 +437,7 @@ class AnalyticsService:
             "totalViews": int(views.get("totalViews", 0)),
             "totalClicks": int(clicks.get("totalClicks", 0)),
             "totalDetailClicks": int(detail_clicks.get("totalDetailClicks", 0)),
+            "totalRelatedClicks": int(related_clicks.get("totalRelatedClicks", 0)),
             "averageTimeSpentSec": float(views.get("averageTimeSpentSec", 0.0)),
             "totalReadingTimeSec": int(views.get("totalReadingTimeSec", 0)),
             "positiveReactions": positive,
@@ -406,7 +446,7 @@ class AnalyticsService:
         }
 
     def _emptyNewsMetrics(self, newsId: int, title: str | None) -> dict[str, Any]:
-        return self._buildNewsMetrics(newsId, title, {}, {}, {}, {})
+        return self._buildNewsMetrics(newsId, title, {}, {}, {}, {}, {})
 
     def _buildSummary(
         self,
@@ -418,6 +458,7 @@ class AnalyticsService:
                 "totalViews": 0,
                 "totalClicks": 0,
                 "totalDetailClicks": 0,
+                "totalRelatedClicks": 0,
                 "averageTimeSpentSec": 0.0,
                 "totalReadingTimeSec": 0,
                 "positiveReactions": 0,
@@ -431,6 +472,7 @@ class AnalyticsService:
         total_views = sum(item["totalViews"] for item in by_news)
         total_clicks = sum(item["totalClicks"] for item in by_news)
         total_detail_clicks = sum(item["totalDetailClicks"] for item in by_news)
+        total_related_clicks = sum(item["totalRelatedClicks"] for item in by_news)
         total_reading_time = sum(item["totalReadingTimeSec"] for item in by_news)
         positive = sum(item["positiveReactions"] for item in by_news)
         negative = sum(item["negativeReactions"] for item in by_news)
@@ -446,6 +488,7 @@ class AnalyticsService:
             "totalViews": total_views,
             "totalClicks": total_clicks,
             "totalDetailClicks": total_detail_clicks,
+            "totalRelatedClicks": total_related_clicks,
             "averageTimeSpentSec": round(weighted_avg, 2),
             "totalReadingTimeSec": total_reading_time,
             "positiveReactions": positive,
@@ -470,6 +513,7 @@ class AnalyticsService:
                     "totalReadingTimeSec": 0,
                     "totalDetailClicks": 0,
                     "totalClicks": 0,
+                    "totalRelatedClicks": 0,
                     "totalSessions": 0,
                     "totalAppTimeSec": 0,
                     "positiveReactions": 0,
@@ -503,6 +547,7 @@ class AnalyticsService:
         event_specs = (
             (NewsDetailClick, NewsDetailClick.detail_click_id, NewsDetailClick.clicked_at, "totalDetailClicks"),
             (NewsClick, NewsClick.click_id, NewsClick.clicked_at, "totalClicks"),
+            (NewsRelatedSourceClick, NewsRelatedSourceClick.related_click_id, NewsRelatedSourceClick.clicked_at, "totalRelatedClicks"),
         )
         for model, id_column, timestamp, key in event_specs:
             query = self.db.query(

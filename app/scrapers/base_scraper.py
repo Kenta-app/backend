@@ -11,7 +11,6 @@ try:
 except ImportError:
     cloudscraper = None
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

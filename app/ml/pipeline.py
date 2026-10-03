@@ -10,6 +10,7 @@ import torch
 from app.ml.claim_extractor import ClaimExtractor
 from app.ml.evidence_retriever import EvidenceRetriever
 from app.ml.fakenews_classifier import FakeNewsClassifier
+from app.ml.risk_policy import FakeNewsRiskPolicy
 from app.ml.stance_classifier import StanceClassifier
 from app.ml.summarizer import summarizer_service
 
@@ -76,15 +77,9 @@ class NewsAnalysisPipeline:
         self.article_fake_risk_threshold = float(
             os.getenv("FAKENEWS_ARTICLE_RISK_THRESHOLD", "0.5")
         )
-        self.article_fake_low_threshold = float(
-            os.getenv("FAKENEWS_ARTICLE_LOW_THRESHOLD", "0.35")
-        )
-        self.article_fake_high_threshold = float(
-            os.getenv("FAKENEWS_ARTICLE_HIGH_THRESHOLD", "0.75")
-        )
-        if self.article_fake_low_threshold >= self.article_fake_high_threshold:
-            self.article_fake_low_threshold = 0.35
-            self.article_fake_high_threshold = 0.75
+        risk_policy = FakeNewsRiskPolicy.from_environment()
+        self.article_fake_low_threshold = risk_policy.low_threshold
+        self.article_fake_high_threshold = risk_policy.high_threshold
         self.use_claims = os.getenv("FAKENEWS_USE_CLAIMS", "true").lower() in (
             "1",
             "true",
@@ -654,22 +649,20 @@ class NewsAnalysisPipeline:
 
     def _attach_risk_triage(self, prediction: dict[str, Any]) -> dict[str, Any]:
         risk_score = float(prediction.get("risk_score", 0.0))
-        if risk_score >= self.article_fake_high_threshold:
-            triage_label = "likely_fake"
-            triage_display = "probable falso"
-        elif risk_score <= self.article_fake_low_threshold:
-            triage_label = "likely_real"
-            triage_display = "probable verdadero"
-        else:
-            triage_label = "indeterminate"
-            triage_display = "indeterminado"
+        policy = FakeNewsRiskPolicy(
+            low_threshold=self.article_fake_low_threshold,
+            high_threshold=self.article_fake_high_threshold,
+        )
+        triage_label = policy.classify(risk_score)
+        triage_display = {
+            "likely_fake": "probable falso",
+            "likely_real": "probable verdadero",
+            "indeterminate": "indeterminado",
+        }[triage_label]
 
         prediction["triage_label"] = triage_label
         prediction["triage_display"] = triage_display
-        prediction["triage_thresholds"] = {
-            "low": round(float(self.article_fake_low_threshold), 4),
-            "high": round(float(self.article_fake_high_threshold), 4),
-        }
+        prediction["triage_thresholds"] = policy.thresholds()
         return prediction
 
     def _predict_fake_news(self, text: str) -> dict[str, Any]:

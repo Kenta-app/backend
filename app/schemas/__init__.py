@@ -1,3 +1,3 @@
-from .articlebase import ArticleResponse, ArticleCreate, ScrapingLogResponse
+"""Request and response schemas for the active API."""
 
 __all__ = ["ArticleResponse", "ArticleCreate", "ScrapingLogResponse"]

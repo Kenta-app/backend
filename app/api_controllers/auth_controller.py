@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
@@ -17,9 +18,9 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 class RegisterRequest(BaseModel):
-    username: str
-    email: str
-    password: str
+    username: str = Field(min_length=3, max_length=100)
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8, max_length=128)
     # Los campos de perfil se reciben desde la UI actual, pero son opcionales
     # para mantener compatibilidad con las cuentas creadas por clientes previos.
     birthDate: date | None = None
@@ -27,6 +28,22 @@ class RegisterRequest(BaseModel):
     acceptedTerms: bool
     termsVersion: str = Field(min_length=1, max_length=32)
     privacyPolicyVersion: str = Field(min_length=1, max_length=32)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if any(ord(char) < 32 for char in normalized):
+            raise ValueError("El nombre de usuario contiene caracteres inválidos.")
+        return normalized
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", normalized):
+            raise ValueError("Ingresa un correo válido.")
+        return normalized
 
     @field_validator("gender")
     @classmethod
@@ -53,8 +70,8 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=1, max_length=128)
     remember: bool = False
 
 
@@ -69,7 +86,33 @@ class VerifyEmailRequest(BaseModel):
 
 
 class ResendVerificationRequest(BaseModel):
-    email: str
+    email: str = Field(min_length=5, max_length=255)
+
+
+class ProfileUpdateRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=100)
+    birthDate: date | None = None
+    gender: str | None = Field(default=None, min_length=1, max_length=50)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if any(ord(char) < 32 for char in normalized):
+            raise ValueError("El nombre de usuario contiene caracteres inválidos.")
+        return normalized
+
+    @field_validator("gender")
+    @classmethod
+    def normalize_gender(cls, value: str | None) -> str | None:
+        return value.strip().lower() if value else None
+
+    @field_validator("birthDate")
+    @classmethod
+    def validate_birth_date(cls, value: date | None) -> date | None:
+        if value is not None and value >= date.today():
+            raise ValueError("La fecha de nacimiento debe ser anterior a hoy.")
+        return value
 
 
 class AuthController(BaseController):
@@ -169,6 +212,19 @@ class AuthController(BaseController):
     def getMe(self) -> dict:
         return self.successResponse(serialize_user(self.requireAuth()))
 
+    def patchProfile(
+        self,
+        username: str,
+        birthDate: date | None,
+        gender: str | None,
+    ) -> dict:
+        user = self.requireAuth()
+        try:
+            updated = self.authService.updateProfile(user, username, birthDate, gender)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return self.successResponse(serialize_user(updated))
+
     def postLogout(self, response: Response) -> dict:
         response.delete_cookie(
             key=self.sessionService.cookie_name,
@@ -245,6 +301,14 @@ def post_verify_email(
 @router.get("/me")
 def get_me(controller: AuthController = Depends(get_auth_controller)):
     return controller.getMe()
+
+
+@router.patch("/profile")
+def patch_profile(
+    payload: ProfileUpdateRequest,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.patchProfile(payload.username, payload.birthDate, payload.gender)
 
 
 @router.post("/logout")

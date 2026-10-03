@@ -45,6 +45,17 @@ def configured_scraping_times() -> tuple[list[int], int]:
     return hours, minute
 
 
+def configured_justification_budget() -> int:
+    """Bound automatic Gemini calls made by one complete scheduled cycle."""
+    try:
+        budget = int(os.getenv("JUSTIFICATION_MAX_PER_SCHEDULED_RUN", "5"))
+    except ValueError as exc:
+        raise ValueError("JUSTIFICATION_MAX_PER_SCHEDULED_RUN must be an integer.") from exc
+    if budget < 0 or budget > 50:
+        raise ValueError("JUSTIFICATION_MAX_PER_SCHEDULED_RUN must be between 0 and 50.")
+    return budget
+
+
 class ScrapingScheduler:
     def __init__(self):
         self.scheduler = BackgroundScheduler(timezone=ZoneInfo("America/Lima"))
@@ -55,11 +66,11 @@ class ScrapingScheduler:
         db = SessionLocal()
         try:
             seed_default_sources(db)
-            sources = db.query(Source).all()
+            sources = db.query(Source).filter(Source.is_active.is_(True)).all()
+            orchestrator = self._build_orchestrator(db)
             for source in sources:
                 source_id = source.source_id
                 source_name = source.name
-                orchestrator = self._build_orchestrator(db)
                 try:
                     result = orchestrator.run_source_pipeline(source_id)
                     logger.info("Pipeline completed for source %s: %s", source_name, result)
@@ -118,4 +129,5 @@ class ScrapingScheduler:
             prediction_service,
             publishing_service,
             justification_service,
+            maxAutoJustifications=configured_justification_budget(),
         )

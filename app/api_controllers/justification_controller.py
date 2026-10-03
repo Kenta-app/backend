@@ -183,6 +183,7 @@ class JustificationController(BaseController):
         Raises:
             HTTPException: En caso de error
         """
+        self.requireRole("admin")
         try:
             stats = self.justification_service.get_cache_stats()
             return self.successResponse(stats)

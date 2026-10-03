@@ -27,6 +27,7 @@ class PipelineOrchestrator:
         predictionService: PredictionService,
         publishingService: PublishingService,
         justificationService: Optional[IJustificationService] = None,
+        maxAutoJustifications: int | None = None,
     ):
         self.ingestionService = ingestionService
         self.preprocessingService = preprocessingService
@@ -35,6 +36,7 @@ class PipelineOrchestrator:
         self.predictionService = predictionService
         self.publishingService = publishingService
         self.justificationService = justificationService
+        self.remainingAutoJustifications = maxAutoJustifications
 
     def run_source_pipeline(self, sourceId: int) -> dict:
         raw_news_items = self.ingestionService.ingestFromSource(sourceId)
@@ -43,6 +45,8 @@ class PipelineOrchestrator:
                 "source_id": sourceId,
                 "raw_news_count": 0,
                 "processed_count": 0,
+                "accepted_count": 0,
+                "rejected_count": 0,
                 "cluster_count": 0,
                 "published_count": 0,
                 "published_news_ids": [],
@@ -51,6 +55,8 @@ class PipelineOrchestrator:
             self.preprocessingService.preprocess(raw_news.news_raw_id)
             for raw_news in raw_news_items
         ]
+        accepted_count = sum(item.status in {"ok", "processed"} for item in processed_items)
+        rejected_count = len(processed_items) - accepted_count
         clusters = self.clusteringService.clusterProcessedNews(sourceId, crossSource=True)
         published_news = self._publish_clusters(clusters)
 
@@ -58,6 +64,8 @@ class PipelineOrchestrator:
             "source_id": sourceId,
             "raw_news_count": len(raw_news_items),
             "processed_count": len(processed_items),
+            "accepted_count": accepted_count,
+            "rejected_count": rejected_count,
             "cluster_count": len(clusters),
             "published_count": len(published_news),
             "published_news_ids": [item.news_id for item in published_news],
@@ -107,7 +115,16 @@ class PipelineOrchestrator:
             if predictions_enabled:
                 try:
                     prediction = self.predictionService.predictAll(representative_id)
-                    auto_justify_prediction(self.justificationService, prediction.prediction_id)
+                    if (
+                        self.remainingAutoJustifications is None
+                        or self.remainingAutoJustifications > 0
+                    ):
+                        attempted = auto_justify_prediction(
+                            self.justificationService,
+                            prediction.prediction_id,
+                        )
+                        if attempted and self.remainingAutoJustifications is not None:
+                            self.remainingAutoJustifications -= 1
                 except ModelNotReadyError as exc:
                     predictions_enabled = False
                     logger.warning(

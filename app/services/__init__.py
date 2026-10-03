@@ -1,3 +1,3 @@
-from .article_service import ArticleService
+"""Infrastructure services used by the active API."""
 
 __all__ = ["ArticleService"]
