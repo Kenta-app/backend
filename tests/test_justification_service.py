@@ -284,6 +284,29 @@ def test_source_allowlist_checks_domain_not_claimed_name(saved_source_service):
         }
     )
     assert not service._is_allowed_source({"url": "https://rpp-falso.example/noticia/1", "source": "RPP"})
+    assert service._is_allowed_source(
+        {"url": "https://www.gob.pe/institucion/onpe/noticias/1", "source": "ONPE"}
+    )
+    assert service._is_allowed_source(
+        {"url": "https://elperuano.pe/noticia/1", "source": "El Peruano"}
+    )
+    assert service._is_allowed_source(
+        {"url": "https://www.infobae.com/peru/2026/10/03/noticia/", "source": "Infobae"}
+    )
+    assert service._is_allowed_source(
+        {"url": "https://diariocorreo.pe/politica/noticia/", "source": "Correo"}
+    )
+    assert not service._is_allowed_source(
+        {"url": "https://firmeasy.legal/blog/noticia", "source": "Firmeasy"}
+    )
+
+
+def test_trusted_related_source_names_are_normalized(saved_source_service):
+    service, _, _ = saved_source_service
+    assert service._source_name_from_url("https://www.gob.pe/institucion/onpe/noticias/1") == "Gobierno del Perú"
+    assert service._source_name_from_url("https://www.elperuano.pe/noticia/1") == "El Peruano"
+    assert service._source_name_from_url("https://www.infobae.com/peru/noticia/") == "Infobae Perú"
+    assert service._source_name_from_url("https://diariocorreo.pe/politica/noticia/") == "Diario Correo"
 
 
 def test_grounding_source_uses_resolved_canonical_url(monkeypatch):

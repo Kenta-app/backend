@@ -45,19 +45,22 @@ class GeminiJustificationService(IJustificationService):
             "Chrome/120.0.0.0 Safari/537.36"
         )
     }
-    JOURNALISTIC_SOURCES = {
+    TRUSTED_RELATED_SOURCE_DOMAINS = {
         "andina": ("andina.pe",),
         "afp factual": ("factual.afp.com",),
         "chequeado": ("chequeado.com",),
         "colombiacheck": ("colombiacheck.com",),
         "convoca": ("convoca.pe",),
+        "diario correo": ("diariocorreo.pe",),
         "el búho": ("elbuho.pe",),
         "el buho": ("elbuho.pe",),
         "el comercio": ("elcomercio.pe",),
+        "el peruano": ("elperuano.pe",),
         "epicentro": ("epicentro.tv",),
         "exitosa": ("exitosanoticias.pe",),
         "gestión": ("gestion.pe",),
         "gestion": ("gestion.pe",),
+        "infobae perú": ("infobae.com",),
         "la república": ("larepublica.pe",),
         "la republica": ("larepublica.pe",),
         "maldita": ("maldita.es",),
@@ -73,6 +76,8 @@ class GeminiJustificationService(IJustificationService):
         "tv perú": ("tvperu.gob.pe",),
         "tv peru": ("tvperu.gob.pe",),
         "verificador": ("larepublica.pe",),
+        # Keep this broad official-domain fallback after specific public media.
+        "gobierno del perú": ("gob.pe",),
     }
     BLOCKED_DOMAINS = {
         "wikipedia.org",
@@ -974,7 +979,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
 
     def _source_name_from_url(self, url: str) -> str:
         domain = self._domain_from_url(url)
-        for source_name, domains in self.JOURNALISTIC_SOURCES.items():
+        for source_name, domains in self.TRUSTED_RELATED_SOURCE_DOMAINS.items():
             if any(domain == allowed or domain.endswith(f".{allowed}") for allowed in domains):
                 return self._display_source_name(source_name)
         return domain
@@ -1069,13 +1074,17 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             "chequeado": "Chequeado",
             "colombiacheck": "ColombiaCheck",
             "convoca": "Convoca",
+            "diario correo": "Diario Correo",
             "el búho": "El Búho",
             "el buho": "El Búho",
             "el comercio": "El Comercio",
+            "el peruano": "El Peruano",
             "epicentro": "Epicentro",
             "exitosa": "Exitosa",
             "gestión": "Gestión",
             "gestion": "Gestión",
+            "gobierno del perú": "Gobierno del Perú",
+            "infobae perú": "Infobae Perú",
             "la república": "La República",
             "la republica": "La República",
             "maldita": "Maldita.es",
@@ -1126,7 +1135,7 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         if not domain or any(domain == blocked or domain.endswith(f".{blocked}") for blocked in self.BLOCKED_DOMAINS):
             return False
 
-        for domains in self.JOURNALISTIC_SOURCES.values():
+        for domains in self.TRUSTED_RELATED_SOURCE_DOMAINS.values():
             if any(domain == allowed or domain.endswith(f".{allowed}") for allowed in domains):
                 return True
 
