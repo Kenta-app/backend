@@ -978,10 +978,14 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
         return grounded_urls
 
     def _source_name_from_url(self, url: str) -> str:
-        domain = self._domain_from_url(url)
-        for source_name, domains in self.TRUSTED_RELATED_SOURCE_DOMAINS.items():
+        return self._display_source_name(self._source_identity_from_url(url))
+
+    @classmethod
+    def _source_identity_from_url(cls, url: str) -> str:
+        domain = cls._domain_from_url(url)
+        for source_name, domains in cls.TRUSTED_RELATED_SOURCE_DOMAINS.items():
             if any(domain == allowed or domain.endswith(f".{allowed}") for allowed in domains):
-                return self._display_source_name(source_name)
+                return source_name
         return domain
 
     def _replacement_title(self, url: str, grounding_sources: Optional[list[dict]]) -> Optional[str]:
@@ -1188,6 +1192,10 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             for source in sources
             if not any(
                 cls._same_url(source.get("canonical_url") or source["url"], excluded_url)
+                or cls._same_outlet(
+                    source.get("canonical_url") or source["url"],
+                    excluded_url,
+                )
                 for excluded_url in excluded_urls
             )
         ]
@@ -1195,6 +1203,12 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
     @classmethod
     def _same_url(cls, left: str, right: str) -> bool:
         return cls._normalize_url_for_match(left) == cls._normalize_url_for_match(right)
+
+    @classmethod
+    def _same_outlet(cls, left: str, right: str) -> bool:
+        left_identity = cls._source_identity_from_url(left)
+        right_identity = cls._source_identity_from_url(right)
+        return bool(left_identity and left_identity == right_identity)
 
     @staticmethod
     def _configured_max_sources() -> int:

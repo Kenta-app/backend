@@ -309,6 +309,35 @@ def test_trusted_related_source_names_are_normalized(saved_source_service):
     assert service._source_name_from_url("https://diariocorreo.pe/politica/noticia/") == "Diario Correo"
 
 
+def test_related_sources_exclude_original_url_and_same_outlet(saved_source_service):
+    service, _, _ = saved_source_service
+    original = "https://elcomercio.pe/politica/hecho-original/"
+    candidates = [
+        {
+            "url": original,
+            "source": "El Comercio",
+            "title": "La misma URL",
+            "excerpt": "Duplicado exacto.",
+        },
+        {
+            "url": "https://www.elcomercio.pe/politica/otra-nota/",
+            "source": "El Comercio",
+            "title": "Otra nota del mismo medio",
+            "excerpt": "No aporta contraste editorial independiente.",
+        },
+        {
+            "url": "https://larepublica.pe/politica/cobertura-del-hecho/",
+            "source": "La República",
+            "title": "Cobertura del mismo hecho en otro medio",
+            "excerpt": "Contraste entre medios.",
+        },
+    ]
+
+    filtered = service._exclude_original_sources(candidates, {original})
+
+    assert [source["source"] for source in filtered] == ["La República"]
+
+
 def test_grounding_source_uses_resolved_canonical_url(monkeypatch):
     service = object.__new__(GeminiJustificationService)
     monkeypatch.setattr(
