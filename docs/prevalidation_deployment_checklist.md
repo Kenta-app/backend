@@ -38,6 +38,7 @@ SCRAPER_MAX_ARTICLES_PER_SOURCE=5
 STANCE_PUBLIC_ENABLED=false
 JUSTIFICATION_AUTO_ENABLED=true
 JUSTIFICATION_MAX_PER_SCHEDULED_RUN=5
+RELATED_CLUSTER_MIN_SCORE=0.60
 ```
 
 El último par limita Gemini a cinco intentos automáticos por ciclo completo de scraping, es decir, un máximo de diez intentos diarios con el horario anterior. Si la cuota no está disponible, usar `JUSTIFICATION_AUTO_ENABLED=false`; el resto de la aplicación seguirá funcionando.

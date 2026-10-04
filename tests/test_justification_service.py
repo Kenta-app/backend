@@ -1,12 +1,22 @@
-import requests
+from datetime import datetime
+
 import pytest
+import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.application_services.justification_service import GeminiJustificationService
 from app.db.database import Base, apply_sqlite_schema_translation
-from app.processed.models import JustificationSource, MlPrediction
+from app.processed.models import (
+    ClusterMember,
+    JustificationSource,
+    MlPrediction,
+    NewsCluster,
+    ProcessedNews,
+)
+from app.raw.models import IngestionLog, RawNews, Source
+from app.serving.models import PublishedNews
 
 
 class Value:
@@ -125,6 +135,140 @@ def test_successful_regeneration_replaces_saved_sources(saved_source_service, mo
     rows = db.query(JustificationSource).filter_by(prediction_id=prediction_id).all()
     assert len(rows) == 1
     assert rows[0].url == replacement["url"]
+
+
+def test_news_sources_fall_back_to_high_confidence_cross_source_cluster(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setenv("RELATED_CLUSTER_MIN_SCORE", "0.60")
+    engine = apply_sqlite_schema_translation(
+        create_engine(
+            "sqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    )
+    Base.metadata.create_all(bind=engine)
+    db = sessionmaker(bind=engine)()
+    try:
+        main_source = Source(
+            name="Medio principal",
+            base_url="https://principal.example",
+            type="web",
+        )
+        alternative_source = Source(
+            name="Medio alternativo",
+            base_url="https://alternativo.example",
+            type="web",
+        )
+        db.add_all([main_source, alternative_source])
+        db.flush()
+
+        main_log = IngestionLog(
+            source_id=main_source.source_id,
+            ingestion_type="web",
+            status="success",
+        )
+        alternative_log = IngestionLog(
+            source_id=alternative_source.source_id,
+            ingestion_type="web",
+            status="success",
+        )
+        db.add_all([main_log, alternative_log])
+        db.flush()
+
+        main_raw = RawNews(
+            source_id=main_source.source_id,
+            log_id=main_log.log_id,
+            platform="web",
+            original_url="https://principal.example/hecho",
+            title_raw="Gobierno anuncia una medida nacional",
+            content_raw="Contenido principal suficientemente descriptivo.",
+            status="processed",
+        )
+        alternative_raw = RawNews(
+            source_id=alternative_source.source_id,
+            log_id=alternative_log.log_id,
+            platform="web",
+            original_url="https://alternativo.example/hecho",
+            title_raw="Otra cobertura de la misma medida nacional",
+            content_raw="Cobertura alternativa suficientemente descriptiva.",
+            status="processed",
+            published_at=datetime.utcnow(),
+        )
+        db.add_all([main_raw, alternative_raw])
+        db.flush()
+
+        main_processed = ProcessedNews(
+            news_raw_id=main_raw.news_raw_id,
+            source_id=main_source.source_id,
+            clean_text=main_raw.content_raw,
+            token_count=100,
+            status="ok",
+        )
+        alternative_processed = ProcessedNews(
+            news_raw_id=alternative_raw.news_raw_id,
+            source_id=alternative_source.source_id,
+            clean_text=alternative_raw.content_raw,
+            token_count=100,
+            status="ok",
+        )
+        db.add_all([main_processed, alternative_processed])
+        db.flush()
+
+        cluster = NewsCluster(
+            representative_news_processed_id=main_processed.news_processed_id,
+            source_id=main_source.source_id,
+            cluster_score=0.75,
+        )
+        db.add(cluster)
+        db.flush()
+        db.add_all([
+            ClusterMember(
+                cluster_id=cluster.cluster_id,
+                news_processed_id=main_processed.news_processed_id,
+                source_id=main_source.source_id,
+            ),
+            ClusterMember(
+                cluster_id=cluster.cluster_id,
+                news_processed_id=alternative_processed.news_processed_id,
+                source_id=alternative_source.source_id,
+            ),
+        ])
+        prediction = MlPrediction(
+            representative_news_processed_id=main_processed.news_processed_id,
+            model_version="test",
+            sentiment_score=0,
+            fake_score=0,
+        )
+        published = PublishedNews(
+            representative_news_processed_id=main_processed.news_processed_id,
+            source_id=main_source.source_id,
+            title=main_raw.title_raw,
+            original_url=main_raw.original_url,
+            published_at=datetime.utcnow(),
+            fake_score=0.1,
+        )
+        db.add_all([prediction, published])
+        db.commit()
+        db.refresh(published)
+
+        service = GeminiJustificationService(db)
+        sources = service.get_sources_by_news_id(published.news_id)
+
+        assert sources == [{
+            "url": alternative_raw.original_url,
+            "source": alternative_source.name,
+            "title": alternative_raw.title_raw,
+            "excerpt": "Cobertura del mismo tema identificada entre las fuentes monitoreadas por Kenta.",
+        }]
+
+        cluster.cluster_score = 0.59
+        db.add(cluster)
+        db.commit()
+        assert service.get_sources_by_news_id(published.news_id) == []
+    finally:
+        db.close()
+        engine.dispose()
 
 
 def test_source_allowlist_checks_domain_not_claimed_name(saved_source_service):
