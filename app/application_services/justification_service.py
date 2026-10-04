@@ -20,8 +20,14 @@ from cachetools import TTLCache
 from sqlalchemy.orm import Session
 
 from app.interfaces.justification_service import IJustificationService
-from app.processed.models import JustificationSource, MlPrediction, ProcessedNews
-from app.raw.models import RawNews
+from app.processed.models import (
+    ClusterMember,
+    JustificationSource,
+    MlPrediction,
+    NewsCluster,
+    ProcessedNews,
+)
+from app.raw.models import RawNews, Source
 from app.serving.models import PublishedNews
 
 logger = logging.getLogger(__name__)
@@ -31,6 +37,7 @@ class GeminiJustificationService(IJustificationService):
     GEMINI_MODEL = "gemini-3.5-flash-lite"
     MAX_DEBUG_TEXT_LENGTH = 4000
     URL_CHECK_TIMEOUT_SECONDS = 8
+    DEFAULT_CLUSTER_SOURCE_MIN_SCORE = 0.60
     URL_CHECK_HEADERS = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -95,6 +102,7 @@ class GeminiJustificationService(IJustificationService):
         self.retry_delay = retry_delay
         self.model_name = os.getenv("JUSTIFICATION_MODEL", self.GEMINI_MODEL)
         self.max_sources = self._configured_max_sources()
+        self.cluster_source_min_score = self._configured_cluster_source_min_score()
 
         self._cache: TTLCache = TTLCache(maxsize=1000, ttl=cache_ttl)
         self._cache_stats = {"hits": 0, "misses": 0}
@@ -170,10 +178,15 @@ class GeminiJustificationService(IJustificationService):
             )
             .first()
         )
-        if not prediction:
-            return []
-
-        return self.get_sources_by_prediction_id(prediction.prediction_id)
+        persisted = (
+            self.get_sources_by_prediction_id(prediction.prediction_id)
+            if prediction
+            else []
+        )
+        return self._merge_related_sources(
+            persisted,
+            self._cluster_sources(news),
+        )
 
     def _build_response_from_prediction(
         self,
@@ -213,7 +226,95 @@ class GeminiJustificationService(IJustificationService):
         )
         if not prediction:
             return None
-        return self._load_persisted_response(prediction.prediction_id)
+
+        response = self._load_persisted_response(prediction.prediction_id)
+        persisted = response["sources"] if response else []
+        merged = self._merge_related_sources(persisted, self._cluster_sources(news))
+        if not merged:
+            return None
+        if response is None:
+            response = self._build_response_from_prediction(
+                prediction,
+                merged,
+                from_cache=True,
+            )
+            response["model_used"] = "local-cluster"
+        else:
+            response["sources"] = merged
+        return response
+
+    def _cluster_sources(self, news: PublishedNews) -> list[dict]:
+        representative_member = (
+            self.db.query(ClusterMember)
+            .filter(
+                ClusterMember.news_processed_id
+                == news.representative_news_processed_id
+            )
+            .first()
+        )
+        if representative_member is None:
+            return []
+
+        cluster = (
+            self.db.query(NewsCluster)
+            .filter(
+                NewsCluster.cluster_id == representative_member.cluster_id,
+                NewsCluster.cluster_score >= self.cluster_source_min_score,
+            )
+            .first()
+        )
+        if cluster is None:
+            return []
+
+        rows = (
+            self.db.query(RawNews, Source)
+            .join(ProcessedNews, ProcessedNews.news_raw_id == RawNews.news_raw_id)
+            .join(
+                ClusterMember,
+                ClusterMember.news_processed_id == ProcessedNews.news_processed_id,
+            )
+            .join(Source, Source.source_id == RawNews.source_id)
+            .filter(
+                ClusterMember.cluster_id == cluster.cluster_id,
+                ProcessedNews.news_processed_id
+                != news.representative_news_processed_id,
+                Source.source_id != news.source_id,
+                Source.type == "web",
+                RawNews.original_url.isnot(None),
+                RawNews.original_url != "",
+                RawNews.original_url != news.original_url,
+            )
+            .order_by(RawNews.published_at.desc(), RawNews.news_raw_id.desc())
+            .limit(self.max_sources * 3)
+            .all()
+        )
+        return [
+            {
+                "url": raw_news.original_url.strip(),
+                "source": source.name,
+                "title": (raw_news.title_raw or f"Cobertura relacionada de {source.name}").strip(),
+                "excerpt": "Cobertura del mismo tema identificada entre las fuentes monitoreadas por Kenta.",
+            }
+            for raw_news, source in rows
+        ]
+
+    def _merge_related_sources(
+        self,
+        preferred: list[dict],
+        fallback: list[dict],
+    ) -> list[dict]:
+        merged: list[dict] = []
+        seen_urls: set[str] = set()
+        for source in [*preferred, *fallback]:
+            url = str(source.get("url") or "").strip()
+            normalized = self._normalize_url_for_match(url)
+            if not normalized or normalized in seen_urls:
+                continue
+            seen_urls.add(normalized)
+            merged.append(source)
+            if len(merged) >= self.max_sources:
+                break
+        return merged
 
     def _load_persisted_response(self, prediction_id: int) -> Optional[dict]:
         prediction = self.db.query(MlPrediction).filter(
@@ -1098,6 +1199,30 @@ Responde solo con las frases breves solicitadas. No uses JSON, listas, enlaces n
             )
             return 4
         return max(1, min(value, 8))
+
+    @classmethod
+    def _configured_cluster_source_min_score(cls) -> float:
+        raw_value = os.getenv(
+            "RELATED_CLUSTER_MIN_SCORE",
+            str(cls.DEFAULT_CLUSTER_SOURCE_MIN_SCORE),
+        )
+        try:
+            value = float(raw_value)
+        except ValueError:
+            logger.warning(
+                "RELATED_CLUSTER_MIN_SCORE inválido (%s); usando %.2f.",
+                raw_value,
+                cls.DEFAULT_CLUSTER_SOURCE_MIN_SCORE,
+            )
+            return cls.DEFAULT_CLUSTER_SOURCE_MIN_SCORE
+        if not 0.0 <= value <= 1.0:
+            logger.warning(
+                "RELATED_CLUSTER_MIN_SCORE fuera de rango (%s); usando %.2f.",
+                raw_value,
+                cls.DEFAULT_CLUSTER_SOURCE_MIN_SCORE,
+            )
+            return cls.DEFAULT_CLUSTER_SOURCE_MIN_SCORE
+        return value
 
     @staticmethod
     def _looks_english(text: str) -> bool:
