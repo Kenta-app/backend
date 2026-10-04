@@ -188,6 +188,11 @@ class GeminiJustificationService(IJustificationService):
             if prediction
             else []
         )
+        if news.original_url:
+            persisted = self._exclude_original_sources(
+                persisted,
+                {news.original_url.strip()},
+            )
         return self._merge_related_sources(
             persisted,
             self._cluster_sources(news),
@@ -234,6 +239,11 @@ class GeminiJustificationService(IJustificationService):
 
         response = self._load_persisted_response(prediction.prediction_id)
         persisted = response["sources"] if response else []
+        if news.original_url:
+            persisted = self._exclude_original_sources(
+                persisted,
+                {news.original_url.strip()},
+            )
         merged = self._merge_related_sources(persisted, self._cluster_sources(news))
         if not merged:
             return None

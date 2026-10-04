@@ -110,6 +110,27 @@ def test_clearing_cache_does_not_delete_saved_sources(saved_source_service):
     assert db.query(JustificationSource).filter_by(prediction_id=prediction_id).count() == 1
 
 
+def test_news_read_filters_legacy_same_outlet_sources(saved_source_service):
+    service, db, _prediction_id = saved_source_service
+    source = Source(name="Andina", base_url="https://andina.pe", type="web")
+    db.add(source)
+    db.flush()
+    published = PublishedNews(
+        representative_news_processed_id=1,
+        source_id=source.source_id,
+        title="Noticia original",
+        original_url="https://andina.pe/agencia/noticia-original-distinta-999.aspx",
+        published_at=datetime.utcnow(),
+        fake_score=0.1,
+    )
+    db.add(published)
+    db.commit()
+    db.refresh(published)
+
+    assert service.get_sources_by_news_id(published.news_id) == []
+    assert service.get_persisted_justification_by_news_id(published.news_id) is None
+
+
 def test_successful_regeneration_replaces_saved_sources(saved_source_service, monkeypatch):
     service, db, prediction_id = saved_source_service
     replacement = {

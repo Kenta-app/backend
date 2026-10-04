@@ -1,6 +1,10 @@
 import pytest
 
-from app.tasks.scheduler import configured_justification_budget, configured_scraping_times
+from app.tasks.scheduler import (
+    configured_justification_budget,
+    configured_scraping_times,
+    select_balanced_prediction_ids,
+)
 
 
 def test_schedule_accepts_two_separated_hours(monkeypatch):
@@ -34,3 +38,23 @@ def test_automatic_related_source_budget_is_bounded(monkeypatch):
     monkeypatch.setenv("JUSTIFICATION_MAX_PER_SCHEDULED_RUN", "51")
     with pytest.raises(ValueError):
         configured_justification_budget()
+
+
+def test_related_source_budget_is_balanced_and_rotatable():
+    predictions = {
+        1: [101, 102, 103],
+        2: [201, 202],
+        3: [301],
+    }
+
+    assert select_balanced_prediction_ids(predictions, limit=5) == [
+        101,
+        201,
+        301,
+        102,
+        202,
+    ]
+    assert select_balanced_prediction_ids(predictions, limit=2, rotation=1) == [
+        201,
+        301,
+    ]
