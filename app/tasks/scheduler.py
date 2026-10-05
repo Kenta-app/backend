@@ -15,6 +15,7 @@ from app.application_services.prediction_service import PredictionService
 from app.application_services.preprocessing_service import PreprocessingService
 from app.application_services.publishing_service import PublishingService
 from app.application_services.summarization_service import SummarizationService
+from app.application_services.study_reminder_service import StudyReminderService
 from app.dependencies import build_justification_service_optional, is_justification_auto_enabled
 from app.db.database import SessionLocal
 from app.processed.models import JustificationRun, MlPrediction
@@ -57,6 +58,24 @@ def configured_justification_budget() -> int:
     if budget < 0 or budget > 50:
         raise ValueError("JUSTIFICATION_MAX_PER_SCHEDULED_RUN must be between 0 and 50.")
     return budget
+
+
+def is_study_reminder_enabled() -> bool:
+    return os.getenv("STUDY_REMINDER_ENABLED", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def configured_study_reminder_minute() -> int:
+    try:
+        minute = int(os.getenv("STUDY_REMINDER_SCHEDULE_MINUTE", "15"))
+    except ValueError as exc:
+        raise ValueError("STUDY_REMINDER_SCHEDULE_MINUTE must be an integer.") from exc
+    if minute < 0 or minute > 59:
+        raise ValueError("STUDY_REMINDER_SCHEDULE_MINUTE must be in the range 0-59.")
+    return minute
 
 
 def select_balanced_prediction_ids(
@@ -134,6 +153,18 @@ class ScrapingScheduler:
         finally:
             db.close()
 
+    def scheduled_study_reminder_job(self):
+        """Send the single, consented validation reminder to due participants."""
+        db = SessionLocal()
+        try:
+            result = StudyReminderService(db).sendDueReminders()
+            logger.info("Study reminder job completed: %s", result)
+        except Exception:
+            db.rollback()
+            logger.exception("Study reminder job failed")
+        finally:
+            db.close()
+
     def start(self):
         """Start one non-overlapping job at each configured Lima-time hour."""
         hours, minute = configured_scraping_times()
@@ -152,6 +183,26 @@ class ScrapingScheduler:
             coalesce=True,
             misfire_grace_time=900,
         )
+        if is_study_reminder_enabled():
+            reminder_minute = configured_study_reminder_minute()
+            self.scheduler.add_job(
+                self.scheduled_study_reminder_job,
+                CronTrigger(
+                    hour="*",
+                    minute=reminder_minute,
+                    timezone=ZoneInfo("America/Lima"),
+                ),
+                id="study_reminder",
+                name="Consented study participation reminder",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=1800,
+            )
+            logger.info(
+                "Study reminder job enabled at minute %02d of each hour America/Lima",
+                reminder_minute,
+            )
         self.scheduler.start()
         logger.info(
             "Scheduler started. Pipeline will run at %s America/Lima",

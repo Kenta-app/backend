@@ -52,6 +52,7 @@ class EmailVerificationTests(unittest.TestCase):
             self.emailSender.messages[-1]["code"],
         )
         self.assertEqual(user.terms_version, "2026-08-28")
+        self.assertIsNone(user.study_reminder_opted_in_at)
 
         with self.assertRaises(EmailNotVerifiedError):
             self.service.login("alice@example.com", "correct-horse-battery-staple")
@@ -73,6 +74,18 @@ class EmailVerificationTests(unittest.TestCase):
             self.service.login("ALICE@example.com", "correct-horse-battery-staple").user_id,
             user.user_id,
         )
+
+    def test_registration_records_explicit_reminder_consent(self):
+        user = self.service.register(
+            "reminder-user",
+            "reminder@example.com",
+            "correct-horse-battery-staple",
+            termsVersion="2026-10-05",
+            privacyPolicyVersion="2026-10-05",
+            studyReminderOptIn=True,
+        )
+
+        self.assertIsNotNone(user.study_reminder_opted_in_at)
 
 
 if __name__ == "__main__":

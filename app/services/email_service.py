@@ -25,15 +25,43 @@ class ResendEmailSender:
             raise EmailDeliveryError("El servicio de correo no está configurado.")
 
         ttl_minutes = int(os.getenv("EMAIL_VERIFICATION_TTL_MINUTES", "10"))
-        payload = {
-            "from": self.fromAddress,
-            "to": [email],
-            "subject": "Confirma tu correo en Kenta",
-            "text": (
+        self._send(
+            email,
+            "Confirma tu correo en Kenta",
+            (
                 f"Tu código de confirmación para Kenta es: {code}\n\n"
                 f"Vence en {ttl_minutes} minutos. "
                 "Si no solicitaste este código, puedes ignorar este correo."
             ),
+        )
+
+    def sendStudyReminder(self, email: str, username: str) -> None:
+        public_url = os.getenv("FRONTEND_PUBLIC_URL", "https://ikenta.app").rstrip("/")
+        display_name = username.strip() or "participante"
+        self._send(
+            email,
+            "¿Nos ayudas a completar tu evaluación de Kenta?",
+            (
+                f"Hola, {display_name}:\n\n"
+                "Hace dos días creaste tu cuenta en Kenta. Para completar correctamente "
+                "la validación de la plataforma, te invitamos a volver y explorar las noticias, "
+                "sus fuentes relacionadas y las demás funciones disponibles.\n\n"
+                f"Continuar en Kenta: {public_url}/home\n\n"
+                "Gracias por apoyar este proyecto académico. Recibes este único recordatorio "
+                "porque aceptaste recibirlo al crear tu cuenta; no enviaremos recordatorios "
+                "adicionales de este tipo."
+            ),
+        )
+
+    def _send(self, email: str, subject: str, body: str) -> None:
+        if not self.apiKey or not self.fromAddress:
+            raise EmailDeliveryError("El servicio de correo no está configurado.")
+
+        payload = {
+            "from": self.fromAddress,
+            "to": [email],
+            "subject": subject,
+            "text": body,
         }
 
         try:
@@ -45,4 +73,4 @@ class ResendEmailSender:
             )
             response.raise_for_status()
         except requests.RequestException as exc:
-            raise EmailDeliveryError("No se pudo enviar el correo de confirmación.") from exc
+            raise EmailDeliveryError("No se pudo enviar el correo.") from exc

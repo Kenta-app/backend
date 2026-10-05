@@ -38,7 +38,15 @@ def main() -> None:
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMP",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS privacy_policy_version VARCHAR(32)",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS privacy_policy_accepted_at TIMESTAMP",
+            # Consentimiento y trazabilidad del recordatorio único de validación.
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS study_reminder_opted_in_at TIMESTAMP",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS study_reminder_sent_at TIMESTAMP",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS study_reminder_last_attempt_at TIMESTAMP",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS study_reminder_attempts INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS study_reminder_last_error TEXT",
             "CREATE INDEX IF NOT EXISTS ix_users_email_verified_at ON serving.users (email_verified_at)",
+            "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_opted_in_at ON serving.users (study_reminder_opted_in_at)",
+            "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_sent_at ON serving.users (study_reminder_sent_at)",
             "UPDATE serving.users SET email_verified_at = created_at WHERE email_verified_at IS NULL",
             # Clics en evidencia/fuentes relacionadas para la validación de usuarios.
             """

@@ -31,6 +31,11 @@ class User(Base):
     terms_accepted_at = Column(DateTime, nullable=True)
     privacy_policy_version = Column(String(32), nullable=True)
     privacy_policy_accepted_at = Column(DateTime, nullable=True)
+    study_reminder_opted_in_at = Column(DateTime, nullable=True, index=True)
+    study_reminder_sent_at = Column(DateTime, nullable=True, index=True)
+    study_reminder_last_attempt_at = Column(DateTime, nullable=True)
+    study_reminder_attempts = Column(Integer, nullable=False, default=0)
+    study_reminder_last_error = Column(Text, nullable=True)
 
     def register(self) -> None:
         if not self.created_at:
