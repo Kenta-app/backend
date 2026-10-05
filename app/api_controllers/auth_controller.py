@@ -28,6 +28,7 @@ class RegisterRequest(BaseModel):
     acceptedTerms: bool
     termsVersion: str = Field(min_length=1, max_length=32)
     privacyPolicyVersion: str = Field(min_length=1, max_length=32)
+    studyReminderOptIn: bool = False
 
     @field_validator("username")
     @classmethod
@@ -152,6 +153,7 @@ class AuthController(BaseController):
         gender: str | None,
         termsVersion: str,
         privacyPolicyVersion: str,
+        studyReminderOptIn: bool,
     ) -> dict:
         try:
             user = self.authService.register(
@@ -162,6 +164,7 @@ class AuthController(BaseController):
                 gender,
                 termsVersion,
                 privacyPolicyVersion,
+                studyReminderOptIn,
             )
         except EmailDeliveryError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -266,6 +269,7 @@ def post_register(
         payload.gender,
         payload.termsVersion,
         payload.privacyPolicyVersion,
+        payload.studyReminderOptIn,
     )
 
 

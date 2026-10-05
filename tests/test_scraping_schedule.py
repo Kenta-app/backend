@@ -3,6 +3,8 @@ import pytest
 from app.tasks.scheduler import (
     configured_justification_budget,
     configured_scraping_times,
+    configured_study_reminder_minute,
+    is_study_reminder_enabled,
     select_balanced_prediction_ids,
 )
 
@@ -58,3 +60,17 @@ def test_related_source_budget_is_balanced_and_rotatable():
         201,
         301,
     ]
+
+
+def test_study_reminder_schedule_is_opt_in_and_bounded(monkeypatch):
+    monkeypatch.delenv("STUDY_REMINDER_ENABLED", raising=False)
+    assert is_study_reminder_enabled() is False
+
+    monkeypatch.setenv("STUDY_REMINDER_ENABLED", "true")
+    monkeypatch.setenv("STUDY_REMINDER_SCHEDULE_MINUTE", "15")
+    assert is_study_reminder_enabled() is True
+    assert configured_study_reminder_minute() == 15
+
+    monkeypatch.setenv("STUDY_REMINDER_SCHEDULE_MINUTE", "60")
+    with pytest.raises(ValueError):
+        configured_study_reminder_minute()

@@ -50,6 +50,7 @@ class AuthService:
         gender: str | None = None,
         termsVersion: str | None = None,
         privacyPolicyVersion: str | None = None,
+        studyReminderOptIn: bool = False,
     ) -> User:
         self._requireVerificationConfiguration()
         normalized_email = email.strip().lower()
@@ -76,6 +77,7 @@ class AuthService:
             terms_accepted_at=now,
             privacy_policy_version=privacyPolicyVersion,
             privacy_policy_accepted_at=now,
+            study_reminder_opted_in_at=now if studyReminderOptIn else None,
         )
         user.register()
         self.db.add(user)
