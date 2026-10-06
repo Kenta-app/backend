@@ -24,8 +24,11 @@ datos y solo debe emplearse para soporte o auditoría autorizada.
   acumulado de una misma apertura actualiza un único registro mediante
   `client_event_id`.
 - **Clic original:** selección del enlace que lleva al medio de origen.
-- **Reacción:** estado actual de utilidad de una noticia para un usuario. Un
-  cambio sustituye el valor anterior; no es un historial de votos.
+- **Reacción:** valoración binaria actual de la utilidad percibida del análisis
+  completo de Kenta para comprender una noticia. Considera en conjunto resumen,
+  señales del modelo y fuentes relacionadas. No es una etiqueta de veracidad ni
+  supervisión directa para reentrenar los modelos. Un cambio sustituye el valor
+  anterior; no es un historial de votos.
 - **Favorito:** noticia que permanece guardada. Si se elimina, el registro deja
   de existir; por tanto, es estado actual y no historial de guardados.
 
