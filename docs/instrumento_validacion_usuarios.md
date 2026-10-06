@@ -1,82 +1,82 @@
-# Instrumento de validación con usuarios — Kenta
+# Instrumento longitudinal de validación con usuarios — Kenta
 
-Este instrumento corresponde al protocolo de validación. No debe cambiarse
-durante la recolección formal; los ajustes se hacen únicamente después del
-piloto y se documentan.
+Este instrumento acompaña al protocolo longitudinal. Se prueba en el piloto y
+se congela antes de la muestra formal. Los formularios deben almacenar el código
+seudonimizado, no el correo del participante.
 
-## A. Consentimiento inicial
+## A. Consentimiento informado
 
-Antes de iniciar, mostrar:
+Mostrar antes de crear la cuenta:
 
-> Se te invita a participar en una evaluación académica de la plataforma Kenta.
-> La sesión es voluntaria y puedes dejar de participar en cualquier momento sin
-> consecuencias. No se solicitarán tu nombre, correo ni acceso a tu cuenta. Las
-> respuestas se analizarán de forma agrupada para la tesis. El estudio evalúa la
-> comprensión, confianza e intención de continuar informándote después de leer
-> noticias políticas. Si tienes dudas, escribe a **[correo del investigador]**.
+> Se te invita a participar en una evaluación académica de Kenta durante 72
+> horas. La participación es voluntaria y puedes retirarte sin consecuencias.
+> Crearás una cuenta y Kenta registrará interacciones dentro de la plataforma,
+> como sesiones, tiempo visible, noticias abiertas, enlaces consultados,
+> guardados y valoraciones de utilidad. La cuenta utiliza los datos descritos en
+> su Política de Privacidad. Las respuestas y la telemetría se analizarán con un
+> código seudonimizado y se presentarán de forma agrupada. La contraseña no es
+> accesible al equipo. El recordatorio por correo es opcional y se enviará una
+> sola vez si lo autorizas. Puedes solicitar el retiro de tus datos escribiendo
+> a **[correo del investigador]** hasta **[fecha límite]**.
 
 Campos obligatorios:
 
 1. Confirmo que tengo 18 años o más. Sí / No.
 2. He leído la información y acepto participar voluntariamente. Sí / No.
+3. Comprendo que puedo retirarme sin consecuencias. Sí / No.
 
-Quien responda `No` en cualquiera de los dos campos no continúa.
+Una respuesta `No` impide continuar. La casilla de recordatorio de la cuenta es
+independiente y no puede ser obligatoria.
 
-## B. Ficha inicial mínima
+## B. Registro inicial
 
-1. Código aleatorio del participante: `P-___`.
-2. Rango de edad: 18–20 / 21–24 / 25 o más.
-3. Antes de esta sesión, ¿con qué frecuencia te informas sobre política?
+1. Código asignado: `P-____`.
+2. Rango de edad: 18–20 / 21–24 / 25–29 / 30 o más.
+3. Frecuencia previa de consumo de noticias políticas:
    Nunca / Rara vez / Algunas veces / Frecuentemente / Muy frecuentemente.
+4. Familiaridad con aplicaciones o sitios de noticias:
+   Nada familiar / Poco / Moderadamente / Muy / Extremadamente familiar.
 
-No incluir nombre, correo, código universitario, fecha de nacimiento exacta ni
-género salvo que exista una razón analítica explícita y aprobada por el asesor.
+El género se obtiene únicamente de la cuenta cuando sea necesario para describir
+la muestra e incluye `Prefiero no responder`. No se exporta la fecha exacta de
+nacimiento.
 
-## C. Hoja por noticia
+## C. Familiarización del día 0
 
-Completar inmediatamente después de cada una de las cuatro noticias.
+El participante marca cada tarea cuando la completa:
 
-Metadatos registrados por el investigador:
+- [ ] Abrí el feed y apliqué al menos un filtro.
+- [ ] Abrí al menos tres noticias.
+- [ ] Revisé el resumen y las señales de Kenta.
+- [ ] Abrí al menos una fuente relacionada.
+- [ ] Abrí al menos una noticia original.
+- [ ] Guardé al menos una noticia.
+- [ ] Marqué la utilidad de al menos dos análisis.
 
-- Código de participante.
-- Noticia: N1, N2, N3 o N4.
-- Condición: Kenta o lectura convencional.
-- Orden de presentación: 1, 2, 3 o 4.
+Pregunta de control:
 
-### C1. Comprensión objetiva
+1. ¿Pudiste completar todas las tareas? Sí / No.
+2. Si respondiste No, ¿qué ocurrió? `[texto breve]`.
 
-Para cada noticia se prepararán tres preguntas de opción múltiple basadas solo
-en hechos presentes en el texto. Cada pregunta tendrá una única respuesta
-correcta y la alternativa “No estoy seguro/a”.
+## D. Valoración integrada dentro de Kenta
 
-Plantilla:
+La reacción mostrada en cada detalle pregunta:
 
-1. ¿Cuál es el hecho principal informado en la noticia? [Cuatro alternativas].
-2. ¿Qué actor, institución o medida se relaciona con el hecho? [Cuatro
-   alternativas].
-3. ¿Cuál de las siguientes afirmaciones resume correctamente la consecuencia o
-   contexto descrito? [Cuatro alternativas].
+> ¿El análisis completo de Kenta te resultó útil para comprender esta noticia?
 
-Puntaje: una respuesta correcta por pregunta; rango 0–3 por noticia.
+Opciones:
 
-### C2. Confianza e intención
+- Sí, fue útil.
+- No fue útil.
 
-Escala de 1 a 5: 1 = totalmente en desacuerdo; 5 = totalmente de acuerdo.
+La interfaz aclara que se consideran conjuntamente resumen, señales del modelo
+y fuentes relacionadas. Esta respuesta es revocable, representa el estado
+actual y no constituye una etiqueta de veracidad.
 
-1. La información presentada me permitió comprender de qué trata esta noticia.
-2. Considero que cuento con elementos suficientes para formarme una idea
-   informada sobre este tema.
-3. Después de revisar esta noticia, tengo intención de buscar más información
-   sobre el tema en fuentes confiables.
+## E. Encuesta final: usabilidad SUS
 
-Las preguntas 1 y 2 se usarán como indicadores de comprensión percibida y
-confianza; la pregunta 3 es el indicador de intención de continuar
-informándose.
-
-## D. Usabilidad de Kenta: SUS
-
-Aplicar una sola vez al finalizar la sesión. Escala de 1 a 5: 1 = totalmente en
-desacuerdo; 5 = totalmente de acuerdo.
+Aplicar entre las 72 y 96 horas. Escala de 1 a 5:
+1 = totalmente en desacuerdo; 5 = totalmente de acuerdo.
 
 1. Me gustaría usar Kenta con frecuencia.
 2. Encontré Kenta innecesariamente complejo.
@@ -89,19 +89,58 @@ desacuerdo; 5 = totalmente de acuerdo.
 9. Me sentí seguro/a al usar Kenta.
 10. Necesité aprender muchas cosas antes de poder usar Kenta.
 
-Puntuación: para los ítems impares, restar 1 a la respuesta; para los pares,
-restar la respuesta a 5. Sumar los diez resultados y multiplicar por 2.5.
+Puntuación: para ítems impares, respuesta menos 1; para pares, 5 menos
+respuesta. Sumar los diez valores y multiplicar por 2.5. El resultado 0–100 es
+un índice de usabilidad, no un porcentaje.
 
-## E. Preguntas abiertas finales
+## F. Utilidad, comprensión y confianza
 
-1. ¿Qué elemento de Kenta te ayudó más a entender o evaluar la noticia?
-2. ¿Qué elemento te resultó confuso, poco útil o debería cambiarse?
+Escala de 1 a 5: 1 = totalmente en desacuerdo; 5 = totalmente de acuerdo.
 
-## F. Registro de incidentes
+1. Los resúmenes me ayudaron a identificar rápidamente el tema principal.
+2. Las señales de riesgo fueron comprensibles.
+3. Comprendí que el riesgo de desinformación es una estimación y no un veredicto
+   definitivo sobre la noticia.
+4. Las fuentes relacionadas me ayudaron a contrastar o ampliar la información.
+5. La combinación de resumen, señales y fuentes me ayudó a formarme una idea más
+   informada sobre las noticias revisadas.
+6. Me resultó claro cómo acceder a la noticia original.
+7. Consideraría volver a utilizar Kenta para revisar noticias políticas.
+8. En general, el análisis de Kenta me resultó útil.
 
-El investigador anotará, sin identificar a la persona:
+Pregunta adicional:
 
-- error de carga;
-- noticia que no se pudo leer;
-- abandono de la sesión;
-- observación que implique excluir o interpretar con cautela una respuesta.
+9. ¿Qué función te resultó más útil?
+   Resumen / Señales de riesgo / Fuentes relacionadas / Enlace original /
+   Filtros y navegación / Guardados / Ninguna / Otra.
+
+## G. Preguntas abiertas
+
+1. ¿Qué elemento de Kenta te ayudó más y por qué?
+2. ¿Qué elemento te resultó confuso o poco útil?
+3. ¿Hubo alguna señal o texto que pudieras interpretar como una afirmación
+   definitiva de que una noticia era verdadera o falsa? Explica brevemente.
+4. ¿Qué cambio priorizarías para una siguiente versión?
+
+## H. Registro técnico del investigador
+
+Por participante, sin copiar correos al formulario de análisis:
+
+- código `P-####`;
+- fecha/hora de registro y encuesta final;
+- familiarización completa: sí/no;
+- recordatorio autorizado: sí/no;
+- recordatorio enviado: sí/no/no aplicaba;
+- días con actividad;
+- encuesta completa: sí/no;
+- incidencia técnica;
+- inclusión final y motivo de exclusión si corresponde.
+
+## I. Reglas de aplicación
+
+- No explicar ni reformular ítems de forma diferente entre participantes.
+- No sugerir que una respuesta positiva beneficia al proyecto.
+- No presentar la reacción útil/no útil como corrección del modelo.
+- No cambiar preguntas después de comenzar la muestra formal.
+- Registrar abandonos y datos faltantes sin reemplazarlos silenciosamente.
+- Separar participantes piloto, cuentas internas y muestra formal.
