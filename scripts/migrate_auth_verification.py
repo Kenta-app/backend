@@ -47,6 +47,18 @@ def main() -> None:
             "CREATE INDEX IF NOT EXISTS ix_users_email_verified_at ON serving.users (email_verified_at)",
             "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_opted_in_at ON serving.users (study_reminder_opted_in_at)",
             "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_sent_at ON serving.users (study_reminder_sent_at)",
+            # Confirmación de datos del ganador del sorteo.
+            """
+            CREATE TABLE IF NOT EXISTS serving.draw_confirmations (
+                draw_confirmation_id SERIAL PRIMARY KEY,
+                draw_id VARCHAR(100) NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES serving.users(user_id),
+                phone VARCHAR(32),
+                confirmed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_draw_confirmation_user_draw ON serving.draw_confirmations (user_id, draw_id)",
+            "ALTER TABLE serving.draw_confirmations ALTER COLUMN phone DROP NOT NULL",
             "UPDATE serving.users SET email_verified_at = created_at WHERE email_verified_at IS NULL",
             # Clics en evidencia/fuentes relacionadas para la validación de usuarios.
             """

@@ -51,6 +51,24 @@ class User(Base):
         return (self.role or "").lower() in {"admin", "moderator", "moderador"}
 
 
+class DrawConfirmation(Base):
+    """Prize-data confirmation submitted by a draw winner."""
+
+    __tablename__ = "draw_confirmations"
+    __table_args__ = (
+        Index("idx_draw_confirmation_user_draw", "user_id", "draw_id", unique=True),
+        {"schema": "serving"},
+    )
+
+    draw_confirmation_id = Column(Integer, primary_key=True, index=True)
+    draw_id = Column(String(100), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("serving.users.user_id"), nullable=False, index=True)
+    # Kept for backwards-compatible storage; the draw confirmation no longer
+    # collects contact information in the API.
+    phone = Column(String(32), nullable=True)
+    confirmed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 class PublishedNews(Base):
     __tablename__ = "news"
     __table_args__ = {"schema": "serving"}

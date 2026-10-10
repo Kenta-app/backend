@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.api_controllers import (
     admin_router,
     auth_router,
+    draw_router,
     favorites_router,
     interaction_router,
     news_router,
@@ -24,6 +25,7 @@ from app.routers.justification_router import router as justification_router
 from app.routers.ml_router import router as ml_router
 from app.serving.models import (
     NewsClick,
+    DrawConfirmation,
     NewsDetailClick,
     NewsFavorite,
     NewsRelatedSourceClick,
@@ -42,6 +44,7 @@ _ = (
     JustificationRun,
     JustificationSource,
     MlPrediction,
+    DrawConfirmation,
     NewsClick,
     NewsDetailClick,
     NewsFavorite,
@@ -85,6 +88,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(draw_router)
 app.include_router(news_router)
 app.include_router(interaction_router)
 app.include_router(favorites_router)

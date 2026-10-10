@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.application_services.analytics_service import AnalyticsService
 from app.application_services.auth_service import AuthService
 from app.application_services.clustering_service import ClusteringService
+from app.application_services.draw_service import DrawService
 from app.application_services.favorite_service import FavoriteService
 from app.application_services.ingestion_service import IngestionService
 from app.application_services.interaction_service import InteractionService
@@ -89,6 +90,13 @@ def get_analytics_service(db: Session = Depends(get_db)) -> AnalyticsService:
 
 def get_email_sender() -> ResendEmailSender:
     return ResendEmailSender()
+
+
+def get_draw_service(
+    db: Session = Depends(get_db),
+    email_sender: ResendEmailSender = Depends(get_email_sender),
+) -> DrawService:
+    return DrawService(db, email_sender)
 
 
 def get_auth_service(

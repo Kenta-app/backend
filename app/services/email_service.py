@@ -53,7 +53,58 @@ class ResendEmailSender:
             ),
         )
 
-    def _send(self, email: str, subject: str, body: str) -> None:
+    def sendDrawConfirmation(self, email: str, username: str, drawId: str) -> None:
+        plain_text = (
+            "¡Hola! 👋\n\n"
+            "🎉 ¡Felicidades! Eres el ganador del sorteo de Kenta y te llevas S/ 80! 🏆💜\n\n"
+            "Queremos agradecerte por haber participado en nuestra investigación y por dedicar tu tiempo "
+            "a probar Kenta. Tu apoyo ha sido muy importante para el desarrollo de nuestra tesis.\n\n"
+            "Para coordinar la entrega de tu premio, necesitamos que nos compartas los siguientes datos:\n\n"
+            "- 📱 Número de celular: Indícanos el número al que deseas recibir el premio.\n"
+            "- 💜 Billetera digital de preferencia: Cuéntanos si prefieres recibir tu premio a través de "
+            "Yape, Plin u otra billetera digital.\n\n"
+            "Con esta información podremos realizar la transferencia de los S/ 80 directamente a la "
+            "billetera que nos indiques. Una vez realizada, te enviaremos la confirmación de la transferencia "
+            "por este medio.\n\n"
+            "¡Muchas gracias por ser parte de Kenta y esperamos que hayas disfrutado la experiencia! 💜\n\n"
+            "Saludos,\nEquipo Kenta 💜"
+        )
+        html = """<!doctype html>
+<html lang="es">
+  <body style="margin:0;padding:24px;background:#f7f3ff;font-family:Arial,sans-serif;color:#2d193d;line-height:1.55;">
+    <main style="max-width:600px;margin:0 auto;padding:32px;background:#ffffff;border-radius:16px;">
+      <p>¡Hola! 👋</p>
+      <p style="font-size:18px;"><strong>🎉 ¡Felicidades! Eres el ganador del sorteo de Kenta y te llevas S/ 80! 🏆💜</strong></p>
+      <p>Queremos agradecerte por haber participado en nuestra investigación y por dedicar tu tiempo a probar Kenta. Tu apoyo ha sido muy importante para el desarrollo de nuestra tesis.</p>
+      <p>Para coordinar la entrega de tu premio, necesitamos que nos compartas los siguientes datos:</p>
+      <ul>
+        <li>📱 <strong>Número de celular:</strong> Indícanos el número al que deseas recibir el premio.</li>
+        <li>💜 <strong>Billetera digital de preferencia:</strong> Cuéntanos si prefieres recibir tu premio a través de <strong>Yape, Plin u otra billetera digital</strong>.</li>
+      </ul>
+      <p>Con esta información podremos realizar la transferencia de los <strong>S/ 80</strong> directamente a la billetera que nos indiques. Una vez realizada, te enviaremos la confirmación de la transferencia por este medio.</p>
+      <p>¡Muchas gracias por ser parte de Kenta y esperamos que hayas disfrutado la experiencia! 💜</p>
+      <p>Saludos,<br><strong>Equipo Kenta</strong> 💜</p>
+    </main>
+  </body>
+</html>"""
+        self._send(
+            email,
+            "🎉 ¡Felicidades! Ganaste S/ 80 en el sorteo de Kenta 💜",
+            plain_text,
+            html=html,
+        )
+
+    def sendDrawTeamNotification(self, email: str, winnerEmail: str, drawId: str) -> None:
+        self._send(
+            email,
+            "Confirmación de datos: ganador del sorteo Kenta",
+            (
+                "El ganador confirmó sus datos de contacto.\n\n"
+                f"Sorteo: {drawId}\nCorreo del ganador: {winnerEmail}"
+            ),
+        )
+
+    def _send(self, email: str, subject: str, body: str, html: str | None = None) -> None:
         if not self.apiKey or not self.fromAddress:
             raise EmailDeliveryError("El servicio de correo no está configurado.")
 
@@ -63,6 +114,8 @@ class ResendEmailSender:
             "subject": subject,
             "text": body,
         }
+        if html:
+            payload["html"] = html
 
         try:
             response = requests.post(
