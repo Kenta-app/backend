@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
 
 from app.db.database import Base
 
@@ -84,6 +84,7 @@ class RawNews(Base):
     image_url = Column(Text, nullable=True)
     title_raw = Column(Text, nullable=True)
     content_raw = Column(Text, nullable=False)
+    social_context = Column(JSON, nullable=True)
     author_raw = Column(String(255), nullable=True)
     published_at = Column(DateTime, nullable=True, index=True)
     scraped_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

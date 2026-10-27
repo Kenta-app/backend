@@ -14,8 +14,8 @@ from app.api_controllers import admin_router, auth_router, interaction_router, n
 from app.api_controllers.justification_controller import JustificationController
 from app.db.database import Base, apply_sqlite_schema_translation, get_db
 from app.dependencies import get_email_sender
-from app.processed.models import MlPrediction
-from app.raw.models import Source
+from app.processed.models import MlPrediction, ProcessedNews
+from app.raw.models import IngestionLog, RawNews, Source
 from app.serving.models import PublishedNews, User
 from app.services.session_token_service import SessionTokenService
 
@@ -347,6 +347,63 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"]["count"], 1)
 
+    def test_feed_hides_high_risk_by_default_and_can_explicitly_include_it(self):
+        source = Source(name="Fuente Riesgo", base_url="https://risk.example", type="web")
+        self.db.add(source)
+        self.db.commit()
+        self.db.add_all([
+            PublishedNews(
+                representative_news_processed_id=301,
+                source_id=source.source_id,
+                title="Bajo riesgo",
+                original_url="https://risk.example/low",
+                published_at=datetime.utcnow(),
+                fake_score=0.1,
+            ),
+            PublishedNews(
+                representative_news_processed_id=302,
+                source_id=source.source_id,
+                title="Alto riesgo",
+                original_url="https://risk.example/high",
+                published_at=datetime.utcnow(),
+                fake_score=0.95,
+            ),
+        ])
+        self.db.commit()
+
+        default_response = self.client.get("/news")
+        all_response = self.client.get(
+            "/news?riskLevels=likely_real,indeterminate,likely_fake,not_assessed"
+        )
+
+        self.assertEqual(default_response.json()["data"]["count"], 1)
+        self.assertEqual(default_response.json()["data"]["items"][0]["title"], "Bajo riesgo")
+        self.assertEqual(all_response.json()["data"]["count"], 2)
+        self.assertEqual(self.client.get("/news?riskLevels=unknown").status_code, 422)
+
+    def test_official_source_remains_in_default_feed_without_public_model_score(self):
+        source = Source(name="El Peruano", base_url="https://elperuano.pe/", type="web")
+        self.db.add(source)
+        self.db.commit()
+        news = PublishedNews(
+            representative_news_processed_id=303,
+            source_id=source.source_id,
+            title="Publicación oficial",
+            original_url="https://elperuano.pe/noticia/prueba",
+            published_at=datetime.utcnow(),
+            fake_score=0.96,
+        )
+        self.db.add(news)
+        self.db.commit()
+
+        response = self.client.get("/news")
+        item = response.json()["data"]["items"][0]
+
+        self.assertEqual(response.json()["data"]["count"], 1)
+        self.assertEqual(item["riskLevel"], "not_assessed")
+        self.assertIsNone(item["fakeScore"])
+        self.assertEqual(item["sourceAuthority"]["authority_type"], "official_state_publisher")
+
     def test_news_detail_returns_published_news_with_empty_evidence(self):
         source = Source(
             name="Fuente Detalle",
@@ -390,6 +447,68 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(response.json()["data"]["newsId"], news.news_id)
         self.assertEqual(response.json()["data"]["predictionId"], prediction.prediction_id)
         self.assertEqual(response.json()["data"]["sources"], [])
+        self.assertEqual(
+            response.json()["data"]["evidenceAssessment"]["status"],
+            "insufficient_evidence",
+        )
+        self.assertEqual(
+            response.json()["data"]["evidenceAssessment"]["distinctPublisherSources"],
+            0,
+        )
+
+    def test_news_detail_exposes_persisted_social_context(self):
+        source = Source(name="Cuenta Contexto", base_url="https://x.com/contexto", type="twitter")
+        self.db.add(source)
+        self.db.commit()
+        log = IngestionLog(source_id=source.source_id, ingestion_type="twitter", status="success")
+        self.db.add(log)
+        self.db.commit()
+        raw = RawNews(
+            source_id=source.source_id,
+            log_id=log.log_id,
+            platform="twitter",
+            original_url="https://x.com/contexto/status/10",
+            title_raw="Publicación de @contexto",
+            content_raw="Esto confirma la noticia",
+            social_context={
+                "version": "x-context-v1",
+                "references": [
+                    {
+                        "id": "9",
+                        "type": "quoted",
+                        "status": "available",
+                        "text": "Texto original citado",
+                    }
+                ],
+            },
+        )
+        self.db.add(raw)
+        self.db.commit()
+        processed = ProcessedNews(
+            news_raw_id=raw.news_raw_id,
+            source_id=source.source_id,
+            clean_text="Texto procesado",
+            token_count=10,
+        )
+        self.db.add(processed)
+        self.db.commit()
+        news = PublishedNews(
+            representative_news_processed_id=processed.news_processed_id,
+            source_id=source.source_id,
+            title="Publicación de @contexto",
+            original_url=raw.original_url,
+            published_at=datetime.utcnow(),
+            fake_score=0.2,
+        )
+        self.db.add(news)
+        self.db.commit()
+
+        response = self.client.get(f"/news/{news.news_id}")
+
+        self.assertEqual(response.status_code, 200)
+        context = response.json()["data"]["socialContext"]
+        self.assertEqual(context["version"], "x-context-v1")
+        self.assertEqual(context["references"][0]["text"], "Texto original citado")
 
     def test_get_justification_does_not_generate_when_missing(self):
         service = ReadOnlyJustificationService()

@@ -38,10 +38,25 @@ SCRAPER_MAX_ARTICLES_PER_SOURCE=5
 STANCE_PUBLIC_ENABLED=false
 JUSTIFICATION_AUTO_ENABLED=true
 JUSTIFICATION_MAX_PER_SCHEDULED_RUN=5
+JUSTIFICATION_FALLBACK_SEARCH=true
+JUSTIFICATION_EMPTY_RETRY_SEARCH=true
+JUSTIFICATION_STANCE_REVIEW=true
+JUSTIFICATION_MIN_SOURCE_TARGET=2
 RELATED_CLUSTER_MIN_SCORE=0.60
 ```
 
-El último par limita Gemini a cinco intentos automáticos por ciclo completo de scraping, es decir, un máximo de diez intentos diarios con el horario anterior. Si la cuota no está disponible, usar `JUSTIFICATION_AUTO_ENABLED=false`; el resto de la aplicación seguirá funcionando.
+`JUSTIFICATION_MAX_PER_SCHEDULED_RUN` limita el número de publicaciones procesadas
+por ciclo. Cuando una primera búsqueda no alcanza dos medios independientes, la
+política de *fallback* puede realizar una segunda llamada para esa publicación.
+Si las dos primeras búsquedas siguen vacías, una tercera pasada amplía la
+búsqueda a medios regionales y sectoriales reconocidos. Con cinco publicaciones
+por ciclo, el máximo teórico es quince llamadas, aunque la tercera solo se usa
+en resultados todavía vacíos.
+`JUSTIFICATION_STANCE_REVIEW=true` ejecuta después una revisión de postura sobre
+las fuentes ya elegidas. Esta llamada no usa búsqueda web ni puede inventar o
+reemplazar URLs; ante una respuesta inválida conserva la etiqueta previa.
+Si la cuota no está disponible, usar `JUSTIFICATION_AUTO_ENABLED=false`; el resto
+de la aplicación seguirá funcionando.
 
 ## 3. Construir sin interrumpir el servicio
 

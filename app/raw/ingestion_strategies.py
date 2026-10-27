@@ -218,6 +218,7 @@ class TwitterApiIngestion(IIngestionStrategy):
                         else "Publicación en X"
                     ),
                     content_raw=tweet.get("text"),
+                    social_context=tweet.get("social_context"),
                     author_raw=tweet.get("author") or account,
                     published_at=WebScraperIngestion._coerce_datetime(tweet.get("published_at")),
                     scraped_at=datetime.utcnow(),
@@ -242,7 +243,7 @@ class TwitterApiIngestion(IIngestionStrategy):
             headers=headers,
             timeout=20,
         )
-        user_response.raise_for_status()
+        self._raise_for_x_status(user_response)
         user_data = user_response.json().get("data") or {}
         user_id = user_data.get("id")
         resolved_username = user_data.get("username") or username
@@ -256,18 +257,24 @@ class TwitterApiIngestion(IIngestionStrategy):
             params={
                 "max_results": max_results,
                 "exclude": "retweets,replies",
-                "tweet.fields": "created_at,attachments",
-                "expansions": "attachments.media_keys",
+                "tweet.fields": "created_at,attachments,author_id,conversation_id,referenced_tweets,in_reply_to_user_id",
+                "expansions": "attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id",
+                "user.fields": "username,name,verified",
                 "media.fields": "media_key,type,url,preview_image_url",
             },
             timeout=20,
         )
-        timeline_response.raise_for_status()
+        self._raise_for_x_status(timeline_response)
         payload = timeline_response.json()
         media_by_key = {
             media.get("media_key"): media
             for media in (payload.get("includes") or {}).get("media", [])
             if media.get("media_key")
+        }
+        username_by_author_id = {
+            user.get("id"): user.get("username")
+            for user in (payload.get("includes") or {}).get("users", [])
+            if user.get("id") and user.get("username")
         }
 
         tweets: list[dict[str, Any]] = []
@@ -287,6 +294,11 @@ class TwitterApiIngestion(IIngestionStrategy):
                     "url": f"https://x.com/{resolved_username}/status/{tweet_id}",
                     "published_at": item.get("created_at"),
                     "image_url": self._first_media_image(media_keys, media_by_key),
+                    "social_context": self._build_social_context(
+                        item,
+                        payload,
+                        username_by_author_id,
+                    ),
                 }
             )
         return tweets
@@ -308,14 +320,14 @@ class TwitterApiIngestion(IIngestionStrategy):
             params={
                 "query": normalized_query,
                 "max_results": self._search_max_results(),
-                "tweet.fields": "created_at,attachments,author_id,lang,public_metrics",
-                "expansions": "author_id,attachments.media_keys",
+                "tweet.fields": "created_at,attachments,author_id,lang,public_metrics,conversation_id,referenced_tweets,in_reply_to_user_id",
+                "expansions": "author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id",
                 "user.fields": "username,name,verified",
                 "media.fields": "media_key,type,url,preview_image_url",
             },
             timeout=20,
         )
-        response.raise_for_status()
+        self._raise_for_x_status(response)
         payload = response.json()
         media_by_key = {
             media.get("media_key"): media
@@ -350,9 +362,96 @@ class TwitterApiIngestion(IIngestionStrategy):
                     ),
                     "published_at": item.get("created_at"),
                     "image_url": self._first_media_image(media_keys, media_by_key),
+                    "social_context": self._build_social_context(
+                        item,
+                        payload,
+                        username_by_author_id,
+                    ),
                 }
             )
         return tweets
+
+    @staticmethod
+    def _raise_for_x_status(response: requests.Response) -> None:
+        if response.status_code == 401:
+            raise ValueError(
+                "X API rechazó TWITTER_BEARER_TOKEN (401 Unauthorized). "
+                "Usa el Bearer Token de la aplicación, sin el prefijo 'Bearer', "
+                "y regénéralo si fue revocado."
+            )
+        if response.status_code == 403:
+            raise PermissionError(
+                "X API denegó el endpoint (403 Forbidden). Verifica que la aplicación "
+                "y su nivel de acceso permitan búsqueda reciente."
+            )
+        if response.status_code == 429:
+            raise RuntimeError("X API alcanzó el límite de solicitudes (429 Too Many Requests).")
+        response.raise_for_status()
+
+    @staticmethod
+    def _build_social_context(
+        item: dict[str, Any],
+        payload: dict[str, Any],
+        username_by_author_id: dict[str, str],
+    ) -> dict[str, Any]:
+        included_tweets = {
+            str(tweet.get("id")): tweet
+            for tweet in (payload.get("includes") or {}).get("tweets", [])
+            if tweet.get("id")
+        }
+        references: list[dict[str, Any]] = []
+        missing_references = 0
+        for reference in item.get("referenced_tweets") or []:
+            reference_id = str(reference.get("id") or "").strip()
+            reference_type = str(reference.get("type") or "").strip()
+            if not reference_id or not reference_type:
+                continue
+            referenced = included_tweets.get(reference_id)
+            if referenced is None:
+                missing_references += 1
+                references.append(
+                    {
+                        "id": reference_id,
+                        "type": reference_type,
+                        "status": "unavailable",
+                    }
+                )
+                continue
+
+            author_id = referenced.get("author_id")
+            username = username_by_author_id.get(author_id)
+            references.append(
+                {
+                    "id": reference_id,
+                    "type": reference_type,
+                    "status": "available",
+                    "text": " ".join((referenced.get("text") or "").split()),
+                    "authorId": author_id,
+                    "account": username,
+                    "publishedAt": referenced.get("created_at"),
+                    "url": (
+                        f"https://x.com/{username}/status/{reference_id}"
+                        if username
+                        else f"https://x.com/i/web/status/{reference_id}"
+                    ),
+                }
+            )
+
+        if missing_references:
+            completeness = "partial"
+        elif references:
+            completeness = "referenced_posts_available"
+        else:
+            completeness = "standalone"
+
+        return {
+            "version": "x-context-v1",
+            "tweetId": str(item.get("id") or ""),
+            "conversationId": item.get("conversation_id"),
+            "inReplyToUserId": item.get("in_reply_to_user_id"),
+            "completeness": completeness,
+            "references": references,
+        }
 
     @staticmethod
     def _first_media_image(

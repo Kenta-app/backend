@@ -132,6 +132,18 @@ SUMMARY_BACKFILL_LIMIT=50 docker compose --profile jobs run --rm summary-backfil
 
 ## Búsqueda reciente en X/Twitter
 
+La migración automática del servicio `migrate` añade
+`raw.news_raw.social_context` para conservar publicaciones citadas o respondidas.
+También amplía `processed.justification_sources` con la afirmación evaluada,
+postura, relevancia, clave de dominio y versión del método de evaluación de
+evidencia. Después de desplegar esta versión, comprueba que el servicio haya
+terminado correctamente antes de iniciar la API:
+
+```bash
+docker compose ps migrate
+docker compose logs --tail=100 migrate
+```
+
 Para leer publicaciones públicas se requiere `TWITTER_BEARER_TOKEN`; el
 Consumer Key y el Access Token de usuario no reemplazan ese token. Configurar
 en `.env` un Bearer Token de lectura y una consulta específica de hasta 512

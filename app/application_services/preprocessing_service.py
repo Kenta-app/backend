@@ -104,7 +104,25 @@ class PreprocessingService:
 
     def _build_raw_text(self, raw_news: RawNews) -> str:
         if (raw_news.platform or "").lower() in {"twitter", "x", "social"}:
-            return clean_social_text(raw_news.content_raw or raw_news.title_raw)
+            primary_text = clean_social_text(raw_news.content_raw or raw_news.title_raw)
+            context_parts = [f"Publicación analizada: {primary_text}"]
+            context = raw_news.social_context if isinstance(raw_news.social_context, dict) else {}
+            labels = {
+                "quoted": "Publicación citada",
+                "replied_to": "Publicación a la que responde",
+                "retweeted": "Publicación republicada",
+            }
+            for reference in context.get("references") or []:
+                if reference.get("status") != "available":
+                    continue
+                reference_text = clean_social_text(reference.get("text"))
+                if not reference_text:
+                    continue
+                label = labels.get(reference.get("type"), "Publicación relacionada")
+                account = str(reference.get("account") or "").strip().lstrip("@")
+                author = f" de {account}" if account else ""
+                context_parts.append(f"{label}{author}: {reference_text}")
+            return "\n".join(context_parts)
         return "\n".join(filter(None, [raw_news.title_raw, raw_news.content_raw]))
 
     def detectLanguage(self, text: str) -> str:

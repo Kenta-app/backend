@@ -35,6 +35,34 @@ class EvidenceSource(BaseModel):
     source: str = Field(..., description="Nombre del medio o verificador")
     title: str = Field(..., description="Título del artículo")
     excerpt: str = Field(..., description="Extracto relevante del artículo")
+    claim: Optional[str] = Field(default=None, description="Afirmación central evaluada")
+    evidenceStance: str = Field(
+        default="discusses",
+        description="Relación: supports, refutes, discusses o unrelated",
+    )
+    relevanceScore: Optional[float] = Field(default=None, ge=0, le=1)
+    independenceKey: Optional[str] = Field(default=None)
+    assessmentMethod: str = Field(default="legacy_related_source")
+    assessmentVersion: str = Field(default="evidence-policy-2026-10-25-v5")
+    sourceRole: str = Field(default="independent_evidence")
+    independenceEligible: bool = True
+
+
+class EvidenceAssessment(BaseModel):
+    status: str = Field(
+        ...,
+        description="supported, disputed, mixed o insufficient_evidence",
+    )
+    supportingSources: int = 0
+    refutingSources: int = 0
+    contextualSources: int = 0
+    unrelatedSources: int = 0
+    primaryContextSources: int = 0
+    totalSourceRecords: int = 0
+    distinctPublisherSources: int = 0
+    minimumDistinctPublisherAgreement: int = 2
+    independenceStatus: str = "publisher_domain_only"
+    assessmentVersion: str
 
 
 class SupportingSource(BaseModel):
@@ -63,7 +91,11 @@ class MlPredictionSummary(BaseModel):
     Resultado del modelo ML separado de la evidencia periodística.
     """
 
-    fake_score: float = Field(..., description="Puntuación de falsedad (0-1)")
+    fake_score: Optional[float] = Field(
+        default=None,
+        description="Puntuación interna de falsedad (0-1), omitida si la política pública la retiene",
+    )
+    analysis_status: str = Field(default="available")
     sentiment_label: Optional[str] = Field(
         default=None,
         description="Etiqueta de sentimiento/postura",
@@ -77,6 +109,7 @@ class JustificationResponse(BaseModel):
 
     prediction_id: int = Field(..., description="ID de la predicción justificada")
     sources: list[EvidenceSource] = Field(default_factory=list)
+    evidence_assessment: EvidenceAssessment
     verification_summary: VerificationSummary
     ml_prediction: MlPredictionSummary = Field(
         ...,

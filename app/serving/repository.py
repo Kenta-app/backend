@@ -4,12 +4,14 @@ from datetime import datetime
 from typing import List
 import unicodedata
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, not_, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 
 from app.interfaces.news_repository import INewsRepository
 from app.raw.models import Source
+from app.ml.risk_policy import FakeNewsRiskPolicy
+from app.source_authority import OFFICIAL_SOURCE_NAMES
 from app.serving.models import PublishedNews
 
 
@@ -53,12 +55,17 @@ class NewsRepository(INewsRepository):
         title: str | None = None,
         since: datetime | None = None,
         before: tuple[datetime, int] | None = None,
+        riskLevels: set[str] | None = None,
     ) -> tuple[List[PublishedNews], int]:
-        query = self.db.query(PublishedNews).filter(PublishedNews.published_at.isnot(None))
+        query = (
+            self.db.query(PublishedNews)
+            .join(Source, PublishedNews.source_id == Source.source_id)
+            .filter(PublishedNews.published_at.isnot(None))
+        )
         if sourceId is not None:
             query = query.filter(PublishedNews.source_id == sourceId)
         elif sourceName:
-            query = query.join(Source).filter(Source.name == sourceName)
+            query = query.filter(Source.name == sourceName)
         if title:
             normalized_title = "".join(
                 char for char in unicodedata.normalize("NFKD", title.casefold())
@@ -75,6 +82,8 @@ class NewsRepository(INewsRepository):
             query = query.filter(func.lower(folded_column).like(f"%{escaped}%", escape="\\"))
         if since is not None:
             query = query.filter(PublishedNews.published_at >= since)
+        if riskLevels is not None:
+            query = query.filter(self._risk_filter(riskLevels))
 
         total = query.count()
         query = query.options(joinedload(PublishedNews.source)).order_by(
@@ -92,6 +101,32 @@ class NewsRepository(INewsRepository):
             query = query.offset((page - 1) * pageSize)
         items = query.limit(pageSize + 1).all()
         return items, total
+
+    @staticmethod
+    def _risk_filter(risk_levels: set[str]):
+        policy = FakeNewsRiskPolicy.from_environment()
+        official_source = func.lower(Source.name).in_(OFFICIAL_SOURCE_NAMES)
+        ordinary_source = not_(official_source)
+        conditions = []
+        if "not_assessed" in risk_levels:
+            conditions.append(official_source)
+        if "likely_real" in risk_levels:
+            conditions.append(
+                and_(ordinary_source, PublishedNews.fake_score <= policy.low_threshold)
+            )
+        if "indeterminate" in risk_levels:
+            conditions.append(
+                and_(
+                    ordinary_source,
+                    PublishedNews.fake_score > policy.low_threshold,
+                    PublishedNews.fake_score < policy.high_threshold,
+                )
+            )
+        if "likely_fake" in risk_levels:
+            conditions.append(
+                and_(ordinary_source, PublishedNews.fake_score >= policy.high_threshold)
+            )
+        return or_(*conditions)
 
     def save(self, news: PublishedNews) -> PublishedNews:
         self.db.add(news)

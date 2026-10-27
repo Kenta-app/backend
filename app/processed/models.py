@@ -207,6 +207,12 @@ class JustificationSource(Base):
     source = Column(String(255), nullable=False)
     title = Column(Text, nullable=False)
     excerpt = Column(Text, nullable=False)
+    claim = Column(Text, nullable=True)
+    evidence_stance = Column(String(20), nullable=False, default="discusses", index=True)
+    relevance_score = Column(Numeric(5, 4), nullable=True)
+    independence_key = Column(String(255), nullable=True, index=True)
+    assessment_method = Column(String(50), nullable=False, default="legacy_related_source")
+    assessment_version = Column(String(50), nullable=False, default="evidence-policy-2026-10-25-v5")
     model_used = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 

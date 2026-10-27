@@ -2,7 +2,11 @@
 .env
 .env.*
 !.env.example
-node_modules/**
+# Node dependencies at any directory depth
+node_modules/
+
+# Local Codex artifact workspaces
+.codex_artifact_*/
 # Python/runtime artifacts
 .venv/
 venv/
