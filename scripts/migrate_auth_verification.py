@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect, text
 
 
 def main() -> None:
-    database_url = os.getenv("DATABASE_URL")
+    load_dotenv(encoding="utf-8-sig")
+    database_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_DATABASE_URL")
     if not database_url:
-        raise RuntimeError("DATABASE_URL es obligatoria para ejecutar la migración.")
+        raise RuntimeError("DATABASE_URL o MYSQL_DATABASE_URL es obligatoria para ejecutar la migración.")
 
     engine = create_engine(database_url, pool_pre_ping=True)
     try:
@@ -25,7 +27,22 @@ def main() -> None:
             "ALTER TABLE raw.source ADD COLUMN IF NOT EXISTS source_account VARCHAR(100)",
             "ALTER TABLE raw.source ADD COLUMN IF NOT EXISTS search_query VARCHAR(512)",
             "ALTER TABLE raw.news_raw ADD COLUMN IF NOT EXISTS image_url TEXT",
+            "ALTER TABLE raw.news_raw ADD COLUMN IF NOT EXISTS social_context JSONB",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS source_account VARCHAR(100)",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS display_text TEXT",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS content_type VARCHAR(30) NOT NULL DEFAULT 'article'",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS content_warning VARCHAR(50)",
+            "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS external_links JSONB",
             "ALTER TABLE serving.news ADD COLUMN IF NOT EXISTS image_url TEXT",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS claim TEXT",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS evidence_stance VARCHAR(20) NOT NULL DEFAULT 'discusses'",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS relevance_score NUMERIC(5, 4)",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS independence_key VARCHAR(255)",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS assessment_method VARCHAR(50) NOT NULL DEFAULT 'legacy_related_source'",
+            "ALTER TABLE processed.justification_sources ADD COLUMN IF NOT EXISTS assessment_version VARCHAR(50) NOT NULL DEFAULT 'evidence-policy-2026-10-25-v4'",
+            "ALTER TABLE processed.justification_sources ALTER COLUMN assessment_version SET DEFAULT 'evidence-policy-2026-10-25-v4'",
+            "CREATE INDEX IF NOT EXISTS ix_justification_sources_evidence_stance ON processed.justification_sources (evidence_stance)",
+            "CREATE INDEX IF NOT EXISTS ix_justification_sources_independence_key ON processed.justification_sources (independence_key)",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS birth_date DATE",
             "ALTER TABLE serving.users ADD COLUMN IF NOT EXISTS gender VARCHAR(50)",
             # Verificación de correo y evidencia de aceptación de documentos.
@@ -97,7 +114,7 @@ def main() -> None:
             ],
             "news_reactions": [
                 "ALTER TABLE serving.news_reactions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
-                "UPDATE serving.news_reactions SET updated_at = created_at WHERE updated_at IS NULL",
+                "UPDATE serving.news_reactions SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL",
                 "ALTER TABLE serving.news_reactions ALTER COLUMN updated_at SET NOT NULL",
             ],
         }

@@ -15,11 +15,14 @@ from app.application_services.publishing_service import PublishingService
 from app.db.database import get_db
 from app.dependencies import build_justification_reader, get_current_user, get_publishing_service
 from app.interfaces.justification_service import IJustificationService
-from app.processed.models import MlPrediction
-from app.raw.models import Source
+from app.processed.models import MlPrediction, ProcessedNews
+from app.raw.models import RawNews, Source
 from app.serving.models import PublishedNews, User
 
 router = APIRouter(prefix="/news", tags=["News"])
+
+ALLOWED_RISK_LEVELS = {"likely_real", "indeterminate", "likely_fake", "not_assessed"}
+DEFAULT_RISK_LEVELS = {"likely_real", "indeterminate", "not_assessed"}
 
 
 def _encode_feed_cursor(news: PublishedNews) -> str:
@@ -53,6 +56,15 @@ def _feed_since(time_range: str) -> datetime | None:
     if time_range == "month":
         return (now - timedelta(days=30)).replace(tzinfo=None)
     return None
+
+
+def _parse_risk_levels(value: str | None) -> set[str]:
+    if value is None:
+        return set(DEFAULT_RISK_LEVELS)
+    levels = {item.strip() for item in value.split(",") if item.strip()}
+    if not levels or not levels.issubset(ALLOWED_RISK_LEVELS):
+        raise HTTPException(status_code=422, detail="Filtro de riesgo inválido.")
+    return levels
 
 
 class NewsController(BaseController):
@@ -100,6 +112,7 @@ class NewsController(BaseController):
             title=(filters.get("title") or "").strip() or None,
             since=_feed_since(filters.get("timeRange") or "all"),
             before=_decode_feed_cursor(filters.get("cursor")),
+            riskLevels=_parse_risk_levels(filters.get("riskLevels")),
         )
         published_items = items[:pageSize]
         serialized = [serialize_published_news(item) for item in published_items]
@@ -124,6 +137,15 @@ class NewsController(BaseController):
             )
             .first()
         )
+        raw_news = (
+            self.db.query(RawNews)
+            .join(ProcessedNews, ProcessedNews.news_raw_id == RawNews.news_raw_id)
+            .filter(
+                ProcessedNews.news_processed_id
+                == news.representative_news_processed_id
+            )
+            .first()
+        )
 
         return self.successResponse(
             serialize_published_news(
@@ -131,6 +153,7 @@ class NewsController(BaseController):
                 sources=evidence_sources,
                 source_name=source.name if source else None,
                 prediction_id=prediction.prediction_id if prediction else None,
+                social_context=raw_news.social_context if raw_news else None,
             )
         )
 
@@ -162,12 +185,20 @@ def get_news_feed(
     title: str | None = Query(default=None, max_length=200),
     timeRange: str = Query(default="all", pattern="^(all|today|week|month)$"),
     cursor: str | None = Query(default=None, max_length=200),
+    riskLevels: str | None = Query(default=None, max_length=100),
     controller: NewsController = Depends(get_news_controller),
 ):
     return controller.getNewsFeed(
         page,
         pageSize,
-        {"sourceId": sourceId, "sourceName": sourceName, "title": title, "timeRange": timeRange, "cursor": cursor},
+        {
+            "sourceId": sourceId,
+            "sourceName": sourceName,
+            "title": title,
+            "timeRange": timeRange,
+            "cursor": cursor,
+            "riskLevels": riskLevels,
+        },
     )
 
 

@@ -61,10 +61,17 @@ class IngestionService:
         except Exception as exc:
             self.db.rollback()
             logger.exception("Error ingesting source %s", sourceId)
-            log.markFailed(str(exc))
+            log.markFailed(self._bounded_failure_message(exc))
             self.db.add(log)
             self.db.commit()
             raise
+
+    @staticmethod
+    def _bounded_failure_message(exc: Exception) -> str:
+        """Fit ingestion diagnostics in the database column without masking the cause."""
+        message = " ".join(str(exc).split())
+        bounded = f"{type(exc).__name__}: {message}"
+        return bounded[:500]
 
     @staticmethod
     def _normalize_raw_news(raw_news: RawNews) -> bool:

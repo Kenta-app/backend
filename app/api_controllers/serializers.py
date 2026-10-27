@@ -5,7 +5,9 @@ import os
 from app.processed.models import MlPrediction, Summary
 from app.processed.text_utils import finish_truncated, repair_english_intrusions
 from app.ml.risk_policy import FakeNewsRiskPolicy
+from app.evidence_assessment import build_evidence_assessment
 from app.raw.models import RawNews, Source
+from app.source_authority import source_authority_policy
 from app.serving.models import (
     NewsClick,
     NewsDetailClick,
@@ -53,11 +55,23 @@ def serialize_published_news(
     source_name: str | None = None,
     prediction_id: int | None = None,
     sources: list[dict] | None = None,
+    social_context: dict | None = None,
 ) -> dict:
     stance_public = _stance_public_enabled()
     risk_policy = FakeNewsRiskPolicy.from_environment()
-    fake_score = float(news.fake_score)
-    risk_level = risk_policy.classify(fake_score)
+    raw_fake_score = float(news.fake_score)
+    authority = source_authority_policy(
+        news.source,
+        source_name=source_name,
+        source_url=news.original_url,
+    )
+    withhold_risk = bool(
+        authority
+        and authority.public_risk_policy == "withhold_pending_source_audit"
+    )
+    fake_score = None if withhold_risk else raw_fake_score
+    risk_level = "not_assessed" if withhold_risk else risk_policy.classify(raw_fake_score)
+    analysis_status = "withheld_source_policy" if withhold_risk else "available"
     payload = {
         "newsId": news.news_id,
         "representativeNewsProcessedId": news.representative_news_processed_id,
@@ -80,10 +94,15 @@ def serialize_published_news(
         "riskLevel": risk_level,
         "riskThresholds": risk_policy.thresholds(),
         "highRisk": risk_level == "likely_fake",
+        "analysisStatus": analysis_status,
+        "sourceAuthority": authority.as_payload() if authority else None,
         "publishedAt": news.published_at.isoformat() if news.published_at else None,
     }
     if sources is not None:
         payload["sources"] = sources
+        payload["evidenceAssessment"] = build_evidence_assessment(sources)
+    if social_context is not None:
+        payload["socialContext"] = social_context
     return payload
 
 
@@ -98,6 +117,7 @@ def serialize_raw_news(raw_news: RawNews) -> dict:
         "imageUrl": raw_news.image_url,
         "titleRaw": raw_news.title_raw,
         "authorRaw": raw_news.author_raw,
+        "socialContext": raw_news.social_context,
         "publishedAt": raw_news.published_at.isoformat() if raw_news.published_at else None,
         "scrapedAt": raw_news.scraped_at.isoformat() if raw_news.scraped_at else None,
         "status": raw_news.status,
