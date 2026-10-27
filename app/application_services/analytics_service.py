@@ -604,8 +604,18 @@ class AnalyticsService:
             item["totalFavorites"] = int(count or 0)
             merge_activity(item, first, last)
 
+        identities = {
+            user.user_id: user
+            for user in self.db.query(User)
+            .filter(User.user_id.in_(metrics.keys()))
+            .all()
+        } if metrics else {}
+
         output = []
         for item in metrics.values():
+            identity = identities.get(item["userId"])
+            item["username"] = identity.username if identity else None
+            item["email"] = identity.email if identity else None
             item["firstActiveAt"] = (
                 item["firstActiveAt"].isoformat() if item["firstActiveAt"] else None
             )

@@ -49,7 +49,7 @@ def seed_news(db):
     return user, admin, news
 
 
-def test_batch_is_idempotent_and_analytics_are_pseudonymized():
+def test_batch_is_idempotent_and_analytics_include_participant_identity():
     engine, db = build_db()
     try:
         user, admin, news = seed_news(db)
@@ -121,6 +121,8 @@ def test_batch_is_idempotent_and_analytics_are_pseudonymized():
                 **metrics["participants"][0],
                 "userId": user.user_id,
                 "participantCode": f"P-{user.user_id:04d}",
+                "username": "participant",
+                "email": "participant@example.com",
                 "totalViews": 1,
                 "totalReadingTimeSec": 20,
                 "totalDetailClicks": 1,
