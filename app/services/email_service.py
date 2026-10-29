@@ -35,6 +35,35 @@ class ResendEmailSender:
             ),
         )
 
+    def sendPasswordResetLink(self, email: str, token: str) -> None:
+        if not self.apiKey or not self.fromAddress:
+            raise EmailDeliveryError("El servicio de correo no está configurado.")
+
+        ttl_minutes = int(os.getenv("PASSWORD_RESET_TTL_MINUTES", "20"))
+        public_url = os.getenv("FRONTEND_PUBLIC_URL", "https://ikenta.app").rstrip("/")
+        reset_url = f"{public_url}/reset-password?token={token}"
+        self._send(
+            email,
+            "Restablece tu contraseña de Kenta",
+            (
+                "Recibimos una solicitud para restablecer tu contraseña de Kenta.\n\n"
+                f"Continúa aquí: {reset_url}\n\n"
+                f"El enlace vence en {ttl_minutes} minutos y solo puede usarse una vez. "
+                "Si no hiciste esta solicitud, ignora este correo; tu contraseña no cambiará."
+            ),
+        )
+
+    def sendPasswordChangedNotice(self, email: str) -> None:
+        self._send(
+            email,
+            "Tu contraseña de Kenta fue actualizada",
+            (
+                "La contraseña de tu cuenta de Kenta fue actualizada correctamente.\n\n"
+                "Si tú no realizaste este cambio, solicita inmediatamente un nuevo "
+                "enlace de recuperación y contacta al equipo de Kenta."
+            ),
+        )
+
     def sendStudyReminder(self, email: str, username: str) -> None:
         public_url = os.getenv("FRONTEND_PUBLIC_URL", "https://ikenta.app").rstrip("/")
         display_name = username.strip() or "participante"

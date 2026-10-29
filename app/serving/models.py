@@ -51,6 +51,34 @@ class User(Base):
         return (self.role or "").lower() in {"admin", "moderator", "moderador"}
 
 
+class PasswordResetRequest(Base):
+    """Auditable, privacy-preserving password-reset request.
+
+    Raw email addresses, client IPs and reset tokens are never stored here.
+    """
+
+    __tablename__ = "password_reset_requests"
+    __table_args__ = (
+        Index("ix_password_reset_email_requested", "email_fingerprint", "requested_at"),
+        Index("ix_password_reset_ip_requested", "ip_fingerprint", "requested_at"),
+        {"schema": "serving"},
+    )
+
+    reset_request_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("serving.users.user_id"),
+        nullable=True,
+        index=True,
+    )
+    email_fingerprint = Column(String(64), nullable=False)
+    ip_fingerprint = Column(String(64), nullable=False)
+    token_hash = Column(String(64), nullable=True, unique=True, index=True)
+    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=True, index=True)
+    used_at = Column(DateTime, nullable=True, index=True)
+
+
 class DrawConfirmation(Base):
     """Prize-data confirmation submitted by a draw winner."""
 

@@ -43,7 +43,7 @@ class EvidenceSource(BaseModel):
     relevanceScore: Optional[float] = Field(default=None, ge=0, le=1)
     independenceKey: Optional[str] = Field(default=None)
     assessmentMethod: str = Field(default="legacy_related_source")
-    assessmentVersion: str = Field(default="evidence-policy-2026-10-25-v5")
+    assessmentVersion: str = Field(default="evidence-policy-2026-10-27-v6")
     sourceRole: str = Field(default="independent_evidence")
     independenceEligible: bool = True
 

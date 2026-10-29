@@ -191,7 +191,7 @@ def candidate_rows(db, output_dir: Path) -> list[dict[str, Any]]:
     return candidates
 
 
-def readiness(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+def readiness(candidates: list[dict[str, Any]], protocol: str) -> dict[str, Any]:
     unique_groups = len({row["group_key"] for row in candidates})
     social = [row for row in candidates if row["is_social"]]
     web = [row for row in candidates if not row["is_social"]]
@@ -212,7 +212,7 @@ def readiness(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     }
     return {
         "audited_at_utc": utc_now(),
-        "protocol": DEFAULT_PROTOCOL,
+        "protocol": protocol,
         "eligible_candidate_n": len(candidates),
         "eligible_unique_group_n": unique_groups,
         "platform_counts": dict(Counter("social" if row["is_social"] else "web" for row in candidates)),
@@ -256,7 +256,11 @@ def selection_is_valid(rows: list[dict[str, Any]]) -> bool:
     return all(risks[band] >= minimum for band, minimum in RISK_MINIMUMS.items())
 
 
-def select_sample(candidates: list[dict[str, Any]], seed: int) -> list[dict[str, Any]]:
+def select_sample(
+    candidates: list[dict[str, Any]],
+    seed: int,
+    case_prefix: str,
+) -> list[dict[str, Any]]:
     rng = random.Random(seed)
     by_group: dict[str, dict[str, Any]] = {}
     for row in candidates:
@@ -269,7 +273,7 @@ def select_sample(candidates: list[dict[str, Any]], seed: int) -> list[dict[str,
         if selection_is_valid(chosen):
             rng.shuffle(chosen)
             for index, row in enumerate(chosen, start=1):
-                row["case_id"] = f"C6-{index:03d}"
+                row["case_id"] = f"{case_prefix}-{index:03d}"
             return chosen
     raise RuntimeError("Candidate pool passed marginal checks but no joint sample satisfied all constraints.")
 
@@ -286,6 +290,8 @@ def main() -> None:
     parser.add_argument("phase", choices=("audit", "freeze"))
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    parser.add_argument("--protocol", default=DEFAULT_PROTOCOL)
+    parser.add_argument("--case-prefix", default="C6")
     args = parser.parse_args()
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -295,7 +301,7 @@ def main() -> None:
         candidates = candidate_rows(db, output_dir)
     finally:
         db.close()
-    audit = readiness(candidates)
+    audit = readiness(candidates, args.protocol)
     audit_path = output_dir / "readiness.json"
     audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(audit, ensure_ascii=False, indent=2))
@@ -309,7 +315,7 @@ def main() -> None:
     manifest_path = output_dir / "selection_manifest.json"
     if frozen_path.exists() or manifest_path.exists():
         raise RuntimeError(f"Frozen sample already exists in {output_dir}; refusing to resample.")
-    selected = select_sample(candidates, args.seed)
+    selected = select_sample(candidates, args.seed, args.case_prefix)
     fields = [
         "case_id", "prediction_id", "news_id", "news_processed_id", "news_raw_id",
         "cluster_id", "group_key", "original_source", "source_type", "platform",
@@ -320,7 +326,7 @@ def main() -> None:
     ]
     write_csv(frozen_path, selected, fields)
     manifest = {
-        "protocol": DEFAULT_PROTOCOL,
+        "protocol": args.protocol,
         "phase": "frozen_before_retrieval",
         "confirmatory": True,
         "frozen_at_utc": utc_now(),

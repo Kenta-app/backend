@@ -389,9 +389,11 @@ def write_blind_annotation_csvs(
         "source_url", "review_status", "human_stance", "confidence", "notes",
     ]
     coverage_fields = [
-        "order", "case_id", "claim", "publication_context", "original_source",
-        "original_url", "returned_source_count", "coverage_status",
-        "missing_relevant_evidence", "missing_source_url", "notes",
+        "order", "case_id", "platform", "claim", "publication_context",
+        "social_context_completeness", "social_reference_count",
+        "social_reference_types", "original_source", "original_url",
+        "returned_source_count", "coverage_status", "missing_relevant_evidence",
+        "missing_source_url", "social_context_status", "notes",
     ]
     for annotator, seed in (("a", 20261025), ("b", 20261026)):
         rng = random.Random(seed)
@@ -415,6 +417,10 @@ def write_blind_annotation_csvs(
                 "coverage_status": "",
                 "missing_relevant_evidence": "",
                 "missing_source_url": "",
+                "social_context_status": (
+                    "" if str(row.get("is_social", "")).lower() == "true"
+                    else "not_applicable"
+                ),
                 "notes": "",
             }
             for row in coverage_rows
@@ -526,8 +532,13 @@ def run_retrieval(output_dir: Path) -> None:
         coverage_rows.append(
             {
                 "case_id": frozen["case_id"],
+                "platform": frozen["platform"],
+                "is_social": frozen["is_social"],
                 "claim": frozen["claim"],
                 "publication_context": frozen["publication_context"],
+                "social_context_completeness": frozen["social_context_completeness"],
+                "social_reference_count": frozen["social_reference_count"],
+                "social_reference_types": frozen["social_reference_types"],
                 "original_source": frozen["original_source"],
                 "original_url": frozen["original_url"],
                 "retrieval_status": result["status"],
@@ -568,8 +579,10 @@ def run_retrieval(output_dir: Path) -> None:
         output_dir / "coverage_annotation_key.csv",
         coverage_rows,
         [
-            "case_id", "claim", "publication_context", "original_source",
-            "original_url", "retrieval_status", "returned_source_count",
+            "case_id", "platform", "is_social", "claim", "publication_context",
+            "social_context_completeness", "social_reference_count",
+            "social_reference_types", "original_source", "original_url",
+            "retrieval_status", "returned_source_count",
         ],
     )
     write_blind_annotation_csvs(output_dir, source_rows, coverage_rows)

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import base64
+import binascii
 from datetime import datetime, timedelta
 import hashlib
 import hmac
+import logging
 import os
 import secrets
 from datetime import date
@@ -12,7 +14,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.services.email_service import EmailDeliveryError, ResendEmailSender
-from app.serving.models import User
+from app.serving.models import PasswordResetRequest, User
+
+
+logger = logging.getLogger(__name__)
 
 
 class EmailNotVerifiedError(ValueError):
@@ -39,6 +44,23 @@ class AuthService:
         )
         self.maxVerificationAttempts = int(
             os.getenv("EMAIL_VERIFICATION_MAX_ATTEMPTS", "5")
+        )
+        self.passwordResetSecret = os.getenv("PASSWORD_RESET_SECRET", "")
+        self.passwordResetTtlMinutes = int(os.getenv("PASSWORD_RESET_TTL_MINUTES", "20"))
+        self.passwordResetWindowMinutes = int(
+            os.getenv("PASSWORD_RESET_WINDOW_MINUTES", "15")
+        )
+        self.passwordResetMaxPerEmail = int(
+            os.getenv("PASSWORD_RESET_MAX_REQUESTS_PER_EMAIL", "3")
+        )
+        self.passwordResetMaxPerIp = int(
+            os.getenv("PASSWORD_RESET_MAX_REQUESTS_PER_IP", "10")
+        )
+        self.passwordResetRetentionDays = int(
+            os.getenv("PASSWORD_RESET_RETENTION_DAYS", "7")
+        )
+        self.passwordHashIterations = int(
+            os.getenv("PASSWORD_HASH_ITERATIONS", "600000")
         )
 
     def register(
@@ -99,6 +121,10 @@ class AuthService:
             raise ValueError("Credenciales invalidas.")
         if user.email_verified_at is None:
             raise EmailNotVerifiedError("Debes confirmar tu correo antes de iniciar sesión.")
+        if self._passwordHashNeedsUpgrade(user.password_hash):
+            user.password_hash = self.hashPassword(password)
+            self.db.commit()
+            self.db.refresh(user)
         return user
 
     def changePassword(self, user: User, currentPassword: str, newPassword: str) -> User:
@@ -107,6 +133,135 @@ class AuthService:
         if self.verifyPassword(newPassword, user.password_hash):
             raise ValueError("La nueva contraseña debe ser distinta de la actual.")
         user.password_hash = self.hashPassword(newPassword)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def requestPasswordReset(
+        self, email: str, clientIp: str
+    ) -> tuple[str, str] | None:
+        """Record a reset request and return delivery data only for a real account.
+
+        The controller always returns the same public response. Email delivery is
+        scheduled after the response to avoid an account-existence timing signal.
+        """
+        self._requirePasswordResetConfiguration()
+        normalized_email = email.strip().lower()
+        normalized_ip = (clientIp or "unknown").strip().lower()
+        email_fingerprint = self._passwordResetFingerprint(
+            "email", normalized_email
+        )
+        ip_fingerprint = self._passwordResetFingerprint("ip", normalized_ip)
+        now = datetime.utcnow()
+        window_start = now - timedelta(minutes=self.passwordResetWindowMinutes)
+        retention_start = now - timedelta(days=self.passwordResetRetentionDays)
+        (
+            self.db.query(PasswordResetRequest)
+            .filter(PasswordResetRequest.requested_at < retention_start)
+            .delete(synchronize_session=False)
+        )
+
+        email_count = (
+            self.db.query(PasswordResetRequest)
+            .filter(
+                PasswordResetRequest.email_fingerprint == email_fingerprint,
+                PasswordResetRequest.requested_at >= window_start,
+            )
+            .count()
+        )
+        ip_count = (
+            self.db.query(PasswordResetRequest)
+            .filter(
+                PasswordResetRequest.ip_fingerprint == ip_fingerprint,
+                PasswordResetRequest.requested_at >= window_start,
+            )
+            .count()
+        )
+        if (
+            email_count >= self.passwordResetMaxPerEmail
+            or ip_count >= self.passwordResetMaxPerIp
+        ):
+            return None
+
+        user = (
+            self.db.query(User)
+            .filter(func.lower(User.email) == normalized_email)
+            .first()
+        )
+        request_row = PasswordResetRequest(
+            user_id=user.user_id if user else None,
+            email_fingerprint=email_fingerprint,
+            ip_fingerprint=ip_fingerprint,
+            requested_at=now,
+        )
+
+        delivery: tuple[str, str] | None = None
+        if user:
+            token = secrets.token_urlsafe(32)
+            request_row.token_hash = self._hashPasswordResetToken(token)
+            request_row.expires_at = now + timedelta(
+                minutes=self.passwordResetTtlMinutes
+            )
+            (
+                self.db.query(PasswordResetRequest)
+                .filter(
+                    PasswordResetRequest.user_id == user.user_id,
+                    PasswordResetRequest.used_at.is_(None),
+                )
+                .update({PasswordResetRequest.used_at: now}, synchronize_session=False)
+            )
+            delivery = (user.email, token)
+
+        self.db.add(request_row)
+        self.db.commit()
+        return delivery
+
+    def sendPasswordResetEmail(self, email: str, token: str) -> None:
+        """Deliver a reset link without exposing provider failures to the client."""
+        try:
+            self.emailSender.sendPasswordResetLink(email, token)
+        except Exception:
+            logger.exception("Password-reset email delivery failed")
+
+    def sendPasswordChangedNotice(self, email: str) -> None:
+        try:
+            self.emailSender.sendPasswordChangedNotice(email)
+        except Exception:
+            logger.exception("Password-change notification delivery failed")
+
+    def resetPassword(self, token: str, newPassword: str) -> User:
+        self._requirePasswordResetConfiguration()
+        now = datetime.utcnow()
+        token_hash = self._hashPasswordResetToken(token)
+        reset_request = (
+            self.db.query(PasswordResetRequest)
+            .filter(PasswordResetRequest.token_hash == token_hash)
+            .first()
+        )
+        if (
+            not reset_request
+            or reset_request.user_id is None
+            or reset_request.used_at is not None
+            or reset_request.expires_at is None
+            or reset_request.expires_at < now
+        ):
+            raise ValueError("El enlace de recuperación es inválido o venció.")
+
+        user = self.db.query(User).filter(User.user_id == reset_request.user_id).first()
+        if not user:
+            raise ValueError("El enlace de recuperación es inválido o venció.")
+        if self.verifyPassword(newPassword, user.password_hash):
+            raise ValueError("La nueva contraseña debe ser distinta de la actual.")
+
+        user.password_hash = self.hashPassword(newPassword)
+        (
+            self.db.query(PasswordResetRequest)
+            .filter(
+                PasswordResetRequest.user_id == user.user_id,
+                PasswordResetRequest.used_at.is_(None),
+            )
+            .update({PasswordResetRequest.used_at: now}, synchronize_session=False)
+        )
         self.db.commit()
         self.db.refresh(user)
         return user
@@ -200,6 +355,22 @@ class AuthService:
         if not self.verificationSecret:
             raise EmailDeliveryError("El servicio de correo no está configurado.")
 
+    def _requirePasswordResetConfiguration(self) -> None:
+        if len(self.passwordResetSecret) < 32:
+            raise EmailDeliveryError(
+                "El servicio de recuperación de contraseña no está configurado."
+            )
+
+    def _passwordResetFingerprint(self, namespace: str, value: str) -> str:
+        return hmac.new(
+            self.passwordResetSecret.encode("utf-8"),
+            f"{namespace}:{value}".encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+
+    def _hashPasswordResetToken(self, token: str) -> str:
+        return self._passwordResetFingerprint("token", token)
+
     def _issueVerificationCode(self, user: User, now: datetime) -> str:
         code = f"{secrets.randbelow(900000) + 100000:06d}"
         user.email_verification_code_hash = self._hashVerificationCode(code)
@@ -219,15 +390,48 @@ class AuthService:
 
     def hashPassword(self, password: str) -> str:
         salt = os.urandom(16)
-        derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 120000)
-        return f"{base64.b64encode(salt).decode()}:{base64.b64encode(derived).decode()}"
+        derived = hashlib.pbkdf2_hmac(
+            "sha256",
+            password.encode("utf-8"),
+            salt,
+            self.passwordHashIterations,
+        )
+        return "$".join(
+            (
+                "pbkdf2_sha256",
+                str(self.passwordHashIterations),
+                base64.b64encode(salt).decode(),
+                base64.b64encode(derived).decode(),
+            )
+        )
 
     def verifyPassword(self, password: str, passwordHash: str) -> bool:
         try:
-            salt_b64, derived_b64 = passwordHash.split(":")
-        except ValueError:
+            if passwordHash.startswith("pbkdf2_sha256$"):
+                algorithm, iterations_text, salt_b64, derived_b64 = passwordHash.split("$")
+                if algorithm != "pbkdf2_sha256":
+                    return False
+                iterations = int(iterations_text)
+                if iterations < 100000 or iterations > 2000000:
+                    return False
+            else:
+                salt_b64, derived_b64 = passwordHash.split(":")
+                iterations = 120000
+            salt = base64.b64decode(salt_b64.encode(), validate=True)
+            expected = base64.b64decode(derived_b64.encode(), validate=True)
+        except (ValueError, TypeError, binascii.Error):
             return False
-        salt = base64.b64decode(salt_b64.encode())
-        expected = base64.b64decode(derived_b64.encode())
-        current = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 120000)
+        current = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, iterations
+        )
         return hmac.compare_digest(expected, current)
+
+    def _passwordHashNeedsUpgrade(self, passwordHash: str) -> bool:
+        try:
+            algorithm, iterations_text, _, _ = passwordHash.split("$")
+            return (
+                algorithm != "pbkdf2_sha256"
+                or int(iterations_text) < self.passwordHashIterations
+            )
+        except (ValueError, TypeError):
+            return True

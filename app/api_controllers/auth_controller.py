@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import date
+import os
 import re
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
 
 from app.api_controllers.base_controller import BaseController
@@ -88,6 +89,23 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: str = Field(min_length=5, max_length=255)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", normalized):
+            raise ValueError("Ingresa un correo válido.")
+        return normalized
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=32, max_length=128)
+    newPassword: str = Field(min_length=8, max_length=128)
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -247,6 +265,69 @@ class AuthController(BaseController):
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return self.successResponse({"email": email.strip().lower(), "verificationRequired": True})
 
+    def postForgotPassword(
+        self,
+        email: str,
+        clientIp: str,
+        backgroundTasks: BackgroundTasks,
+    ) -> dict:
+        try:
+            delivery = self.authService.requestPasswordReset(email, clientIp)
+        except EmailDeliveryError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        if delivery:
+            backgroundTasks.add_task(
+                self.authService.sendPasswordResetEmail,
+                delivery[0],
+                delivery[1],
+            )
+        return self.successResponse(
+            {
+                "message": (
+                    "Si existe una cuenta asociada, recibirás un enlace de "
+                    "recuperación en los próximos minutos."
+                )
+            }
+        )
+
+    def postResetPassword(
+        self,
+        response: Response,
+        token: str,
+        newPassword: str,
+        backgroundTasks: BackgroundTasks,
+    ) -> dict:
+        try:
+            user = self.authService.resetPassword(token, newPassword)
+        except EmailDeliveryError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        response.delete_cookie(
+            key=self.sessionService.cookie_name,
+            httponly=True,
+            secure=self.sessionService.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+        backgroundTasks.add_task(
+            self.authService.sendPasswordChangedNotice,
+            user.email,
+        )
+        return self.successResponse({"changed": True})
+
+
+def _password_reset_client_ip(request: Request) -> str:
+    direct_ip = request.client.host if request.client else "unknown"
+    trust_proxy = os.getenv("PASSWORD_RESET_TRUST_PROXY_HEADERS", "false").lower() in {
+        "1", "true", "yes", "on"
+    }
+    if not trust_proxy:
+        return direct_ip
+    forwarded = request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for", "")
+    candidate = forwarded.split(",", 1)[0].strip()
+    return candidate or direct_ip
+
 
 def get_auth_controller(
     auth_service: AuthService = Depends(get_auth_service),
@@ -329,3 +410,32 @@ def post_resend_verification(
     controller: AuthController = Depends(get_auth_controller),
 ):
     return controller.postResendVerification(payload.email)
+
+
+@router.post("/forgot-password", status_code=202)
+def post_forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.postForgotPassword(
+        payload.email,
+        _password_reset_client_ip(request),
+        background_tasks,
+    )
+
+
+@router.post("/reset-password")
+def post_reset_password(
+    payload: ResetPasswordRequest,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.postResetPassword(
+        response,
+        payload.token,
+        payload.newPassword,
+        background_tasks,
+    )

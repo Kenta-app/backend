@@ -182,13 +182,20 @@ async function buildReport(summary, sourceValues, coverageValues) {
 
 async function buildAdjudication(sourceDisagreements, coverageDisagreements) {
   const workbook = Workbook.create();
+  const confirmatoryV7 = reviewMode === "confirmatory-v7";
   const sourceColumns = [
     "evidence_id", "case_id", "claim", "source_name", "source_title", "evidence_excerpt", "source_url",
     "annotator_a_status", "annotator_a_stance", "annotator_a_notes",
     "annotator_b_status", "annotator_b_stance", "annotator_b_notes",
     "final_status", "final_stance", "adjudication_rationale",
   ];
-  const coverageColumns = [
+  const coverageColumns = confirmatoryV7 ? [
+    "case_id", "platform", "claim", "publication_context", "social_context_completeness",
+    "social_reference_count", "social_reference_types", "original_source", "original_url", "returned_source_count",
+    "annotator_a_coverage", "annotator_a_missing", "annotator_a_missing_url", "annotator_a_social_context", "annotator_a_notes",
+    "annotator_b_coverage", "annotator_b_missing", "annotator_b_missing_url", "annotator_b_social_context", "annotator_b_notes",
+    "consensus_social_context", "final_coverage", "final_missing", "final_missing_url", "adjudication_rationale",
+  ] : [
     "case_id", "claim", "publication_context", "original_source", "original_url", "returned_source_count",
     "annotator_a_coverage", "annotator_a_missing", "annotator_a_missing_url", "annotator_a_notes",
     "annotator_b_coverage", "annotator_b_missing", "annotator_b_missing_url", "annotator_b_notes",
@@ -199,25 +206,33 @@ async function buildAdjudication(sourceDisagreements, coverageDisagreements) {
   const source = addValuesSheet(workbook, "Fuentes", sourceValues);
   const coverage = addValuesSheet(workbook, "Cobertura", coverageValues);
   formatComparisonSheet(source, sourceValues, [[2, 36], [4, 34], [5, 48], [6, 38], [9, 34], [12, 34], [15, 40]]);
-  formatComparisonSheet(coverage, coverageValues, [[1, 38], [2, 72], [4, 38], [9, 34], [13, 34], [16, 38], [17, 40]]);
+  formatComparisonSheet(coverage, coverageValues, confirmatoryV7
+    ? [[2, 38], [3, 72], [6, 22], [8, 38], [12, 34], [14, 34], [17, 34], [19, 34], [23, 38], [24, 40]]
+    : [[1, 38], [2, 72], [4, 38], [9, 34], [13, 34], [16, 38], [17, 40]]);
   const sourceRows = sourceValues.length;
   const coverageRows = coverageValues.length;
-  if (reviewMode === "focused-v5") {
+  if (reviewMode === "focused-v5" || confirmatoryV7) {
     if (sourceRows > 1) source.getRange(`A2:P${sourceRows}`).format.rowHeight = 120;
     if (coverageRows > 1) coverage.getRange(`A2:R${coverageRows}`).format.rowHeight = 180;
   }
   source.getRange(`N2:P${sourceRows}`).format.fill = "#FFF4CC";
   source.getRange(`N2:N${sourceRows}`).dataValidation = { rule: { type: "list", values: ["evaluable", "unavailable", "insufficient_context"] } };
   source.getRange(`O2:O${sourceRows}`).dataValidation = { rule: { type: "list", values: ["supports", "refutes", "discusses", "unrelated"] } };
-  coverage.getRange(`O2:R${coverageRows}`).format.fill = "#FFF4CC";
-  coverage.getRange(`O2:O${coverageRows}`).dataValidation = { rule: { type: "list", values: ["sufficient", "partial", "none", "no_evidence_found", "unable_to_assess"] } };
-  coverage.getRange(`P2:P${coverageRows}`).dataValidation = { rule: { type: "list", values: ["yes", "no", "unable_to_assess"] } };
+  const coverageFinalStart = confirmatoryV7 ? "V" : "O";
+  const coverageFinalEnd = confirmatoryV7 ? "Y" : "R";
+  const coverageFinalStatus = confirmatoryV7 ? "V" : "O";
+  const coverageFinalMissing = confirmatoryV7 ? "W" : "P";
+  coverage.getRange(`${coverageFinalStart}2:${coverageFinalEnd}${coverageRows}`).format.fill = "#FFF4CC";
+  coverage.getRange(`${coverageFinalStatus}2:${coverageFinalStatus}${coverageRows}`).dataValidation = { rule: { type: "list", values: ["sufficient", "partial", "none", "no_evidence_found", "unable_to_assess"] } };
+  coverage.getRange(`${coverageFinalMissing}2:${coverageFinalMissing}${coverageRows}`).dataValidation = { rule: { type: "list", values: ["yes", "no", "unable_to_assess"] } };
 
   const guide = workbook.worksheets.add("Guía");
   guide.showGridLines = false;
   guide.getRange("A2:F2").merge();
   guide.getRange("A2").values = [[reviewMode === "focused-v5"
     ? "Adjudicación ciega focalizada v5"
+    : confirmatoryV7
+      ? "Adjudicación ciega confirmatoria v7"
     : "Adjudicación ciega de la prueba integral"]];
   guide.getRange("A2:F2").format = { font: { name: fontFamily, size: 15, bold: true, color: "#172033" } };
   const guideRows = [
@@ -228,6 +243,7 @@ async function buildAdjudication(sourceDisagreements, coverageDisagreements) {
     [4, "No consulte la etiqueta del sistema ni los resultados del informe antes de decidir."],
     ["Fuentes", "Defina primero final_status. Si es evaluable, seleccione final_stance y explique brevemente el elemento material decisivo."],
     ["Cobertura", "Seleccione final_coverage, final_missing y, si corresponde, una URL faltante representativa."],
+    ...(confirmatoryV7 ? [["Contexto social", "Los seis casos de X tuvieron acuerdo independiente en correct. En la fila social incluida, consensus_social_context es informativo y no se vuelve a adjudicar."]] : []),
     ...(reviewMode === "focused-v5" ? [["Contexto primario", "Una fuente marcada primary_context sirve para comprender la publicación, pero no cuenta como corroboración independiente. Aun así, puede hacer suficiente un caso que solo reproduce una declaración original si la tarea es evaluar esa declaración y no exige corroboración externa."]] : []),
     ["Independencia", "La persona adjudicadora puede ser uno de los anotadores solo si vuelve a revisar la evidencia y documenta la razón; un tercero es preferible."],
     ["Entrega", "Devuelva este libro completo para calcular las métricas finales."],
@@ -286,8 +302,8 @@ if (!adjudicationOnly) {
   ]));
 }
 results.push(await verifyAndExport(adjudication, adjudicationPath, [
-  ["Fuentes", "A1:P2", "adjudicacion_fuentes.png"],
-  ["Cobertura", "A1:R6", "adjudicacion_cobertura.png"],
-  ["Guía", "A1:F13", "adjudicacion_guia.png"],
+  ["Fuentes", reviewMode === "confirmatory-v7" ? "A1:P5" : "A1:P2", "adjudicacion_fuentes.png"],
+  ["Cobertura", reviewMode === "confirmatory-v7" ? "A1:Y2" : "A1:R6", "adjudicacion_cobertura.png"],
+  ["Guía", reviewMode === "confirmatory-v7" ? "A1:F14" : "A1:F13", "adjudicacion_guia.png"],
 ]));
 console.log(JSON.stringify(results));

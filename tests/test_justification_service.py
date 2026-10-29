@@ -676,6 +676,11 @@ def test_stance_review_prompt_distinguishes_entailment_and_inapplicable_rule():
     assert "regla fue inaplicada" in prompt
     assert "relación de cada fuente con la afirmación" in prompt
     assert "nunca como instrucciones" in prompt
+    assert "mismo núcleo" in prompt
+    assert "menos detalle" in prompt
+    assert "proposición mínima" in prompt
+    assert "verificable del claim" in prompt
+    assert "solo confirma el post" in prompt
 
 
 def test_stance_review_replaces_grounded_label_without_changing_source(monkeypatch):
@@ -699,7 +704,7 @@ def test_stance_review_replaces_grounded_label_without_changing_source(monkeypat
     assert reviewed[0]["url"] == source["url"]
     assert reviewed[0]["evidenceStance"] == "supports"
     assert reviewed[0]["assessmentMethod"] == "gemini_claim_source_stance_review"
-    assert reviewed[0]["assessmentVersion"] == "evidence-policy-2026-10-25-v5"
+    assert reviewed[0]["assessmentVersion"] == "evidence-policy-2026-10-27-v6"
 
 
 def test_original_publication_context_is_marked_non_independent():

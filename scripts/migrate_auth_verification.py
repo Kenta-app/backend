@@ -64,6 +64,25 @@ def main() -> None:
             "CREATE INDEX IF NOT EXISTS ix_users_email_verified_at ON serving.users (email_verified_at)",
             "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_opted_in_at ON serving.users (study_reminder_opted_in_at)",
             "CREATE INDEX IF NOT EXISTS ix_users_study_reminder_sent_at ON serving.users (study_reminder_sent_at)",
+            # Recuperación de contraseña: solo se guardan huellas criptográficas.
+            """
+            CREATE TABLE IF NOT EXISTS serving.password_reset_requests (
+                reset_request_id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES serving.users(user_id),
+                email_fingerprint VARCHAR(64) NOT NULL,
+                ip_fingerprint VARCHAR(64) NOT NULL,
+                token_hash VARCHAR(64) UNIQUE,
+                requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP,
+                used_at TIMESTAMP
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_requests_user_id ON serving.password_reset_requests (user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_requests_token_hash ON serving.password_reset_requests (token_hash)",
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_email_requested ON serving.password_reset_requests (email_fingerprint, requested_at)",
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_ip_requested ON serving.password_reset_requests (ip_fingerprint, requested_at)",
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_requests_expires_at ON serving.password_reset_requests (expires_at)",
+            "CREATE INDEX IF NOT EXISTS ix_password_reset_requests_used_at ON serving.password_reset_requests (used_at)",
             # Confirmación de datos del ganador del sorteo.
             """
             CREATE TABLE IF NOT EXISTS serving.draw_confirmations (

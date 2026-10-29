@@ -3,7 +3,7 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 
-ASSESSMENT_VERSION = "evidence-policy-2026-10-25-v5"
+ASSESSMENT_VERSION = "evidence-policy-2026-10-27-v6"
 ALLOWED_STANCES = {"supports", "refutes", "discusses", "unrelated"}
 PRIMARY_CONTEXT_METHOD = "original_publication_context"
 

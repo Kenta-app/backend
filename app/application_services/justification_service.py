@@ -825,6 +825,10 @@ ETIQUETAS:
   no infieras un acto previo solo porque haría plausible el resultado posterior.
   Una nota que dice directamente que una persona pidió, fue nombrada o realizó
   la acción del encabezado es supports aunque añada antecedentes o consecuencias.
+  También es supports cuando el título o el extracto expresan el mismo núcleo
+  actor-acción-objeto con otras palabras. No rebajes a discusses por omitir
+  antecedentes, explicaciones, consecuencias o detalles decorativos que no
+  cambiarían si la proposición central es verdadera o falsa.
 - refutes: la fuente niega el hecho o aporta una regla, fecha, ámbito o decisión
   incompatible con él. Si la afirmación aplica una regla a un proceso concreto
   y la fuente indica que esa regla fue inaplicada o no rige para ese proceso,
@@ -833,8 +837,14 @@ ETIQUETAS:
   regla nueva, prevalece esa limitación expresa: refutes.
 - discusses: aborda el mismo evento o predicado, pero no permite concluir ni lo
   afirmado ni algo incompatible; solo aporta contexto, antecedentes o un estado
-  distinto del proceso.
+  distinto del proceso. Úsalo por una omisión solo cuando el dato omitido sea
+  material: al quitarlo cambia quién hizo qué, la existencia del hecho, su
+  alcance, tiempo, lugar, cantidad o condición esencial. Que la fuente tenga
+  menos detalle que la afirmación no basta por sí solo.
 - unrelated: comparte persona, organización o tema, pero no el predicado central.
+  En respuestas, quotes o republicaciones, una fuente que solo confirma el post
+  citado o respondido es unrelated respecto de la afirmación nueva del autor,
+  salvo que también aborde el predicado escrito por ese autor.
 
 Clasifica la relación de cada fuente con la afirmación, no la veracidad global
 de la noticia. No exijas coincidencia literal: conserva actor, acción, objeto,
@@ -851,8 +861,19 @@ REGLAS DE CONTROL:
   la fecha visible en la fuente o su URL permite establecer la equivalencia.
 - Evalúa juntos título y extracto. No ignores una salvedad de alcance del título
   porque el extracto mencione la regla o el hecho en abstracto.
+- Aplica esta prueba antes de elegir discusses: identifica la proposición mínima
+  verificable del claim y pregunta si título más extracto la afirman. Si la
+  respuesta es sí y no hay contradicción material, usa supports.
 - No conviertas una consecuencia posterior en prueba del antecedente salvo que
   la propia fuente nombre ese antecedente.
+
+EJEMPLOS DE FRONTERA:
+- Claim: "La entidad contrató un proyecto dirigido por una persona condenada".
+  Fuente: "Entidad contrató proyecto liderado por sentenciado". => supports.
+- Claim: "La funcionaria criticó el procedimiento y dijo que faltaban dos firmas".
+  Fuente: "Se publicó una fe de erratas", sin esa crítica ni las firmas. => discusses.
+- Claim escrito en un reply: "El Congreso pronto la destituirá". Fuente que solo
+  confirma el saludo contenido en el post respondido. => unrelated.
 
 Devuelve únicamente JSON válido con este esquema exacto:
 {{"sources":[{{"index":0,"stance":"supports"}}]}}

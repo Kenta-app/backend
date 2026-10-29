@@ -212,7 +212,7 @@ class JustificationSource(Base):
     relevance_score = Column(Numeric(5, 4), nullable=True)
     independence_key = Column(String(255), nullable=True, index=True)
     assessment_method = Column(String(50), nullable=False, default="legacy_related_source")
-    assessment_version = Column(String(50), nullable=False, default="evidence-policy-2026-10-25-v5")
+    assessment_version = Column(String(50), nullable=False, default="evidence-policy-2026-10-27-v6")
     model_used = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 

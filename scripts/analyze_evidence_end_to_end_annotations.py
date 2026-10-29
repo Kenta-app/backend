@@ -22,6 +22,7 @@ COVERAGE_LABELS = ("sufficient", "partial", "none", "no_evidence_found", "unable
 REVIEW_STATUSES = ("evaluable", "unavailable", "insufficient_context")
 CONFIDENCE_LABELS = ("high", "medium", "low")
 MISSING_LABELS = ("yes", "no", "unable_to_assess")
+SOCIAL_CONTEXT_LABELS = ("correct", "incorrect", "unable_to_assess")
 
 
 def norm(value: Any) -> str:
@@ -104,7 +105,10 @@ def validate_coverage_annotations(
     system_rows: dict[str, dict[str, Any]],
 ) -> None:
     errors: list[str] = []
-    frozen_fields = ("claim", "original_source", "original_url")
+    frozen_fields = (
+        "platform", "claim", "publication_context", "social_context_completeness",
+        "social_reference_count", "social_reference_types", "original_source", "original_url",
+    )
     for case_id, row in rows.items():
         key = system_rows.get(case_id)
         if key is None:
@@ -127,6 +131,12 @@ def validate_coverage_annotations(
             errors.append(f"{case_id}: invalid missing_relevant_evidence {missing!r}")
         if missing == "yes" and not missing_url:
             errors.append(f"{case_id}: missing_source_url is required when missing=yes")
+        platform = norm(row.get("platform"))
+        social_status = norm(row.get("social_context_status"))
+        if platform == "twitter" and social_status not in SOCIAL_CONTEXT_LABELS:
+            errors.append(f"{case_id}: twitter row requires a valid social_context_status")
+        if platform != "twitter" and social_status != "not_applicable":
+            errors.append(f"{case_id}: non-social row requires social_context_status=not_applicable")
         if not norm(row.get("notes")):
             errors.append(f"{case_id}: notes are required")
     if errors:
@@ -212,6 +222,11 @@ def main() -> None:
         action="store_true",
         help="Apply the five preregistered v4 acceptance criteria.",
     )
+    parser.add_argument(
+        "--preregistered-v7",
+        action="store_true",
+        help="Apply the six preregistered final confirmatory v7 acceptance criteria.",
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -281,30 +296,46 @@ def main() -> None:
         b = b_coverage[case_id]
         status_agreement = norm(a.get("coverage_status")) == norm(b.get("coverage_status"))
         missing_agreement = norm(a.get("missing_relevant_evidence")) == norm(b.get("missing_relevant_evidence"))
-        needs_adjudication = not (status_agreement and missing_agreement)
+        is_social = norm(a.get("platform")) == "twitter"
+        social_agreement = (
+            norm(a.get("social_context_status")) == norm(b.get("social_context_status"))
+            if is_social else True
+        )
+        needs_adjudication = not (status_agreement and missing_agreement and social_agreement)
         row = {
             "case_id": case_id,
+            "platform": norm(a.get("platform")),
             "claim": norm(a.get("claim")),
             "publication_context": norm(key.get("publication_context")),
+            "social_context_completeness": norm(key.get("social_context_completeness")),
+            "social_reference_count": int(key.get("social_reference_count") or 0),
+            "social_reference_types": norm(key.get("social_reference_types")),
             "original_source": norm(a.get("original_source")),
             "original_url": norm(a.get("original_url")),
             "returned_source_count": int(key.get("returned_source_count") or 0),
             "annotator_a_coverage": norm(a.get("coverage_status")),
             "annotator_a_missing": norm(a.get("missing_relevant_evidence")),
             "annotator_a_missing_url": norm(a.get("missing_source_url")),
+            "annotator_a_social_context": norm(a.get("social_context_status")),
             "annotator_a_notes": norm(a.get("notes")),
             "annotator_b_coverage": norm(b.get("coverage_status")),
             "annotator_b_missing": norm(b.get("missing_relevant_evidence")),
             "annotator_b_missing_url": norm(b.get("missing_source_url")),
+            "annotator_b_social_context": norm(b.get("social_context_status")),
             "annotator_b_notes": norm(b.get("notes")),
             "coverage_agreement": status_agreement,
             "missing_agreement": missing_agreement,
+            "social_context_agreement": social_agreement,
             "consensus_coverage": norm(a.get("coverage_status")) if status_agreement else "",
             "consensus_missing": norm(a.get("missing_relevant_evidence")) if missing_agreement else "",
+            "consensus_social_context": (
+                norm(a.get("social_context_status")) if is_social and social_agreement else ""
+            ),
             "needs_adjudication": needs_adjudication,
             "final_coverage": "",
             "final_missing": "",
             "final_missing_url": "",
+            "final_social_context": "",
             "adjudication_rationale": "",
         }
         coverage_comparison.append(row)
@@ -343,6 +374,9 @@ def main() -> None:
     ]
     false_empty = [row for row in zero_source_consensus if row["consensus_coverage"] == "none"]
     false_empty_rate = pct(len(false_empty), len(zero_source_consensus))
+    social_cases = [row for row in coverage_comparison if row["platform"] == "twitter"]
+    social_consensus = [row for row in social_cases if row["consensus_social_context"]]
+    social_correct = [row for row in social_consensus if row["consensus_social_context"] == "correct"]
 
     a_eval_binary = ["evaluable" if row["annotator_a_status"] == "evaluable" else "not_evaluable" for row in source_comparison]
     b_eval_binary = ["evaluable" if row["annotator_b_status"] == "evaluable" else "not_evaluable" for row in source_comparison]
@@ -386,6 +420,17 @@ def main() -> None:
             "consensus_coverage_n": len(coverage_consensus),
             "needs_adjudication_n": len(coverage_disagreements),
         },
+        "social_context_agreement": {
+            "social_cases_n": len(social_cases),
+            "exact": pct(sum(row["social_context_agreement"] for row in social_cases), len(social_cases)),
+            "kappa": cohen_kappa(
+                [row["annotator_a_social_context"] for row in social_cases],
+                [row["annotator_b_social_context"] for row in social_cases],
+            ),
+            "consensus_n": len(social_consensus),
+            "correct_n": len(social_correct),
+            "correct_rate": pct(len(social_correct), len(social_consensus)),
+        },
         "coverage_consensus_only": {
             "status_counts": dict(Counter(row["consensus_coverage"] for row in coverage_consensus)),
             "evidence_exists_n": len(evidence_exists_consensus),
@@ -410,11 +455,60 @@ def main() -> None:
         "limitations": [
             "All quality metrics are pre-adjudication and use only exact-consensus rows.",
             "The sample is a small stratified pilot and does not estimate natural feed prevalence.",
-            "The production snapshot had no X/social cases.",
+            "Social-context quality is measured only on the six preregistered X cases.",
             "Macro-F1 over four fixed classes is depressed when a gold class is absent; observed-class macro-F1 is also reported.",
         ],
     }
-    if args.preregistered_v4:
+    if args.preregistered_v7:
+        criteria = {
+            "retrieval_content_at_least_80pct": {
+                "value": summary["system_run"]["retrieval_success_rate"],
+                "threshold": 0.80,
+                "passes": summary["system_run"]["retrieval_success_rate"] >= 0.80,
+                "status": "final",
+            },
+            "source_precision_at_least_90pct": {
+                "value": summary["retrieval_source_quality_consensus_only"]["precision"],
+                "threshold": 0.90,
+                "passes": summary["retrieval_source_quality_consensus_only"]["precision"] >= 0.90,
+                "status": "pre_adjudication",
+            },
+            "useful_coverage_at_least_80pct": {
+                "value": summary["coverage_consensus_only"]["useful_coverage_rate"],
+                "threshold": 0.80,
+                "passes": summary["coverage_consensus_only"]["useful_coverage_rate"] >= 0.80,
+                "status": "pre_adjudication",
+            },
+            "stance_accuracy_at_least_75pct": {
+                "value": summary["system_stance_consensus_only"]["accuracy"],
+                "threshold": 0.75,
+                "passes": summary["system_stance_consensus_only"]["accuracy"] >= 0.75,
+                "status": "pre_adjudication",
+            },
+            "false_empty_rate_at_most_20pct": {
+                "value": false_empty_rate,
+                "threshold": 0.20,
+                "passes": false_empty_rate is not None and false_empty_rate <= 0.20,
+                "status": "pre_adjudication",
+            },
+            "social_context_correct_at_least_80pct": {
+                "value": summary["social_context_agreement"]["correct_rate"],
+                "threshold": 0.80,
+                "passes": summary["social_context_agreement"]["correct_rate"] is not None
+                and summary["social_context_agreement"]["correct_rate"] >= 0.80,
+                "status": "pre_adjudication",
+            },
+        }
+        summary["preregistered_criteria"] = criteria
+        summary["overall_status"] = (
+            "failed_retrieval_criterion"
+            if not criteria["retrieval_content_at_least_80pct"]["passes"]
+            else "pending_adjudication"
+        )
+        summary["limitations"].append(
+            "The six v7 thresholds were preregistered; human-dependent results remain preliminary until adjudication."
+        )
+    elif args.preregistered_v4:
         criteria = {
             "retrieval_16_of_20": {
                 "value": summary["system_run"]["retrieval_success_n"],

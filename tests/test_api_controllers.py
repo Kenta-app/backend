@@ -12,11 +12,12 @@ from sqlalchemy.pool import StaticPool
 
 from app.api_controllers import admin_router, auth_router, interaction_router, news_router
 from app.api_controllers.justification_controller import JustificationController
+from app.application_services.auth_service import AuthService
 from app.db.database import Base, apply_sqlite_schema_translation, get_db
 from app.dependencies import get_email_sender
 from app.processed.models import MlPrediction, ProcessedNews
 from app.raw.models import IngestionLog, RawNews, Source
-from app.serving.models import PublishedNews, User
+from app.serving.models import PasswordResetRequest, PublishedNews, User
 from app.services.session_token_service import SessionTokenService
 
 
@@ -25,7 +26,13 @@ class FakeEmailSender:
         self.messages = []
 
     def sendVerificationCode(self, email: str, code: str) -> None:
-        self.messages.append({"email": email, "code": code})
+        self.messages.append({"type": "verification", "email": email, "code": code})
+
+    def sendPasswordResetLink(self, email: str, token: str) -> None:
+        self.messages.append({"type": "password_reset", "email": email, "token": token})
+
+    def sendPasswordChangedNotice(self, email: str) -> None:
+        self.messages.append({"type": "password_changed", "email": email})
 
 
 class ReadOnlyJustificationService:
@@ -47,6 +54,8 @@ class ApiControllersTests(unittest.TestCase):
             {
                 "EMAIL_VERIFICATION_SECRET": "test-verification-secret",
                 "AUTH_SESSION_SECRET": "test-session-secret-with-at-least-32-characters",
+                "PASSWORD_RESET_SECRET": "test-password-reset-secret-with-32-characters",
+                "PASSWORD_RESET_MAX_REQUESTS_PER_EMAIL": "1",
                 "AUTH_COOKIE_SECURE": "false",
             },
         )
@@ -172,6 +181,83 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(user.email, "profile@example.com")
         self.assertEqual(user.birth_date.isoformat(), "1998-07-12")
         self.assertEqual(user.gender, "female")
+
+    def test_password_reset_is_single_use_generic_and_revokes_existing_sessions(self):
+        user = User(
+            username="reset-user",
+            email="reset@example.com",
+            password_hash=AuthService(self.db).hashPassword("old-secret-123"),
+            role="user",
+            email_verified_at=datetime.utcnow(),
+        )
+        user.register()
+        self.db.add(user)
+        self.db.commit()
+        old_cookies = self.auth_cookies(user)
+
+        known_response = self.client.post(
+            "/auth/forgot-password", json={"email": "RESET@example.com"}
+        )
+        unknown_response = self.client.post(
+            "/auth/forgot-password", json={"email": "missing@example.com"}
+        )
+
+        self.assertEqual(known_response.status_code, 202)
+        self.assertEqual(unknown_response.status_code, 202)
+        self.assertEqual(known_response.json(), unknown_response.json())
+        limited_response = self.client.post(
+            "/auth/forgot-password", json={"email": "reset@example.com"}
+        )
+        self.assertEqual(limited_response.status_code, 202)
+        self.assertEqual(limited_response.json(), known_response.json())
+        self.assertEqual(
+            sum(
+                message["type"] == "password_reset"
+                for message in self.emailSender.messages
+            ),
+            1,
+        )
+        reset_message = next(
+            message for message in self.emailSender.messages
+            if message["type"] == "password_reset"
+        )
+        stored_request = (
+            self.db.query(PasswordResetRequest)
+            .filter(PasswordResetRequest.user_id == user.user_id)
+            .one()
+        )
+        self.assertNotEqual(stored_request.token_hash, reset_message["token"])
+
+        reset_response = self.client.post(
+            "/auth/reset-password",
+            json={"token": reset_message["token"], "newPassword": "new-secret-123"},
+        )
+        self.assertEqual(reset_response.status_code, 200)
+        self.assertTrue(
+            any(message["type"] == "password_changed" for message in self.emailSender.messages)
+        )
+        self.assertEqual(self.client.get("/auth/me", cookies=old_cookies).status_code, 401)
+        self.assertEqual(
+            self.client.post(
+                "/auth/login",
+                json={"email": user.email, "password": "old-secret-123"},
+            ).status_code,
+            401,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/auth/login",
+                json={"email": user.email, "password": "new-secret-123"},
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/auth/reset-password",
+                json={"token": reset_message["token"], "newPassword": "another-secret-123"},
+            ).status_code,
+            400,
+        )
 
     def test_news_feed_returns_published_news(self):
         source = Source(

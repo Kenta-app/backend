@@ -28,10 +28,12 @@ SOURCE_FROZEN_FIELDS = (
     "annotator_a_notes", "annotator_b_status", "annotator_b_stance", "annotator_b_notes",
 )
 COVERAGE_FROZEN_FIELDS = (
-    "case_id", "claim", "original_source", "original_url", "returned_source_count",
+    "case_id", "platform", "claim", "publication_context", "social_context_completeness",
+    "social_reference_count", "social_reference_types", "original_source", "original_url", "returned_source_count",
     "annotator_a_coverage", "annotator_a_missing", "annotator_a_missing_url",
-    "annotator_a_notes", "annotator_b_coverage", "annotator_b_missing",
-    "annotator_b_missing_url", "annotator_b_notes",
+    "annotator_a_social_context", "annotator_a_notes", "annotator_b_coverage", "annotator_b_missing",
+    "annotator_b_missing_url", "annotator_b_social_context", "annotator_b_notes",
+    "consensus_social_context",
 )
 
 
@@ -264,6 +266,7 @@ def validate_and_apply(
             result["final_missing_url"] = next((url for url in urls if url), "")
             result["adjudication_rationale"] = ""
             result["decision_source"] = "exact_consensus"
+        result["final_social_context"] = text(row.get("consensus_social_context"))
         final_coverage.append(result)
 
     return final_sources, final_coverage, audit
@@ -283,6 +286,11 @@ def main() -> None:
         "--preregistered-v4",
         action="store_true",
         help="Apply the criteria preregistered for the fresh blind v4 sample.",
+    )
+    parser.add_argument(
+        "--preregistered-v7",
+        action="store_true",
+        help="Apply the six criteria preregistered for the final confirmatory v7 sample.",
     )
     args = parser.parse_args()
 
@@ -305,6 +313,8 @@ def main() -> None:
     false_empty = [row for row in zero_source if row["final_coverage"] == "none"]
     retrieval_success = sum(int(row["returned_source_count"]) > 0 for row in final_coverage)
     false_empty_rate = len(false_empty) / len(zero_source) if zero_source else 0.0
+    social_cases = [row for row in final_coverage if text(row.get("platform")) == "twitter"]
+    social_correct = [row for row in social_cases if text(row.get("final_social_context")) == "correct"]
 
     with (args.pre_results_dir / "summary.json").open("r", encoding="utf-8") as handle:
         pre_summary = json.load(handle)
@@ -319,6 +329,7 @@ def main() -> None:
         "interannotator_agreement_pre_adjudication": {
             "source_agreement": pre_summary["source_agreement"],
             "coverage_agreement": pre_summary["coverage_agreement"],
+            "social_context_agreement": pre_summary.get("social_context_agreement"),
         },
         "retrieval_source_quality_final": {
             "evaluable_n": len(evaluable),
@@ -345,8 +356,58 @@ def main() -> None:
             "retrieval_success_wilson_95": wilson(retrieval_success, len(final_coverage)),
         },
         "false_empty_rate": false_empty_rate,
+        "social_context_final": {
+            "social_cases_n": len(social_cases),
+            "correct_n": len(social_correct),
+            "correct_rate": len(social_correct) / len(social_cases) if social_cases else None,
+        },
     }
-    if args.registered_criteria or args.preregistered_v4:
+    if args.preregistered_v7:
+        summary["registered_criteria"] = {
+            "retrieval_content_at_least_80_percent": {
+                "threshold": 0.80,
+                "observed": retrieval_success / len(final_coverage),
+                "passed": retrieval_success / len(final_coverage) >= 0.80,
+            },
+            "source_precision_at_least_90_percent": {
+                "threshold": 0.90,
+                "observed": summary["retrieval_source_quality_final"]["precision"],
+                "passed": summary["retrieval_source_quality_final"]["precision"] >= 0.90,
+            },
+            "useful_coverage_at_least_80_percent": {
+                "threshold": 0.80,
+                "observed": len(useful) / len(evidence_exists) if evidence_exists else None,
+                "passed": bool(evidence_exists) and len(useful) / len(evidence_exists) >= 0.80,
+            },
+            "stance_accuracy_at_least_75_percent": {
+                "threshold": 0.75,
+                "observed": summary["system_stance_final"]["accuracy"],
+                "passed": summary["system_stance_final"]["accuracy"] >= 0.75,
+            },
+            "false_empty_rate_at_most_20_percent": {
+                "threshold": 0.20,
+                "observed": false_empty_rate,
+                "passed": false_empty_rate <= 0.20,
+            },
+            "social_context_correct_at_least_80_percent": {
+                "threshold": 0.80,
+                "observed": summary["social_context_final"]["correct_rate"],
+                "passed": summary["social_context_final"]["correct_rate"] is not None
+                and summary["social_context_final"]["correct_rate"] >= 0.80,
+            },
+        }
+        summary["overall_passed"] = all(
+            criterion["passed"] for criterion in summary["registered_criteria"].values()
+        )
+        summary["limitations"] = [
+            "Final confirmatory frozen sample of 24 stratified cases; results do not estimate natural feed prevalence.",
+            "The six decision criteria were fixed before retrieval, annotation, and adjudication.",
+            "The small denominators produce wide uncertainty intervals.",
+            "Social-context quality is measured on the six preregistered X cases.",
+            "The final metrics combine exact consensus with explicit adjudication; agreement metrics remain pre-adjudication.",
+            "The v7 closure rule prohibits another post hoc iteration on the same evidence.",
+        ]
+    elif args.registered_criteria or args.preregistered_v4:
         summary["registered_criteria"] = {
             "retrieval_at_least_16_of_20": {
                 "threshold": 16 / 20,
