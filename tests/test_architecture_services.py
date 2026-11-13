@@ -53,15 +53,15 @@ class ArchitectureServicesTests(unittest.TestCase):
         user = service.register(
             "alice",
             "alice@example.com",
-            "super-secret",
+            "Super-secret1",
             termsVersion="2026-08-28",
             privacyPolicyVersion="2026-08-28",
         )
 
-        self.assertNotEqual(user.password_hash, "super-secret")
-        self.assertTrue(service.verifyPassword("super-secret", user.password_hash))
+        self.assertNotEqual(user.password_hash, "Super-secret1")
+        self.assertTrue(service.verifyPassword("Super-secret1", user.password_hash))
         service.verifyEmail("alice@example.com", email_sender.messages[-1]["code"])
-        self.assertEqual(service.login("alice@example.com", "super-secret").user_id, user.user_id)
+        self.assertEqual(service.login("alice@example.com", "Super-secret1").user_id, user.user_id)
 
     def test_preprocess_cluster_and_publish_pipeline_snapshot(self):
         source = Source(name="Fuente Test", base_url="https://example.com", type="web")

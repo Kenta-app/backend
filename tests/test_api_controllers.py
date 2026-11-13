@@ -105,7 +105,7 @@ class ApiControllersTests(unittest.TestCase):
             json={
                 "username": "bob",
                 "email": "bob@example.com",
-                "password": "secret-123",
+                "password": "Secret-123",
                 "acceptedTerms": True,
                 "termsVersion": "2026-08-28",
                 "privacyPolicyVersion": "2026-08-28",
@@ -113,7 +113,7 @@ class ApiControllersTests(unittest.TestCase):
         )
         unverified_login_response = self.client.post(
             "/auth/login",
-            json={"email": "bob@example.com", "password": "secret-123"},
+            json={"email": "bob@example.com", "password": "Secret-123"},
         )
         verification_response = self.client.post(
             "/auth/verify-email",
@@ -121,7 +121,7 @@ class ApiControllersTests(unittest.TestCase):
         )
         login_response = self.client.post(
             "/auth/login",
-            json={"email": "bob@example.com", "password": "secret-123"},
+            json={"email": "bob@example.com", "password": "Secret-123"},
         )
 
         self.assertEqual(register_response.status_code, 200)
@@ -134,42 +134,50 @@ class ApiControllersTests(unittest.TestCase):
 
         wrong_password_response = self.client.post(
             "/auth/change-password",
-            json={"currentPassword": "wrong", "newPassword": "new-secret-123"},
+            json={"currentPassword": "wrong", "newPassword": "New-secret-123"},
         )
         self.assertEqual(wrong_password_response.status_code, 400)
         change_response = self.client.post(
             "/auth/change-password",
-            json={"currentPassword": "secret-123", "newPassword": "new-secret-123"},
+            json={"currentPassword": "Secret-123", "newPassword": "New-secret-123"},
         )
         self.assertEqual(change_response.status_code, 200)
         self.assertEqual(
-            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "secret-123"}).status_code,
+            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "Secret-123"}).status_code,
             401,
         )
         self.assertEqual(
-            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "new-secret-123"}).status_code,
+            self.client.post("/auth/login", json={"email": "bob@example.com", "password": "New-secret-123"}).status_code,
             200,
         )
         self.assertEqual(self.client.post("/auth/logout").status_code, 200)
         self.assertEqual(self.client.get("/auth/me").status_code, 401)
 
-    def test_profile_update_is_persisted_and_keeps_email_immutable(self):
+    def test_profile_update_changes_email_and_rejects_duplicates(self):
         user = User(
             username="profile-user",
             email="profile@example.com",
-            password_hash="hash",
+            password_hash=AuthService(self.db).hashPassword("Profile-123"),
             role="user",
         )
         user.register()
         user.email_verified_at = datetime.utcnow()
         self.db.add(user)
+        self.db.add(User(
+            username="existing-user",
+            email="existing@example.com",
+            password_hash="hash",
+            role="user",
+            email_verified_at=datetime.utcnow(),
+        ))
         self.db.commit()
 
         response = self.client.patch(
             "/auth/profile",
             cookies=self.auth_cookies(user),
             json={
-                "username": "Perfil Actualizado",
+                "username": "Perfil-Actualizado",
+                "email": "updated@example.com",
                 "birthDate": "1998-07-12",
                 "gender": "FEMALE",
             },
@@ -177,16 +185,86 @@ class ApiControllersTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.db.refresh(user)
-        self.assertEqual(user.username, "Perfil Actualizado")
-        self.assertEqual(user.email, "profile@example.com")
+        self.assertEqual(user.username, "Perfil-Actualizado")
+        self.assertEqual(user.email, "updated@example.com")
         self.assertEqual(user.birth_date.isoformat(), "1998-07-12")
         self.assertEqual(user.gender, "female")
+
+        duplicate_response = self.client.patch(
+            "/auth/profile",
+            cookies=self.auth_cookies(user),
+            json={
+                "username": "Perfil-Actualizado",
+                "email": "existing@example.com",
+                "birthDate": "1998-07-12",
+                "gender": "female",
+            },
+        )
+        self.assertEqual(duplicate_response.status_code, 400)
+        self.assertIn("correo electrónico ya está en uso", duplicate_response.text)
+
+    def test_registration_rejects_invalid_username_and_weak_password(self):
+        base_payload = {
+            "email": "invalid@example.com",
+            "acceptedTerms": True,
+            "termsVersion": "2026-08-28",
+            "privacyPolicyVersion": "2026-08-28",
+        }
+        username_response = self.client.post(
+            "/auth/register",
+            json={**base_payload, "username": "@@@", "password": "Valid-123"},
+        )
+        password_response = self.client.post(
+            "/auth/register",
+            json={**base_payload, "username": "valid-user", "password": "12345678"},
+        )
+        self.assertEqual(username_response.status_code, 422)
+        self.assertEqual(password_response.status_code, 422)
+
+    def test_delete_account_requires_password_and_revokes_login(self):
+        password = "Delete-123"
+        service = AuthService(self.db)
+        user = User(
+            username="delete-user",
+            email="delete@example.com",
+            password_hash=service.hashPassword(password),
+            role="user",
+            email_verified_at=datetime.utcnow(),
+        )
+        user.register()
+        self.db.add(user)
+        self.db.commit()
+        cookies = self.auth_cookies(user)
+
+        wrong_response = self.client.request(
+            "DELETE",
+            "/auth/account",
+            cookies=cookies,
+            json={"currentPassword": "Wrong-123"},
+        )
+        self.assertEqual(wrong_response.status_code, 400)
+
+        delete_response = self.client.request(
+            "DELETE",
+            "/auth/account",
+            cookies=cookies,
+            json={"currentPassword": password},
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertIsNone(self.db.query(User).filter(User.email == "delete@example.com").first())
+        self.assertEqual(
+            self.client.post(
+                "/auth/login",
+                json={"email": "delete@example.com", "password": password},
+            ).status_code,
+            401,
+        )
 
     def test_password_reset_is_single_use_generic_and_revokes_existing_sessions(self):
         user = User(
             username="reset-user",
             email="reset@example.com",
-            password_hash=AuthService(self.db).hashPassword("old-secret-123"),
+            password_hash=AuthService(self.db).hashPassword("Old-secret-123"),
             role="user",
             email_verified_at=datetime.utcnow(),
         )
@@ -230,7 +308,7 @@ class ApiControllersTests(unittest.TestCase):
 
         reset_response = self.client.post(
             "/auth/reset-password",
-            json={"token": reset_message["token"], "newPassword": "new-secret-123"},
+            json={"token": reset_message["token"], "newPassword": "New-secret-123"},
         )
         self.assertEqual(reset_response.status_code, 200)
         self.assertTrue(
@@ -240,21 +318,21 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(
             self.client.post(
                 "/auth/login",
-                json={"email": user.email, "password": "old-secret-123"},
+                json={"email": user.email, "password": "Old-secret-123"},
             ).status_code,
             401,
         )
         self.assertEqual(
             self.client.post(
                 "/auth/login",
-                json={"email": user.email, "password": "new-secret-123"},
+                json={"email": user.email, "password": "New-secret-123"},
             ).status_code,
             200,
         )
         self.assertEqual(
             self.client.post(
                 "/auth/reset-password",
-                json={"token": reset_message["token"], "newPassword": "another-secret-123"},
+                json={"token": reset_message["token"], "newPassword": "Another-secret-123"},
             ).status_code,
             400,
         )

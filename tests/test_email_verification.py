@@ -40,7 +40,7 @@ class EmailVerificationTests(unittest.TestCase):
         user = self.service.register(
             "alice",
             "Alice@Example.com",
-            "correct-horse-battery-staple",
+            "Correct-horse-battery-staple1",
             termsVersion="2026-08-28",
             privacyPolicyVersion="2026-08-28",
         )
@@ -55,7 +55,7 @@ class EmailVerificationTests(unittest.TestCase):
         self.assertIsNone(user.study_reminder_opted_in_at)
 
         with self.assertRaises(EmailNotVerifiedError):
-            self.service.login("alice@example.com", "correct-horse-battery-staple")
+            self.service.login("alice@example.com", "Correct-horse-battery-staple1")
 
         with self.assertRaises(ValueError):
             self.service.verifyEmail("alice@example.com", "000000")
@@ -71,7 +71,7 @@ class EmailVerificationTests(unittest.TestCase):
         )
         self.assertIsNotNone(verified.email_verified_at)
         self.assertEqual(
-            self.service.login("ALICE@example.com", "correct-horse-battery-staple").user_id,
+            self.service.login("ALICE@example.com", "Correct-horse-battery-staple1").user_id,
             user.user_id,
         )
 
@@ -79,7 +79,7 @@ class EmailVerificationTests(unittest.TestCase):
         user = self.service.register(
             "reminder-user",
             "reminder@example.com",
-            "correct-horse-battery-staple",
+            "Correct-horse-battery-staple1",
             termsVersion="2026-10-05",
             privacyPolicyVersion="2026-10-05",
             studyReminderOptIn=True,

@@ -14,7 +14,19 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.services.email_service import EmailDeliveryError, ResendEmailSender
-from app.serving.models import PasswordResetRequest, User
+from app.services.account_validation import validate_password, validate_username
+from app.serving.models import (
+    DrawConfirmation,
+    NewsClick,
+    NewsDetailClick,
+    NewsFavorite,
+    NewsReaction,
+    NewsRelatedSourceClick,
+    NewsView,
+    PasswordResetRequest,
+    User,
+    UserAppSession,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -75,6 +87,8 @@ class AuthService:
         studyReminderOptIn: bool = False,
     ) -> User:
         self._requireVerificationConfiguration()
+        username = validate_username(username)
+        validate_password(password)
         normalized_email = email.strip().lower()
         existing = (
             self.db.query(User)
@@ -128,6 +142,7 @@ class AuthService:
         return user
 
     def changePassword(self, user: User, currentPassword: str, newPassword: str) -> User:
+        validate_password(newPassword)
         if not self.verifyPassword(currentPassword, user.password_hash):
             raise ValueError("La contraseña actual es incorrecta.")
         if self.verifyPassword(newPassword, user.password_hash):
@@ -230,6 +245,7 @@ class AuthService:
             logger.exception("Password-change notification delivery failed")
 
     def resetPassword(self, token: str, newPassword: str) -> User:
+        validate_password(newPassword)
         self._requirePasswordResetConfiguration()
         now = datetime.utcnow()
         token_hash = self._hashPasswordResetToken(token)
@@ -270,27 +286,64 @@ class AuthService:
         self,
         user: User,
         username: str,
+        email: str,
         birthDate: date | None,
         gender: str | None,
     ) -> User:
-        normalized_username = " ".join(username.split())
+        normalized_username = validate_username(username)
+        normalized_email = email.strip().lower()
         existing = (
             self.db.query(User)
             .filter(
-                func.lower(User.username) == normalized_username.lower(),
+                (
+                    (func.lower(User.username) == normalized_username.lower())
+                    | (func.lower(User.email) == normalized_email)
+                ),
                 User.user_id != user.user_id,
             )
             .first()
         )
         if existing:
+            if existing.email.lower() == normalized_email:
+                raise ValueError("El correo electrónico ya está en uso.")
             raise ValueError("El nombre de usuario ya está en uso.")
         user.username = normalized_username
+        user.email = normalized_email
         user.birth_date = birthDate
         user.gender = gender.strip().lower() if gender else None
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
         return user
+
+    def deleteAccount(self, user: User, currentPassword: str) -> None:
+        if not self.verifyPassword(currentPassword, user.password_hash):
+            raise ValueError("La contraseña actual es incorrecta.")
+
+        user_id = user.user_id
+        dependent_models = (
+            PasswordResetRequest,
+            DrawConfirmation,
+            NewsReaction,
+            NewsView,
+            NewsClick,
+            NewsRelatedSourceClick,
+            NewsDetailClick,
+            UserAppSession,
+            NewsFavorite,
+        )
+        try:
+            for model in dependent_models:
+                (
+                    self.db.query(model)
+                    .filter(model.user_id == user_id)
+                    .delete(synchronize_session=False)
+                )
+            self.db.delete(user)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     def verifyEmail(self, email: str, code: str) -> User:
         normalized_email = email.strip().lower()

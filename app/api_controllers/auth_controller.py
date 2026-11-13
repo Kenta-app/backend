@@ -12,6 +12,7 @@ from app.api_controllers.serializers import serialize_user
 from app.application_services.auth_service import AuthService, EmailNotVerifiedError
 from app.dependencies import get_auth_service, get_current_user, get_session_token_service
 from app.services.email_service import EmailDeliveryError
+from app.services.account_validation import validate_password, validate_username
 from app.services.session_token_service import SessionTokenService
 from app.serving.models import User
 
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=100)
+    username: str = Field(min_length=3, max_length=20)
     email: str = Field(min_length=5, max_length=255)
     password: str = Field(min_length=8, max_length=128)
     # Los campos de perfil se reciben desde la UI actual, pero son opcionales
@@ -34,10 +35,12 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        normalized = " ".join(value.split())
-        if any(ord(char) < 32 for char in normalized):
-            raise ValueError("El nombre de usuario contiene caracteres inválidos.")
-        return normalized
+        return validate_username(value)
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        return validate_password(value)
 
     @field_validator("email")
     @classmethod
@@ -81,6 +84,11 @@ class ChangePasswordRequest(BaseModel):
     currentPassword: str
     newPassword: str = Field(min_length=8, max_length=128)
 
+    @field_validator("newPassword")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        return validate_password(value)
+
 
 class VerifyEmailRequest(BaseModel):
     email: str
@@ -107,18 +115,29 @@ class ResetPasswordRequest(BaseModel):
     token: str = Field(min_length=32, max_length=128)
     newPassword: str = Field(min_length=8, max_length=128)
 
+    @field_validator("newPassword")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        return validate_password(value)
+
 
 class ProfileUpdateRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=100)
+    username: str = Field(min_length=3, max_length=20)
+    email: str = Field(min_length=5, max_length=255)
     birthDate: date | None = None
     gender: str | None = Field(default=None, min_length=1, max_length=50)
 
     @field_validator("username")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        normalized = " ".join(value.split())
-        if any(ord(char) < 32 for char in normalized):
-            raise ValueError("El nombre de usuario contiene caracteres inválidos.")
+        return validate_username(value)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", normalized):
+            raise ValueError("Ingresa un correo válido.")
         return normalized
 
     @field_validator("gender")
@@ -132,6 +151,10 @@ class ProfileUpdateRequest(BaseModel):
         if value is not None and value >= date.today():
             raise ValueError("La fecha de nacimiento debe ser anterior a hoy.")
         return value
+
+
+class DeleteAccountRequest(BaseModel):
+    currentPassword: str = Field(min_length=1, max_length=128)
 
 
 class AuthController(BaseController):
@@ -236,15 +259,31 @@ class AuthController(BaseController):
     def patchProfile(
         self,
         username: str,
+        email: str,
         birthDate: date | None,
         gender: str | None,
     ) -> dict:
         user = self.requireAuth()
         try:
-            updated = self.authService.updateProfile(user, username, birthDate, gender)
+            updated = self.authService.updateProfile(user, username, email, birthDate, gender)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return self.successResponse(serialize_user(updated))
+
+    def deleteAccount(self, response: Response, currentPassword: str) -> dict:
+        user = self.requireAuth()
+        try:
+            self.authService.deleteAccount(user, currentPassword)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        response.delete_cookie(
+            key=self.sessionService.cookie_name,
+            httponly=True,
+            secure=self.sessionService.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+        return self.successResponse({"deleted": True})
 
     def postLogout(self, response: Response) -> dict:
         response.delete_cookie(
@@ -393,7 +432,18 @@ def patch_profile(
     payload: ProfileUpdateRequest,
     controller: AuthController = Depends(get_auth_controller),
 ):
-    return controller.patchProfile(payload.username, payload.birthDate, payload.gender)
+    return controller.patchProfile(
+        payload.username, payload.email, payload.birthDate, payload.gender
+    )
+
+
+@router.delete("/account")
+def delete_account(
+    payload: DeleteAccountRequest,
+    response: Response,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.deleteAccount(response, payload.currentPassword)
 
 
 @router.post("/logout")
