@@ -42,6 +42,7 @@ class SessionTokenService:
             "iat": int(now.timestamp()),
             "exp": int((now + ttl).timestamp()),
             "pwd": self.password_fingerprint(user.password_hash),
+            "ver": int(user.auth_session_version or 0),
             "nonce": secrets.token_urlsafe(8),
         }
         encoded = self._b64encode(

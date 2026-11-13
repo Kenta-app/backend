@@ -126,6 +126,7 @@ class ProfileUpdateRequest(BaseModel):
     email: str = Field(min_length=5, max_length=255)
     birthDate: date | None = None
     gender: str | None = Field(default=None, min_length=1, max_length=50)
+    currentPassword: str | None = Field(default=None, min_length=1, max_length=128)
 
     @field_validator("username")
     @classmethod
@@ -155,6 +156,10 @@ class ProfileUpdateRequest(BaseModel):
 
 class DeleteAccountRequest(BaseModel):
     currentPassword: str = Field(min_length=1, max_length=128)
+
+
+class VerifyEmailChangeRequest(BaseModel):
+    code: str = Field(pattern=r"^\d{6}$")
 
 
 class AuthController(BaseController):
@@ -262,13 +267,50 @@ class AuthController(BaseController):
         email: str,
         birthDate: date | None,
         gender: str | None,
+        currentPassword: str | None,
     ) -> dict:
         user = self.requireAuth()
         try:
-            updated = self.authService.updateProfile(user, username, email, birthDate, gender)
+            updated, email_change_required = self.authService.updateProfile(
+                user, username, email, birthDate, gender, currentPassword
+            )
+        except EmailDeliveryError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return self.successResponse(serialize_user(updated))
+        payload = serialize_user(updated)
+        payload["emailChangeRequired"] = email_change_required
+        return self.successResponse(payload)
+
+    def verifyEmailChange(
+        self,
+        response: Response,
+        code: str,
+        backgroundTasks: BackgroundTasks,
+    ) -> dict:
+        user = self.requireAuth()
+        try:
+            updated, old_email = self.authService.verifyEmailChange(user, code)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        response.delete_cookie(
+            key=self.sessionService.cookie_name,
+            httponly=True,
+            secure=self.sessionService.cookie_secure,
+            samesite="lax",
+            path="/",
+        )
+        backgroundTasks.add_task(
+            self.authService.sendEmailChangedNotice,
+            old_email,
+            updated.email,
+        )
+        return self.successResponse({"changed": True, "email": updated.email})
+
+    def cancelEmailChange(self) -> dict:
+        user = self.requireAuth()
+        self.authService.cancelEmailChange(user)
+        return self.successResponse({"cancelled": True})
 
     def deleteAccount(self, response: Response, currentPassword: str) -> dict:
         user = self.requireAuth()
@@ -433,8 +475,29 @@ def patch_profile(
     controller: AuthController = Depends(get_auth_controller),
 ):
     return controller.patchProfile(
-        payload.username, payload.email, payload.birthDate, payload.gender
+        payload.username,
+        payload.email,
+        payload.birthDate,
+        payload.gender,
+        payload.currentPassword,
     )
+
+
+@router.post("/email-change/verify")
+def verify_email_change(
+    payload: VerifyEmailChangeRequest,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.verifyEmailChange(response, payload.code, background_tasks)
+
+
+@router.delete("/email-change")
+def cancel_email_change(
+    controller: AuthController = Depends(get_auth_controller),
+):
+    return controller.cancelEmailChange()
 
 
 @router.delete("/account")

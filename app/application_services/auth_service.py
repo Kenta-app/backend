@@ -289,32 +289,109 @@ class AuthService:
         email: str,
         birthDate: date | None,
         gender: str | None,
-    ) -> User:
+        currentPassword: str | None = None,
+    ) -> tuple[User, bool]:
         normalized_username = validate_username(username)
         normalized_email = email.strip().lower()
-        existing = (
+        existing_username = (
             self.db.query(User)
             .filter(
-                (
-                    (func.lower(User.username) == normalized_username.lower())
-                    | (func.lower(User.email) == normalized_email)
-                ),
+                func.lower(User.username) == normalized_username.lower(),
                 User.user_id != user.user_id,
             )
             .first()
         )
-        if existing:
-            if existing.email.lower() == normalized_email:
-                raise ValueError("El correo electrónico ya está en uso.")
+        if existing_username:
             raise ValueError("El nombre de usuario ya está en uso.")
+
+        email_change_required = normalized_email != user.email.lower()
+        if email_change_required:
+            if not currentPassword or not self.verifyPassword(currentPassword, user.password_hash):
+                raise ValueError("La contraseña actual es incorrecta.")
+            self._requireVerificationConfiguration()
+            existing_email = (
+                self.db.query(User)
+                .filter(
+                    (
+                        (func.lower(User.email) == normalized_email)
+                        | (func.lower(User.pending_email) == normalized_email)
+                    ),
+                    User.user_id != user.user_id,
+                )
+                .first()
+            )
+            if existing_email:
+                raise ValueError("El correo electrónico ya está en uso.")
+
         user.username = normalized_username
-        user.email = normalized_email
         user.birth_date = birthDate
         user.gender = gender.strip().lower() if gender else None
         self.db.add(user)
+
+        if email_change_required:
+            now = datetime.utcnow()
+            code = self._issueEmailChangeCode(user, normalized_email, now)
+            try:
+                self.db.flush()
+                self.emailSender.sendEmailChangeCode(normalized_email, code)
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
+        else:
+            self.db.commit()
+        self.db.refresh(user)
+        return user, email_change_required
+
+    def verifyEmailChange(self, user: User, code: str) -> tuple[User, str]:
+        now = datetime.utcnow()
+        if (
+            not user.pending_email
+            or not user.email_change_code_hash
+            or not user.email_change_expires_at
+            or user.email_change_expires_at < now
+        ):
+            raise ValueError("El código de cambio de correo es inválido o venció.")
+        if user.email_change_attempts >= self.maxVerificationAttempts:
+            raise ValueError("Se agotaron los intentos. Solicita nuevamente el cambio de correo.")
+
+        user.email_change_attempts += 1
+        if not hmac.compare_digest(
+            user.email_change_code_hash,
+            self._hashVerificationCode(code),
+        ):
+            self.db.commit()
+            raise ValueError("El código de cambio de correo es inválido o venció.")
+
+        duplicate = (
+            self.db.query(User)
+            .filter(
+                func.lower(User.email) == user.pending_email.lower(),
+                User.user_id != user.user_id,
+            )
+            .first()
+        )
+        if duplicate:
+            raise ValueError("El correo electrónico ya está en uso.")
+
+        old_email = user.email
+        user.email = user.pending_email
+        user.email_verified_at = now
+        self._clearEmailChange(user)
+        user.auth_session_version = int(user.auth_session_version or 0) + 1
         self.db.commit()
         self.db.refresh(user)
-        return user
+        return user, old_email
+
+    def cancelEmailChange(self, user: User) -> None:
+        self._clearEmailChange(user)
+        self.db.commit()
+
+    def sendEmailChangedNotice(self, oldEmail: str, newEmail: str) -> None:
+        try:
+            self.emailSender.sendEmailChangedNotice(oldEmail, newEmail)
+        except Exception:
+            logger.exception("Email-change notice delivery failed")
 
     def deleteAccount(self, user: User, currentPassword: str) -> None:
         if not self.verifyPassword(currentPassword, user.password_hash):
@@ -433,6 +510,23 @@ class AuthService:
         user.email_verification_sent_at = now
         user.email_verification_attempts = 0
         return code
+
+    def _issueEmailChangeCode(self, user: User, pendingEmail: str, now: datetime) -> str:
+        code = f"{secrets.randbelow(900000) + 100000:06d}"
+        user.pending_email = pendingEmail
+        user.email_change_code_hash = self._hashVerificationCode(code)
+        user.email_change_expires_at = now + timedelta(minutes=self.verificationTtlMinutes)
+        user.email_change_sent_at = now
+        user.email_change_attempts = 0
+        return code
+
+    @staticmethod
+    def _clearEmailChange(user: User) -> None:
+        user.pending_email = None
+        user.email_change_code_hash = None
+        user.email_change_expires_at = None
+        user.email_change_sent_at = None
+        user.email_change_attempts = 0
 
     def _hashVerificationCode(self, code: str) -> str:
         return hmac.new(

@@ -42,6 +42,7 @@ def serialize_user(user: User) -> dict:
         "userId": user.user_id,
         "username": user.username,
         "email": user.email,
+        "pendingEmail": user.pending_email,
         "birthDate": user.birth_date.isoformat() if user.birth_date else None,
         "gender": user.gender,
         "role": (user.role or "user").lower(),

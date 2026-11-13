@@ -48,6 +48,8 @@ def get_current_user(
         session_service.password_fingerprint(user.password_hash),
     ):
         return None
+    if int(payload.get("ver", 0)) != int(user.auth_session_version or 0):
+        return None
     return user
 
 

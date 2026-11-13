@@ -64,6 +64,29 @@ class ResendEmailSender:
             ),
         )
 
+    def sendEmailChangeCode(self, email: str, code: str) -> None:
+        ttl_minutes = int(os.getenv("EMAIL_VERIFICATION_TTL_MINUTES", "10"))
+        self._send(
+            email,
+            "Confirma tu nuevo correo en Kenta",
+            (
+                f"Tu código para confirmar este correo en Kenta es: {code}\n\n"
+                f"Vence en {ttl_minutes} minutos. Tu correo actual no cambiará "
+                "hasta que completes esta verificación."
+            ),
+        )
+
+    def sendEmailChangedNotice(self, oldEmail: str, newEmail: str) -> None:
+        self._send(
+            oldEmail,
+            "El correo de tu cuenta de Kenta fue actualizado",
+            (
+                "El correo de acceso de tu cuenta de Kenta fue cambiado a "
+                f"{newEmail}. Todas las sesiones anteriores fueron cerradas.\n\n"
+                "Si tú no realizaste este cambio, contacta inmediatamente al equipo de Kenta."
+            ),
+        )
+
     def sendStudyReminder(self, email: str, username: str) -> None:
         public_url = os.getenv("FRONTEND_PUBLIC_URL", "https://ikenta.app").rstrip("/")
         display_name = username.strip() or "participante"

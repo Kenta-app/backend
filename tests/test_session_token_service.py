@@ -17,9 +17,28 @@ def test_session_token_rejects_tampering_and_password_changes(monkeypatch):
     payload = service.verify(token)
 
     assert payload["uid"] == 7
+    assert payload["ver"] == 0
     assert max_age == service.remember_ttl_days * 24 * 60 * 60
     assert service.verify(f"{token[:-1]}x") is None
     assert payload["pwd"] != service.password_fingerprint("new-hash")
+
+
+def test_session_token_carries_account_session_version(monkeypatch):
+    monkeypatch.setenv(
+        "AUTH_SESSION_SECRET", "test-session-secret-with-at-least-32-characters"
+    )
+    service = SessionTokenService()
+    user = User(
+        user_id=8,
+        username="versioned",
+        email="versioned@example.com",
+        password_hash="hash",
+        auth_session_version=3,
+    )
+
+    token, _ = service.issue(user, False)
+
+    assert service.verify(token)["ver"] == 3
 
 
 def test_session_token_rejects_expired_payload(monkeypatch):

@@ -34,6 +34,16 @@ class FakeEmailSender:
     def sendPasswordChangedNotice(self, email: str) -> None:
         self.messages.append({"type": "password_changed", "email": email})
 
+    def sendEmailChangeCode(self, email: str, code: str) -> None:
+        self.messages.append({"type": "email_change", "email": email, "code": code})
+
+    def sendEmailChangedNotice(self, oldEmail: str, newEmail: str) -> None:
+        self.messages.append({
+            "type": "email_changed",
+            "oldEmail": oldEmail,
+            "newEmail": newEmail,
+        })
+
 
 class ReadOnlyJustificationService:
     def __init__(self):
@@ -153,7 +163,7 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(self.client.post("/auth/logout").status_code, 200)
         self.assertEqual(self.client.get("/auth/me").status_code, 401)
 
-    def test_profile_update_changes_email_and_rejects_duplicates(self):
+    def test_profile_update_verifies_new_email_and_revokes_sessions(self):
         user = User(
             username="profile-user",
             email="profile@example.com",
@@ -178,6 +188,7 @@ class ApiControllersTests(unittest.TestCase):
             json={
                 "username": "Perfil-Actualizado",
                 "email": "updated@example.com",
+                "currentPassword": "Profile-123",
                 "birthDate": "1998-07-12",
                 "gender": "FEMALE",
             },
@@ -186,9 +197,53 @@ class ApiControllersTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.db.refresh(user)
         self.assertEqual(user.username, "Perfil-Actualizado")
-        self.assertEqual(user.email, "updated@example.com")
+        self.assertEqual(user.email, "profile@example.com")
+        self.assertEqual(user.pending_email, "updated@example.com")
+        self.assertTrue(response.json()["data"]["emailChangeRequired"])
         self.assertEqual(user.birth_date.isoformat(), "1998-07-12")
         self.assertEqual(user.gender, "female")
+
+        change_message = next(
+            message for message in self.emailSender.messages
+            if message["type"] == "email_change"
+        )
+        wrong_code_response = self.client.post(
+            "/auth/email-change/verify",
+            cookies=self.auth_cookies(user),
+            json={"code": "000000"},
+        )
+        self.assertEqual(wrong_code_response.status_code, 400)
+
+        old_cookies = self.auth_cookies(user)
+        verify_response = self.client.post(
+            "/auth/email-change/verify",
+            cookies=old_cookies,
+            json={"code": change_message["code"]},
+        )
+        self.assertEqual(verify_response.status_code, 200)
+        self.db.refresh(user)
+        self.assertEqual(user.email, "updated@example.com")
+        self.assertIsNone(user.pending_email)
+        self.assertEqual(self.client.get("/auth/me", cookies=old_cookies).status_code, 401)
+        self.assertEqual(
+            self.client.post(
+                "/auth/login",
+                json={"email": "profile@example.com", "password": "Profile-123"},
+            ).status_code,
+            401,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/auth/login",
+                json={"email": "updated@example.com", "password": "Profile-123"},
+            ).status_code,
+            200,
+        )
+        self.assertTrue(any(
+            message["type"] == "email_changed"
+            and message["oldEmail"] == "profile@example.com"
+            for message in self.emailSender.messages
+        ))
 
         duplicate_response = self.client.patch(
             "/auth/profile",
@@ -196,12 +251,53 @@ class ApiControllersTests(unittest.TestCase):
             json={
                 "username": "Perfil-Actualizado",
                 "email": "existing@example.com",
+                "currentPassword": "Profile-123",
                 "birthDate": "1998-07-12",
                 "gender": "female",
             },
         )
         self.assertEqual(duplicate_response.status_code, 400)
         self.assertIn("correo electrónico ya está en uso", duplicate_response.text)
+
+    def test_profile_email_change_requires_password_and_can_be_cancelled(self):
+        password = "Profile-123"
+        user = User(
+            username="profile-cancel",
+            email="cancel@example.com",
+            password_hash=AuthService(self.db).hashPassword(password),
+            role="user",
+            email_verified_at=datetime.utcnow(),
+        )
+        user.register()
+        self.db.add(user)
+        self.db.commit()
+        cookies = self.auth_cookies(user)
+        payload = {
+            "username": user.username,
+            "email": "pending@example.com",
+            "birthDate": None,
+            "gender": None,
+        }
+
+        missing_password = self.client.patch(
+            "/auth/profile", cookies=cookies, json=payload
+        )
+        self.assertEqual(missing_password.status_code, 400)
+
+        requested = self.client.patch(
+            "/auth/profile",
+            cookies=cookies,
+            json={**payload, "currentPassword": password},
+        )
+        self.assertEqual(requested.status_code, 200)
+        self.db.refresh(user)
+        self.assertEqual(user.pending_email, "pending@example.com")
+
+        cancelled = self.client.delete("/auth/email-change", cookies=cookies)
+        self.assertEqual(cancelled.status_code, 200)
+        self.db.refresh(user)
+        self.assertIsNone(user.pending_email)
+        self.assertEqual(user.email, "cancel@example.com")
 
     def test_registration_rejects_invalid_username_and_weak_password(self):
         base_payload = {
